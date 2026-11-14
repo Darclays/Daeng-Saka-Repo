@@ -60,8 +60,9 @@ namespace GamecommMentor.DaengSaka
                     throw new InvalidOperationException("Battle Core needs an active battle canvas.");
                 session = new GmBattleSession(party, enemies, restMp);
                 view = new GmBattleView(battleCanvas.transform, session, SelectUnit,
-                    () => OpenMenu(GmBattleMenu.Attack), () => OpenMenu(GmBattleMenu.Item),
-                    Rest, PickMove, Back, ConfirmArea, ExitBattle);
+                    () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
+                    () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
+                    PickMove, Back, ConfirmMove, ExitBattle);
                 Refresh();
             }
             catch (Exception exception)
@@ -104,30 +105,36 @@ namespace GamecommMentor.DaengSaka
                 else Refresh();
                 return;
             }
-            if (!CanAct || menu != GmBattleMenu.Target || selection == null ||
-                selection.Target == GmBattleTarget.AllEnemies) return;
+            if (!CanAct || menu != GmBattleMenu.Target || selection == null || selection.NeedsConfirm) return;
             StartMove(selection, index);
         }
 
         private void OpenMenu(GmBattleMenu next)
         {
             if (!CanAct || menu != GmBattleMenu.Command) return;
+            if (next == GmBattleMenu.Target) selection = GmBattleMove.BasicAttack;
             menu = next;
             Refresh();
         }
 
         private void PickMove(int index)
         {
-            if (!CanAct) return;
+            if (!CanAct || index < 0) return;
             GmBattleMove move;
             switch (menu)
             {
-                case GmBattleMenu.Attack:
-                    move = index == 0 ? GmBattleMove.BasicAttack : session.Actor.Skill;
+                case GmBattleMenu.Skill:
+                    if (index >= session.Actor.Skills.Count) return;
+                    move = session.Actor.Skills[index];
                     break;
                 case GmBattleMenu.Item:
+                    if (index > 1) return;
                     move = index == 0 ? GmBattleMove.HpItem : GmBattleMove.MpItem;
                     break;
+                case GmBattleMenu.Rest:
+                    if (index > 1) return;
+                    UseRestOption(guard: index == 1);
+                    return;
                 default:
                     return;
             }
@@ -146,7 +153,8 @@ namespace GamecommMentor.DaengSaka
                     if (!session.TryDeselectPartyMember()) return;
                     break;
                 case GmBattleMenu.Target:
-                    menu = selection.IsItem ? GmBattleMenu.Item : GmBattleMenu.Attack;
+                    if (selection == GmBattleMove.BasicAttack) menu = GmBattleMenu.Command;
+                    else menu = selection.IsItem ? GmBattleMenu.Item : GmBattleMenu.Skill;
                     break;
                 default:
                     menu = GmBattleMenu.Command;
@@ -156,9 +164,9 @@ namespace GamecommMentor.DaengSaka
             Refresh();
         }
 
-        private void ConfirmArea()
+        private void ConfirmMove()
         {
-            if (CanAct && menu == GmBattleMenu.Target && selection?.Target == GmBattleTarget.AllEnemies)
+            if (CanAct && menu == GmBattleMenu.Target && selection != null && selection.NeedsConfirm)
                 StartMove(selection, -1);
         }
 
@@ -201,7 +209,7 @@ namespace GamecommMentor.DaengSaka
                         ExitBattle();
                         yield break;
                     }
-                    lastAction = FormatAction(actor, move, hits);
+                    lastAction = FormatAction(actor, move, hits, round);
                     Refresh(actorIndex, round);
                 }
                 view.DrawAction(session, actorIndex, move, targets, frame, count, impact);
@@ -211,14 +219,20 @@ namespace GamecommMentor.DaengSaka
             view.ClearAction();
         }
 
-        private void Rest()
+        private void UseRestOption(bool guard)
         {
-            if (!CanAct || menu != GmBattleMenu.Command) return;
-            GmBattleUnit actor = session.Actor;
-            if (!session.TryRest(out int recovered)) return;
-            lastAction = recovered > 0
-                ? $"{GmBattleView.ShortName(actor)} · Rest · +{recovered} MP"
-                : $"{GmBattleView.ShortName(actor)} · Rest · MP penuh";
+            string actor = GmBattleView.ShortName(session.Actor);
+            if (guard)
+            {
+                if (!session.TryGuard()) return;
+                lastAction = $"{actor} · Guard · −{GmBattleSession.GuardReductionPercent}% damage selama fase musuh";
+            }
+            else
+            {
+                if (!session.TryRest(out int recovered)) return;
+                lastAction = recovered > 0 ? $"{actor} · Recharge MP · +{recovered} MP" : $"{actor} · Recharge MP · MP penuh";
+            }
+            menu = GmBattleMenu.Command;
             StartCoroutine(PlayAutomaticTurns());
         }
 
@@ -257,8 +271,11 @@ namespace GamecommMentor.DaengSaka
             Refresh();
         }
 
-        private string FormatAction(GmBattleUnit actor, GmBattleMove move, GmBattleHit[] hits)
+        private string FormatAction(GmBattleUnit actor, GmBattleMove move, GmBattleHit[] hits, int round)
         {
+            string title = $"{GmBattleView.ShortName(actor)} · {move.Name} · ";
+            if (move.Effect == GmBattleEffect.Buff) return title + GmBattleView.BuffDetail(move);
+
             string[] effects = new string[hits.Length];
             for (int i = 0; i < hits.Length; i++)
             {
@@ -267,14 +284,21 @@ namespace GamecommMentor.DaengSaka
                 string amount = move.Effect switch
                 {
                     GmBattleEffect.Heal => $"+{hit.Amount} HP",
+                    GmBattleEffect.HealPercent => $"+{hit.Amount} HP",
                     GmBattleEffect.RestoreMp => $"+{hit.Amount} MP",
                     _ => $"−{hit.Amount} HP"
                 };
-                string status = !target.IsAlive ? " · KO"
-                    : move.Effect == GmBattleEffect.StunDamage ? " · Stun" : "";
+                string status = !target.IsAlive ? " · KO" : hit.Stunned ? " · Stun" : "";
+                if (move.Effect == GmBattleEffect.StunDamage && target.IsBoss && target.IsAlive && !hit.Stunned)
+                    status = " · Tahan Stun";
+                if (!actor.IsParty && target.GuardRound == round && move.IsDamaging)
+                    status += " · Guard";
                 effects[i] = $"{GmBattleView.ShortName(target)} {amount}{status}";
             }
-            return $"{GmBattleView.ShortName(actor)} · {move.Name} · {string.Join(" / ", effects)}";
+            string summary = title + string.Join(" / ", effects);
+            if (move.IsDamaging && move.Buff != GmBattleBuff.None)
+                summary += $" · Diri {GmBattleView.BuffDetail(move)}";
+            return summary;
         }
 
         private void Refresh(int actorIndex = -1, int round = -1)

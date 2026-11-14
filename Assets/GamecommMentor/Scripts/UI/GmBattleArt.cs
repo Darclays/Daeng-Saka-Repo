@@ -73,10 +73,7 @@ namespace GamecommMentor.DaengSaka
 
         public Clip Animation(GmBattleMove move, GmBattleCharacter character)
         {
-            if (move == GmBattleMove.SharkBite) return Find("sakaSkill");
-            if (move == GmBattleMove.ShieldSwing) return Find("paccaSkill");
-            if (move == GmBattleMove.RayOfHealing) return Find("daungSkill");
-            if (move != GmBattleMove.BasicAttack) return null;
+            if (move != GmBattleMove.BasicAttack) return Find(move?.AnimationKey);
             return character switch
             {
                 GmBattleCharacter.Saka => Find("sakaBasic"),
@@ -86,13 +83,7 @@ namespace GamecommMentor.DaengSaka
             };
         }
 
-        public Clip Impact(GmBattleMove move)
-        {
-            if (move == GmBattleMove.SharkBite) return Find("sharkImpact");
-            if (move == GmBattleMove.ShieldSwing) return Find("shieldImpact");
-            if (move == GmBattleMove.RayOfHealing || move == GmBattleMove.HpItem) return Find("healingImpact");
-            return null;
-        }
+        public Clip Impact(GmBattleMove move) => Find(move?.ImpactKey);
 
         public void SetBlur(RawImage image, bool soft, bool isBackdrop = false)
         {

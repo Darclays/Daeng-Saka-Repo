@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmBattleMenu { Command, Attack, Item, Target }
+    internal enum GmBattleMenu { Command, Skill, Item, Rest, Target }
 
     internal sealed class GmBattleView : IDisposable
     {
@@ -20,12 +20,14 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color Disabled = new Color(0.89f, 0.91f, 0.93f);
         private static readonly Color HpColor = new Color(0.21f, 0.47f, 0.42f);
         private static readonly Color MpColor = new Color(0.33f, 0.51f, 0.64f);
+        internal static readonly Color GuardColor = new Color(0.82f, 0.90f, 0.96f);
 
         private sealed class PartyHud
         {
             public Button Button;
             public Image Background;
             public Text Name;
+            public Text Status;
             public Text Hp;
             public Text Mp;
             public RectTransform HpFill;
@@ -44,11 +46,11 @@ namespace GamecommMentor.DaengSaka
         private readonly Text actionTitle;
         private readonly Text hint;
         private readonly Button attackButton;
+        private readonly Button skillButton;
         private readonly Button itemButton;
         private readonly Button restButton;
         private readonly Button backButton;
-        private readonly Button firstMove;
-        private readonly Button secondMove;
+        private readonly Button[] options = new Button[3];
         private readonly Button confirmButton;
         private readonly Button leaveButton;
         private readonly GameObject resultOverlay;
@@ -56,7 +58,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Button resultButton;
 
         public GmBattleView(Transform parent, GmBattleSession session, Action<int> select, Action attack,
-            Action item, Action rest, Action<int> pickMove, Action back, Action confirm, Action leave)
+            Action skill, Action item, Action rest, Action<int> pickMove, Action back, Action confirm, Action leave)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             RectTransform frame = Rect("Battle Screen", parent, 0f, 0f, 1f, 1f);
@@ -95,12 +97,18 @@ namespace GamecommMentor.DaengSaka
             Fill(panel, Panel);
             actionTitle = Label(font, panel, "Action Title", "Aksi", 19, 0.026f, 0.66f, 0.72f, 0.98f, TextAnchor.MiddleLeft);
             actionTitle.fontStyle = FontStyle.Bold;
-            attackButton = MakeButton(panel, "Attack", 0.026f, 0.23f, 0.322f, 0.61f, attack);
-            itemButton = MakeButton(panel, "Item", 0.352f, 0.23f, 0.648f, 0.61f, item);
-            restButton = MakeButton(panel, "Rest", 0.678f, 0.23f, 0.974f, 0.61f, rest);
+            attackButton = MakeButton(panel, "Attack", 0.026f, 0.23f, 0.250f, 0.61f, attack);
+            skillButton = MakeButton(panel, "Skill", 0.267f, 0.23f, 0.491f, 0.61f, skill);
+            itemButton = MakeButton(panel, "Item", 0.509f, 0.23f, 0.733f, 0.61f, item);
+            restButton = MakeButton(panel, "Rest", 0.750f, 0.23f, 0.974f, 0.61f, rest);
             backButton = MakeButton(panel, "Kembali", 0.759f, 0.72f, 0.974f, 0.96f, back, 16);
-            firstMove = MakeButton(panel, "", 0.026f, 0.37f, 0.974f, 0.665f, () => pickMove(0), 18, TextAnchor.MiddleLeft);
-            secondMove = MakeButton(panel, "", 0.026f, 0.05f, 0.974f, 0.345f, () => pickMove(1), 18, TextAnchor.MiddleLeft);
+            for (int i = 0; i < options.Length; i++)
+            {
+                int index = i;
+                float top = 0.665f - 0.21f * i;
+                options[i] = MakeButton(panel, "", 0.026f, top - 0.19f, 0.974f, top,
+                    () => pickMove(index), 17, TextAnchor.MiddleLeft);
+            }
             hint = Label(font, panel, "Target Prompt", "", 17, 0.026f, 0.39f, 0.974f, 0.68f, TextAnchor.MiddleLeft);
             hint.color = Muted;
             confirmButton = MakeButton(panel, "Pakai", 0.026f, 0.065f, 0.974f, 0.36f, confirm);
@@ -125,7 +133,7 @@ namespace GamecommMentor.DaengSaka
             bool finished = !resolving && !session.IsActive;
             bool partyTurn = !resolving && session.IsPartyTurn && !session.Actor.IsStunned;
             bool choosing = partyTurn && menu == GmBattleMenu.Target && selection != null;
-            bool area = choosing && selection.Target == GmBattleTarget.AllEnemies;
+            bool confirm = choosing && selection.NeedsConfirm;
             bool submenu = partyTurn && menu != GmBattleMenu.Command;
             bool focus = partyTurn && !choosing;
             GmBattleMove targetMove = choosing ? selection : null;
@@ -142,36 +150,38 @@ namespace GamecommMentor.DaengSaka
 
             bool showCommands = partyTurn && !submenu;
             SetButton(attackButton, showCommands, true);
+            SetButton(skillButton, showCommands, showCommands && session.Actor.Skills.Count > 0);
             SetButton(itemButton, showCommands, true);
             SetButton(restButton, showCommands, true);
             SetButton(backButton, partyTurn, true);
             if (partyTurn) ButtonLabel(backButton).text = submenu ? "Kembali" : "Ganti karakter";
             bool moves = submenu && !choosing;
-            if (moves)
-            {
-                GmBattleMove first = menu == GmBattleMenu.Attack ? GmBattleMove.BasicAttack : GmBattleMove.HpItem;
-                GmBattleMove second = menu == GmBattleMenu.Attack ? session.Actor.Skill : GmBattleMove.MpItem;
-                RenderMove(firstMove, first, session);
-                RenderMove(secondMove, second, session);
-            }
-            else
-            {
-                SetButton(firstMove, false, false);
-                SetButton(secondMove, false, false);
-            }
-            SetButton(confirmButton, area, true);
-            if (area) ButtonLabel(confirmButton).text = "Pakai " + selection.Name;
+            if (moves) RenderOptions(session, menu);
+            else foreach (Button option in options) SetButton(option, false, false);
+            SetButton(confirmButton, confirm, true);
+            if (confirm) ButtonLabel(confirmButton).text = "Pakai " + selection.Name;
             hint.gameObject.SetActive(choosing || choosingMember);
             if (choosing)
             {
                 actionTitle.text = selection.MpCost > 0 ? $"{selection.Name} · {selection.MpCost} MP" : selection.Name;
-                hint.text = selection.Target switch
+                if (selection.Effect == GmBattleEffect.Buff)
                 {
-                    GmBattleTarget.Ally => "Pilih satu teman.",
-                    GmBattleTarget.AllEnemies => "Semua musuh hidup terpilih.",
-                    _ => "Pilih satu musuh."
-                };
-                if (area) preferred = confirmButton;
+                    string recipient = selection.Target == GmBattleTarget.Self ? "Diri" : "Party";
+                    hint.text = $"{recipient} · {BuffDetail(selection)}";
+                }
+                else
+                {
+                    hint.text = selection.Target switch
+                    {
+                        GmBattleTarget.Ally => "Pilih satu teman.",
+                        GmBattleTarget.AllEnemies => "Semua musuh hidup terpilih.",
+                        GmBattleTarget.AllAllies => "Semua anggota party hidup terpilih.",
+                        _ => "Pilih satu musuh."
+                    };
+                    if (selection.IsDamaging && selection.Buff != GmBattleBuff.None)
+                        hint.text += $" Diri · {BuffDetail(selection)}";
+                }
+                if (confirm) preferred = confirmButton;
             }
             else if (choosingMember)
             {
@@ -181,8 +191,14 @@ namespace GamecommMentor.DaengSaka
             else if (resolving) actionTitle.text = "Aksi berlangsung";
             else if (moves)
             {
-                actionTitle.text = menu == GmBattleMenu.Attack ? "Attack" : "Item";
-                preferred = firstMove.interactable ? firstMove : secondMove.interactable ? secondMove : backButton;
+                actionTitle.text = menu.ToString();
+                preferred = backButton;
+                foreach (Button option in options)
+                {
+                    if (!option.interactable) continue;
+                    preferred = option;
+                    break;
+                }
             }
             else if (partyTurn || finished)
             {
@@ -232,14 +248,16 @@ namespace GamecommMentor.DaengSaka
                 RectTransform panel = Inset("Panel", card, 1.4f);
                 Image background = Fill(panel, Panel);
                 Button button = Clickable(background, () => select(index));
-                Text name = Label(font, panel, "Name", "", 20, 0.075f, 0.68f, 0.925f, 0.96f, TextAnchor.MiddleLeft);
+                Text name = Label(font, panel, "Name", "", 20, 0.075f, 0.80f, 0.925f, 0.97f, TextAnchor.MiddleLeft);
                 name.fontStyle = FontStyle.Bold;
+                Text status = Label(font, panel, "Status", "", 14, 0.075f, 0.68f, 0.925f, 0.80f, TextAnchor.MiddleLeft);
+                status.color = Muted;
                 Text hp = Label(font, panel, "HP", "", 16, 0.075f, 0.43f, 0.925f, 0.66f, TextAnchor.MiddleLeft);
                 RectTransform hpFill = Meter(panel, "HP Bar", HpColor, 0.40f);
                 Text mp = Label(font, panel, "MP", "", 16, 0.075f, 0.15f, 0.925f, 0.38f, TextAnchor.MiddleLeft);
                 RectTransform mpFill = Meter(panel, "MP Bar", MpColor, 0.12f);
                 cards[i] = new PartyHud { Button = button, Background = background, Name = name,
-                    Hp = hp, Mp = mp, HpFill = hpFill, MpFill = mpFill };
+                    Status = status, Hp = hp, Mp = mp, HpFill = hpFill, MpFill = mpFill };
             }
             return cards;
         }
@@ -253,12 +271,19 @@ namespace GamecommMentor.DaengSaka
                 PartyHud card = party[i];
                 bool marked = move != null && session.CanTarget(move, i);
                 bool selectable = choosingMember && session.CanChoosePartyMember(i) ||
-                    marked && move.Target != GmBattleTarget.AllEnemies;
+                    marked && !move.NeedsConfirm;
                 card.Button.interactable = selectable;
                 if (selectable && first == null) first = card.Button;
                 bool spent = unit.LastActedRound == round;
-                card.Background.color = marked ? Target : i == actor ? Focus : unit.IsAlive && !spent ? Panel : Disabled;
+                bool guarding = unit.IsAlive && unit.GuardRound == round;
+                Color color = unit.IsAlive && !spent ? Panel : Disabled;
+                if (guarding) color = GuardColor;
+                if (i == actor) color = Focus;
+                if (marked) color = Target;
+                card.Background.color = color;
                 card.Name.text = UnitLabel(unit, round, i == actor);
+                if (guarding) card.Name.text += " · Guard";
+                card.Status.text = unit.IsAlive ? BuffStatus(unit, round) : "";
                 card.Hp.text = $"HP  {unit.Hp}/{unit.MaxHp}";
                 card.Mp.text = $"MP  {unit.Mp}/{unit.MaxMp}";
                 card.HpFill.anchorMax = new Vector2(unit.Hp / (float)unit.MaxHp, 1f);
@@ -283,6 +308,30 @@ namespace GamecommMentor.DaengSaka
             for (; slot < queueLabels.Length; slot++) queueChips[slot].gameObject.SetActive(false);
         }
 
+        private void RenderOptions(GmBattleSession session, GmBattleMenu menu)
+        {
+            switch (menu)
+            {
+                case GmBattleMenu.Skill:
+                    for (int i = 0; i < options.Length; i++)
+                        RenderMove(options[i], i < session.Actor.Skills.Count ? session.Actor.Skills[i] : null, session);
+                    break;
+                case GmBattleMenu.Item:
+                    RenderMove(options[0], GmBattleMove.HpItem, session);
+                    RenderMove(options[1], GmBattleMove.MpItem, session);
+                    SetButton(options[2], false, false);
+                    break;
+                case GmBattleMenu.Rest:
+                    int amount = session.RechargeAmount;
+                    ButtonLabel(options[0]).text = amount > 0 ? $"Recharge MP  ·  +{amount} MP" : "Recharge MP  ·  MP penuh";
+                    ButtonLabel(options[1]).text = $"Guard  ·  −{GmBattleSession.GuardReductionPercent}% damage selama fase musuh";
+                    SetButton(options[0], true, true);
+                    SetButton(options[1], true, true);
+                    SetButton(options[2], false, false);
+                    break;
+            }
+        }
+
         private static void RenderMove(Button button, GmBattleMove move, GmBattleSession session)
         {
             if (move == null)
@@ -294,14 +343,42 @@ namespace GamecommMentor.DaengSaka
             string detail = move.Target switch
             {
                 GmBattleTarget.Ally => "1 teman",
-                GmBattleTarget.AllEnemies => "AoE",
+                GmBattleTarget.AllEnemies => "Semua musuh",
+                GmBattleTarget.AllAllies => "Party",
+                GmBattleTarget.Self => "Diri",
                 _ => "1 musuh"
             };
             if (move.IsItem) detail = $"×{session.ItemCount(move)}";
-            else if (move.MpCost > 0) detail = $"{move.MpCost} MP · {detail}";
+            else
+            {
+                string effect = move.Effect switch
+                {
+                    GmBattleEffect.StunDamage => $"{move.Amount} DMG + Stun",
+                    GmBattleEffect.Heal => $"+{move.Amount} HP",
+                    GmBattleEffect.HealPercent => $"+{move.Amount}% maks. HP",
+                    GmBattleEffect.Buff => BuffDetail(move),
+                    _ => $"{move.Amount} DMG"
+                };
+                if (move.IsDamaging && move.Buff != GmBattleBuff.None)
+                    effect += $" · Diri tahan {move.BuffPercent}%";
+                detail = $"{move.MpCost} MP · {detail} · {effect}";
+            }
             if (reason != null) detail += " · " + reason;
             ButtonLabel(button).text = move.Name + "  ·  " + detail;
             SetButton(button, true, reason == null);
+        }
+
+        public static string BuffDetail(GmBattleMove move) => move.Buff == GmBattleBuff.Attack
+            ? $"DMG +{move.BuffPercent}% / {move.BuffRounds} ronde"
+            : $"Tahan {move.BuffPercent}% / {move.BuffRounds} ronde";
+
+        private static string BuffStatus(GmBattleUnit unit, int round)
+        {
+            int attack = unit.BuffPercent(GmBattleBuff.Attack, round);
+            int defense = unit.BuffPercent(GmBattleBuff.Defense, round);
+            string bonus = attack > 0 ? $"DMG +{attack}%" : "";
+            if (defense == 0) return bonus;
+            return attack > 0 ? $"{bonus} · Tahan {defense}%" : $"Tahan {defense}%";
         }
 
         private void FocusAvailableControl(Button preferred)

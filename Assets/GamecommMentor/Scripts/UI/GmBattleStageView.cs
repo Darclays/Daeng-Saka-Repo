@@ -10,6 +10,7 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color Ground = new Color(0.34f, 0.40f, 0.44f, 0.45f);
         private static readonly Color Active = new Color(0.11f, 0.52f, 0.43f);
         private static readonly Color Target = new Color(0.78f, 0.48f, 0.16f);
+        private static readonly Color GuardRing = new Color(0.26f, 0.50f, 0.69f);
         private static readonly Color LabelBackground = new Color(0.96f, 0.97f, 0.98f);
 
         private sealed class UnitView
@@ -89,13 +90,23 @@ namespace GamecommMentor.DaengSaka
                 bool acting = i == actor;
                 bool marked = selection != null && session.CanTarget(selection, i);
                 bool canChoose = choosingPartyMember && session.CanChoosePartyMember(i);
-                bool selectable = canChoose || (marked && selection.Target != GmBattleTarget.AllEnemies);
+                bool selectable = canChoose || (marked && !selection.NeedsConfirm);
+                bool guarding = unit.IsAlive && unit.GuardRound == round;
                 view.Button.interactable = selectable;
                 if (selectable && first == null) first = view.Button;
-                view.Ring.color = marked ? Target : acting || canChoose ? Active : Ground;
-                view.NameBackground.color = marked ? new Color(0.98f, 0.87f, 0.70f)
-                    : acting ? new Color(0.80f, 0.91f, 0.86f) : LabelBackground;
-                view.Name.text = GmBattleView.UnitLabel(unit, round, acting);
+                Color ringColor = guarding ? GuardRing : Ground;
+                Color nameColor = guarding ? GmBattleView.GuardColor : LabelBackground;
+                if (acting || canChoose) ringColor = Active;
+                if (acting) nameColor = new Color(0.80f, 0.91f, 0.86f);
+                if (marked)
+                {
+                    ringColor = Target;
+                    nameColor = new Color(0.98f, 0.87f, 0.70f);
+                }
+                view.Ring.color = ringColor;
+                view.NameBackground.color = nameColor;
+                view.Name.text = guarding ? GmBattleView.ShortName(unit) + " · Guard"
+                    : GmBattleView.UnitLabel(unit, round, acting);
                 if (view.Hp != null) view.Hp.text = $"{unit.Hp}/{unit.MaxHp} HP";
 
                 GmBattleArt.Draw(view.Sprite, view.Idle, 0, unit.IsParty ? SpriteScale : SpriteScale * 0.8f);
@@ -124,7 +135,7 @@ namespace GamecommMentor.DaengSaka
             GmBattleArt.Clip animation = art.Animation(move, unit.Character);
             GmBattleArt.Draw(actor.Sprite, animation ?? actor.Idle, frame, unit.IsParty ? SpriteScale : SpriteScale * 0.8f);
 
-            bool approach = move == GmBattleMove.ShieldSwing ||
+            bool approach = move == GmBattleMove.ShieldSwing || move == GmBattleMove.DominionStrike ||
                 (move == GmBattleMove.BasicAttack && unit.Character == GmBattleCharacter.Pacca);
             if (approach && targets.Length == 1)
             {
@@ -141,13 +152,13 @@ namespace GamecommMentor.DaengSaka
             foreach (int index in targets)
             {
                 UnitView target = views[index];
-                if (index != actorIndex)
+                if (index != actorIndex && move.IsDamaging)
                 {
                     float opacity = session.Units[index].IsAlive ? 1f : 0.29f;
                     target.Sprite.color = new Color(1f, 0.87f, 0.73f, opacity);
                 }
-                target.Ring.color = Target;
-                GmBattleArt.Draw(target.Effect, effect, frame - impactFrame, SpriteScale * 0.94f);
+                target.Ring.color = move.IsDamaging ? Target : Active;
+                GmBattleArt.Draw(target.Effect, effect, frame - impactFrame, SpriteScale * move.ImpactScale);
                 target.Effect.rectTransform.SetAsLastSibling();
             }
         }
