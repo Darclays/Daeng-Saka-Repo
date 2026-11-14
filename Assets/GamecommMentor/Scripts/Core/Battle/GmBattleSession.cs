@@ -62,11 +62,12 @@ namespace GamecommMentor.DaengSaka
         public int AttackDamage { get; }
         public GmBattleCharacter Character { get; }
         public IReadOnlyList<GmBattleMove> Skills { get; }
-        public bool IsAlive => Hp > 0;
+        public bool IsPresent { get; internal set; } = true;
+        public bool IsAlive => IsPresent && Hp > 0;
         public int Hp { get; internal set; }
         public int Mp { get; internal set; }
-        public int LastActedRound { get; internal set; }
-        public int GuardRound { get; internal set; }
+        public int LastActedRound { get; internal set; } = -1;
+        public int GuardRound { get; internal set; } = -1;
         public int CompletedActions { get; internal set; }
         public bool IsStunned { get; internal set; }
 
@@ -80,8 +81,8 @@ namespace GamecommMentor.DaengSaka
 
         public void ApplyBuff(GmBattleMove move, int round)
         {
-            // A self attack buff can first improve an action on the caster's next round.
-            bool countsFromNextRound = move.Target == GmBattleTarget.Self && move.Buff == GmBattleBuff.Attack;
+            // A self attack buff that uses the caster's action benefits their next round first.
+            bool countsFromNextRound = !move.IsFreeAction && move.Target == GmBattleTarget.Self && move.Buff == GmBattleBuff.Attack;
             buffEndRounds[move] = round + move.BuffRounds - (countsFromNextRound ? 0 : 1);
         }
 
@@ -120,8 +121,9 @@ namespace GamecommMentor.DaengSaka
         private int hpItems = 1;
         private int mpItems = 1;
 
-        public GmBattleSession(GmBattleStats[] party, GmBattleStats[] enemies, int restMp)
+        public GmBattleSession(GmBattleStats[] party, GmBattleStats[] enemies, int restMp, GmBossBattleProfile bossProfile = null)
         {
+            if (bossProfile != null) enemies = bossProfile.CreateRoster();
             if (party == null || party.Length == 0 || enemies == null || enemies.Length == 0)
                 throw new ArgumentException("Battle needs at least one party member and one enemy.");
 
@@ -141,11 +143,20 @@ namespace GamecommMentor.DaengSaka
                 return bySpeed != 0 ? bySpeed : left.CompareTo(right);
             });
             restRecovery = Math.Max(1, restMp);
+            if (bossProfile != null)
+            {
+                Boss = new GmBossBattle(bossProfile, enemies, units, PartyCount);
+                RoundNumber = 0;
+                Phase = GmBattlePhase.Enemy;
+                ActorIndex = Boss.Index;
+            }
         }
 
         public IReadOnlyList<GmBattleUnit> Units => units;
         public IReadOnlyList<int> EnemyOrder => enemyOrder;
         public int PartyCount { get; }
+        public GmBossBattle Boss { get; }
+        public bool IsOpeningEnemyPhase => RoundNumber == 0 && Phase == GmBattlePhase.Enemy;
         public GmBattlePhase Phase { get; private set; } = GmBattlePhase.Party;
         public int ActorIndex { get; private set; } = -1;
         public GmBattleUnit Actor => ActorIndex >= 0 ? units[ActorIndex] : null;
@@ -196,6 +207,7 @@ namespace GamecommMentor.DaengSaka
         public string UnavailableReason(GmBattleMove move)
         {
             if (Actor == null || Actor.IsStunned || move == null) return "Tidak tersedia";
+            if (move.IsEnemyMove) return !Actor.IsParty && Boss?.Index == ActorIndex ? null : "Tidak tersedia";
             if (move == GmBattleMove.BasicAttack) return null;
             if (!Actor.IsParty) return "Tidak tersedia";
             if (move.IsItem) return ItemCount(move) > 0 ? null : "Habis";
@@ -208,6 +220,7 @@ namespace GamecommMentor.DaengSaka
         public bool CanTarget(GmBattleMove move, int index)
         {
             if (move == null || Actor == null || index < 0 || index >= units.Length || !units[index].IsAlive) return false;
+            if (move.IsEnemyMove && move.Target == GmBattleTarget.AllAllies && index == ActorIndex) return false;
             GmBattleUnit unit = units[index];
             bool ally = unit.IsParty == Actor.IsParty;
             return move.Target switch
@@ -256,12 +269,14 @@ namespace GamecommMentor.DaengSaka
                 hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned);
             }
             if (move.IsDamaging && move.Buff != GmBattleBuff.None) Actor.ApplyBuff(move, RoundNumber);
-            if (!move.IsItem) CompleteAction();
+            if (move.IsEnemyMove) Boss.ResolveMove(move);
+            if (!move.IsItem && !move.IsFreeAction) CompleteAction();
             return true;
         }
 
         private int ApplyMove(GmBattleMove move, GmBattleUnit target)
         {
+            if (move.Effect == GmBattleEffect.Summon || move.Effect == GmBattleEffect.Charge) return 0;
             if (move.Effect == GmBattleEffect.Heal || move.Effect == GmBattleEffect.HealPercent)
             {
                 int heal = move.Effect == GmBattleEffect.HealPercent ? (int)((long)target.MaxHp * move.Amount / 100) : move.Amount;
@@ -283,6 +298,7 @@ namespace GamecommMentor.DaengSaka
 
             long power = move == GmBattleMove.BasicAttack ? Actor.AttackDamage : move.Amount;
             power += power * Actor.BuffPercent(GmBattleBuff.Attack, RoundNumber) / 100;
+            power -= power * Actor.BuffPercent(GmBattleBuff.Weaken, RoundNumber) / 100;
             power -= power * target.BuffPercent(GmBattleBuff.Defense, RoundNumber) / 100;
             // Round the reduction down so a guarded 1-damage hit still deals 1.
             if (Phase == GmBattlePhase.Enemy && target.GuardRound == RoundNumber)
@@ -315,6 +331,7 @@ namespace GamecommMentor.DaengSaka
         public bool TrySkipStunnedTurn()
         {
             if (Actor == null || !Actor.IsStunned) return false;
+            if (Boss?.Index == ActorIndex) Boss.CancelCharge();
             Actor.IsStunned = false;
             CompleteAction();
             return true;
@@ -331,11 +348,37 @@ namespace GamecommMentor.DaengSaka
             return target;
         }
 
+        public void PrepareEnemyTurn()
+        {
+            if (Phase == GmBattlePhase.Enemy && Boss?.Index == ActorIndex) Boss.UpdatePhase();
+        }
+
+        public GmBattleMove ChooseEnemyMove(out GmBattleMove support, out int target)
+        {
+            support = null;
+            if (Boss?.Index == ActorIndex)
+            {
+                GmBattleMove move = Boss.ChooseMove(random, out support);
+                target = -1;
+                if (move.Target == GmBattleTarget.Enemy)
+                {
+                    var living = new List<int>(PartyCount);
+                    for (int index = 0; index < PartyCount; index++)
+                        if (units[index].IsAlive) living.Add(index);
+                    if (living.Count > 0) target = living[random.Next(living.Count)];
+                }
+                return move;
+            }
+            target = FindEnemyTarget();
+            return GmBattleMove.BasicAttack;
+        }
+
         private void CompleteAction()
         {
             Actor.LastActedRound = RoundNumber;
             Actor.CompletedActions++;
             ActorIndex = -1;
+            if (Boss != null && !units[Boss.Index].IsAlive) Boss.DespawnMinions();
             bool partyAlive = false;
             bool enemiesAlive = false;
             foreach (GmBattleUnit unit in units)
@@ -352,7 +395,6 @@ namespace GamecommMentor.DaengSaka
             }
 
             if (Phase == GmBattlePhase.Party && PartyActionsRemaining > 0) return;
-
             foreach (int index in enemyOrder)
             {
                 if (!CanActThisRound(units[index])) continue;

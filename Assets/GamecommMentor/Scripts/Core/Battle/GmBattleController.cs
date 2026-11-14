@@ -26,6 +26,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField, Min(1)] private int restMp = 6;
         [SerializeField, Min(0f)] private float enemyActionDelay = 0.55f;
         [SerializeField, Range(0.035f, 0.15f)] private float animationFrameTime = 0.075f;
+        [SerializeField, Range(0f, 0.08f)] private float hitZoom = 0.035f;
 
         private GmEncounterBattleRoot encounter;
         private GmBattleSession session;
@@ -34,6 +35,7 @@ namespace GamecommMentor.DaengSaka
         private GmBattleMove selection;
         private bool resolving;
         private bool leaving;
+        private int shownBossPhase;
         private string lastAction;
 
         public void SetCanvas(Canvas canvas) => battleCanvas = canvas;
@@ -58,12 +60,13 @@ namespace GamecommMentor.DaengSaka
             {
                 if (battleCanvas == null || !battleCanvas.isActiveAndEnabled)
                     throw new InvalidOperationException("Battle Core needs an active battle canvas.");
-                session = new GmBattleSession(party, enemies, restMp);
-                view = new GmBattleView(battleCanvas.transform, session, SelectUnit,
+                session = new GmBattleSession(party, enemies, restMp, encounter.Encounter.BossBattleProfile);
+                view = new GmBattleView(battleCanvas.transform, session, hitZoom, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
                     () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
                     PickMove, Back, ConfirmMove, ExitBattle);
                 Refresh();
+                if (session.IsOpeningEnemyPhase) StartCoroutine(PlayAutomaticTurns());
             }
             catch (Exception exception)
             {
@@ -92,6 +95,7 @@ namespace GamecommMentor.DaengSaka
             selection = null;
             resolving = false;
             leaving = false;
+            shownBossPhase = 0;
             lastAction = null;
         }
 
@@ -196,14 +200,15 @@ namespace GamecommMentor.DaengSaka
             lastAction = $"{GmBattleView.ShortName(actor)} · {move.Name}";
             Refresh();
 
-            int count = view.FrameCount(move, actor.Character);
+            int count = view.FrameCount(move, actor, session.Boss != null && !actor.IsParty && actorIndex != session.Boss.Index);
             int impact = Mathf.Max(1, count / 2);
             var wait = new WaitForSecondsRealtime(Mathf.Clamp(animationFrameTime, 0.035f, 0.15f));
+            GmBattleHit[] hits = null;
             for (int frame = 0; frame < count; frame++)
             {
                 if (frame == impact)
                 {
-                    if (!session.TryUse(move, targetIndex, out GmBattleHit[] hits))
+                    if (!session.TryUse(move, targetIndex, out hits))
                     {
                         Debug.LogError("[Daeng Saka] Battle action could not resolve its target.", this);
                         ExitBattle();
@@ -212,7 +217,7 @@ namespace GamecommMentor.DaengSaka
                     lastAction = FormatAction(actor, move, hits, round);
                     Refresh(actorIndex, round);
                 }
-                view.DrawAction(session, actorIndex, move, targets, frame, count, impact);
+                view.DrawAction(session, actorIndex, move, targets, hits, frame, count, impact);
                 yield return wait;
             }
 
@@ -242,6 +247,17 @@ namespace GamecommMentor.DaengSaka
                 (session.Phase == GmBattlePhase.Enemy || session.Actor.IsStunned))
             {
                 resolving = false;
+                session.PrepareEnemyTurn();
+                if (session.Boss != null && shownBossPhase != session.Boss.Phase)
+                {
+                    shownBossPhase = session.Boss.Phase;
+                    if (shownBossPhase > 1)
+                    {
+                        lastAction = $"Nenek Pakande memasuki Fase {shownBossPhase}";
+                        Refresh();
+                        yield return PlayBossTransition(shownBossPhase);
+                    }
+                }
                 Refresh();
                 yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, enemyActionDelay));
                 GmBattleUnit actor = session.Actor;
@@ -256,25 +272,43 @@ namespace GamecommMentor.DaengSaka
                     continue;
                 }
 
-                int target = session.FindEnemyTarget();
-                int[] targets = session.TargetsFor(GmBattleMove.BasicAttack, target);
+                GmBattleMove move = session.ChooseEnemyMove(out GmBattleMove support, out int target);
+                if (support != null)
+                {
+                    yield return PlayMove(support, -1, session.TargetsFor(support, -1));
+                    if (session == null || leaving) yield break;
+                }
+                int[] targets = session.TargetsFor(move, target);
                 if (targets.Length == 0)
                 {
                     Debug.LogError("[Daeng Saka] Musuh tidak menemukan target battle.", this);
                     ExitBattle();
                     yield break;
                 }
-                yield return PlayMove(GmBattleMove.BasicAttack, target, targets);
+                yield return PlayMove(move, target, targets);
             }
             if (session == null || leaving) yield break;
             resolving = false;
             Refresh();
         }
 
+        private IEnumerator PlayBossTransition(int phase)
+        {
+            int count = view.BossTransitionFrames(phase, session.Boss.WasAirborne);
+            var wait = new WaitForSecondsRealtime(Mathf.Clamp(animationFrameTime, 0.035f, 0.15f));
+            for (int frame = 0; frame < count; frame++)
+            {
+                view.DrawBossTransition(session.Boss.Index, phase, session.Boss.WasAirborne, frame);
+                yield return wait;
+            }
+        }
+
         private string FormatAction(GmBattleUnit actor, GmBattleMove move, GmBattleHit[] hits, int round)
         {
             string title = $"{GmBattleView.ShortName(actor)} · {move.Name} · ";
             if (move.Effect == GmBattleEffect.Buff) return title + GmBattleView.BuffDetail(move);
+            if (move.Effect == GmBattleEffect.Summon) return "Nenek Pakande memanggil Poppo";
+            if (move.Effect == GmBattleEffect.Charge) return "Hujan Api siap menghantam party pada fase musuh berikutnya";
 
             string[] effects = new string[hits.Length];
             for (int i = 0; i < hits.Length; i++)

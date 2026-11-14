@@ -5,8 +5,8 @@ namespace GamecommMentor.DaengSaka
 {
     internal enum GmBattleCharacter { Unspecified, Saka, Pacca, Daung }
     internal enum GmBattleTarget { Enemy, AllEnemies, Ally, AllAllies, Self }
-    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff }
-    internal enum GmBattleBuff { None, Attack, Defense }
+    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff, Summon, Charge }
+    internal enum GmBattleBuff { None, Attack, Defense, Weaken }
 
     internal sealed class GmBattleMove
     {
@@ -48,10 +48,11 @@ namespace GamecommMentor.DaengSaka
         private static readonly IReadOnlyList<GmBattleMove> PaccaSkills = Array.AsReadOnly(new[] { ShieldSwing, BattleAura, DominionStrike });
         private static readonly IReadOnlyList<GmBattleMove> DaungSkills = Array.AsReadOnly(new[] { RayOfHealing, GrimoireInvocation, SanctuaryBloom });
 
-        private GmBattleMove(string name, GmBattleTarget target, GmBattleEffect effect,
+        public GmBattleMove(string name, GmBattleTarget target, GmBattleEffect effect,
             int amount, int mpCost = 0, int cooldown = 0, bool isItem = false,
             GmBattleBuff buff = GmBattleBuff.None, int buffPercent = 0, int buffRounds = 0, int bossStunChance = 100,
-            string animation = null, string impact = null, float impactScale = 0.94f)
+            string animation = null, string impact = null, float impactScale = 0.94f,
+            bool enemyOnly = false, bool freeAction = false)
         {
             Name = name;
             Target = target;
@@ -67,6 +68,8 @@ namespace GamecommMentor.DaengSaka
             AnimationKey = animation;
             ImpactKey = impact;
             ImpactScale = impactScale;
+            IsEnemyMove = enemyOnly;
+            IsFreeAction = freeAction;
         }
 
         public string Name { get; }
@@ -83,6 +86,8 @@ namespace GamecommMentor.DaengSaka
         public string AnimationKey { get; }
         public string ImpactKey { get; }
         public float ImpactScale { get; }
+        public bool IsEnemyMove { get; }
+        public bool IsFreeAction { get; }
         public bool TargetsAll => Target == GmBattleTarget.AllEnemies || Target == GmBattleTarget.AllAllies;
         public bool NeedsConfirm => TargetsAll || Target == GmBattleTarget.Self;
         public bool IsDamaging => Effect == GmBattleEffect.Damage || Effect == GmBattleEffect.StunDamage;

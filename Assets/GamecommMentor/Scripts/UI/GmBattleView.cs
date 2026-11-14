@@ -43,6 +43,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Text turnNumber;
         private readonly Text turnLabel;
         private readonly Text actionLog;
+        private readonly Text bossStatus;
         private readonly Text actionTitle;
         private readonly Text hint;
         private readonly Button attackButton;
@@ -57,7 +58,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Text resultTitle;
         private readonly Button resultButton;
 
-        public GmBattleView(Transform parent, GmBattleSession session, Action<int> select, Action attack,
+        public GmBattleView(Transform parent, GmBattleSession session, float hitZoom, Action<int> select, Action attack,
             Action skill, Action item, Action rest, Action<int> pickMove, Action back, Action confirm, Action leave)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -75,7 +76,6 @@ namespace GamecommMentor.DaengSaka
             turnNumber.color = Muted;
             turnLabel = Label(font, header, "Actor", "", 32, 0.02f, 0.12f, 0.50f, 0.57f, TextAnchor.MiddleLeft);
             turnLabel.fontStyle = FontStyle.Bold;
-            Label(font, header, "Enemy Order", "Urutan musuh", 15, 0.55f, 0.59f, 0.87f, 0.91f, TextAnchor.MiddleLeft).color = Muted;
             for (int i = 0; i < queueLabels.Length; i++)
             {
                 float x = 0.55f + i * 0.077f;
@@ -83,10 +83,12 @@ namespace GamecommMentor.DaengSaka
                 queueChips[i] = Fill(chip, Panel);
                 queueLabels[i] = Label(font, chip, "Unit", "—", 16, 0.02f, 0f, 0.98f, 1f);
             }
+            bossStatus = Label(font, header, "Boss Status", "", 17, 0.55f, 0.59f, 0.87f, 0.91f, TextAnchor.MiddleLeft);
+            bossStatus.fontStyle = FontStyle.Bold;
             leaveButton = MakeButton(header, "Mundur", 0.894f, 0.22f, 0.98f, 0.66f, leave);
 
             RectTransform arena = Rect("Arena", content, 0f, 0.305f, 1f, 0.865f);
-            stage = new GmBattleStageView(arena, session, font, select);
+            stage = new GmBattleStageView(arena, session, font, select, hitZoom);
             actionLog = Label(font, content, "Action Log", "", 17, 0.02f, 0.245f, 0.98f, 0.302f, TextAnchor.MiddleLeft);
             actionLog.color = Muted;
             party = BuildPartyHud(content, session, select);
@@ -141,10 +143,22 @@ namespace GamecommMentor.DaengSaka
 
             GmBattleUnit actor = actingIndex >= 0 ? session.Units[actingIndex] : null;
             string phaseLabel = actor != null && !actor.IsParty ? "GILIRAN MUSUH" : "GILIRAN PEMAIN";
-            turnNumber.text = finished ? $"RONDE {displayRound}" : $"RONDE {displayRound} · {phaseLabel}";
+            turnNumber.text = displayRound == 0 ? "PEMBUKA · GILIRAN MUSUH"
+                : finished ? $"RONDE {displayRound}" : $"RONDE {displayRound} · {phaseLabel}";
             turnLabel.text = choosingMember ? "Pilih karakter" : actor?.Name ?? "Battle selesai";
             actionLog.text = lastAction ?? "";
             RenderEnemyOrder(session, displayRound, actingIndex);
+            if (session.Boss == null)
+            {
+                bossStatus.text = "Urutan musuh";
+                bossStatus.color = Muted;
+            }
+            else
+            {
+                bool charging = session.Boss.IsCharging;
+                bossStatus.text = charging ? "FASE 3 · HUJAN API BERIKUTNYA" : $"FASE {session.Boss.Phase} · URUTAN MUSUH";
+                bossStatus.color = charging ? new Color(0.62f, 0.23f, 0.12f) : Ink;
+            }
             Button firstParty = RenderParty(session, choosingMember, actingIndex, displayRound, targetMove);
             if (preferred == null) preferred = firstParty;
 
@@ -218,10 +232,15 @@ namespace GamecommMentor.DaengSaka
             FocusAvailableControl(preferred);
         }
 
-        public int FrameCount(GmBattleMove move, GmBattleCharacter character) => stage.FrameCount(move, character);
+        public int FrameCount(GmBattleMove move, GmBattleUnit actor, bool isMinion) => stage.FrameCount(move, actor, isMinion);
+
+        public int BossTransitionFrames(int phase, bool wasAirborne) => stage.BossTransitionFrames(phase, wasAirborne);
+
+        public void DrawBossTransition(int index, int phase, bool wasAirborne, int frame) =>
+            stage.DrawBossTransition(index, phase, wasAirborne, frame);
 
         public void DrawAction(GmBattleSession session, int actor, GmBattleMove move, int[] targets,
-            int frame, int count, int impact) => stage.DrawAction(session, actor, move, targets, frame, count, impact);
+            GmBattleHit[] hits, int frame, int count, int impact) => stage.DrawAction(session, actor, move, targets, hits, frame, count, impact);
 
         public void ClearAction() => stage.ClearAction();
 
@@ -302,7 +321,7 @@ namespace GamecommMentor.DaengSaka
                 if (!unit.IsAlive || (!acting && unit.LastActedRound == round)) continue;
                 queueChips[slot].gameObject.SetActive(true);
                 queueChips[slot].color = acting ? Target : Panel;
-                queueLabels[slot].text = UnitLabel(unit, round, acting);
+                queueLabels[slot].text = session.Boss?.Index == index ? "Pakande" : UnitLabel(unit, round, acting);
                 if (++slot == queueLabels.Length) break;
             }
             for (; slot < queueLabels.Length; slot++) queueChips[slot].gameObject.SetActive(false);
@@ -368,17 +387,22 @@ namespace GamecommMentor.DaengSaka
             SetButton(button, true, reason == null);
         }
 
-        public static string BuffDetail(GmBattleMove move) => move.Buff == GmBattleBuff.Attack
-            ? $"DMG +{move.BuffPercent}% / {move.BuffRounds} ronde"
-            : $"Tahan {move.BuffPercent}% / {move.BuffRounds} ronde";
+        public static string BuffDetail(GmBattleMove move) => move.Buff switch
+        {
+            GmBattleBuff.Attack => $"DMG +{move.BuffPercent}% / {move.BuffRounds} ronde",
+            GmBattleBuff.Weaken => $"DMG −{move.BuffPercent}% pada ronde pemain berikutnya",
+            _ => $"Tahan {move.BuffPercent}% / {move.BuffRounds} ronde"
+        };
 
         private static string BuffStatus(GmBattleUnit unit, int round)
         {
             int attack = unit.BuffPercent(GmBattleBuff.Attack, round);
+            int weaken = unit.BuffPercent(GmBattleBuff.Weaken, round);
             int defense = unit.BuffPercent(GmBattleBuff.Defense, round);
             string bonus = attack > 0 ? $"DMG +{attack}%" : "";
+            if (weaken > 0) bonus = attack > 0 ? $"{bonus} / −{weaken}%" : $"DMG −{weaken}%";
             if (defense == 0) return bonus;
-            return attack > 0 ? $"{bonus} · Tahan {defense}%" : $"Tahan {defense}%";
+            return bonus.Length > 0 ? $"{bonus} · Tahan {defense}%" : $"Tahan {defense}%";
         }
 
         private void FocusAvailableControl(Button preferred)

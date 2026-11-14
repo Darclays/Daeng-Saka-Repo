@@ -9,18 +9,21 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmEncounterFlow flow;
         [SerializeField] private string encounterId = "enemy-test-01";
         [SerializeField] private string displayName = "Musuh Uji";
+        [SerializeField] private GmBossBattleProfile bossBattleProfile;
         private SphereCollider trigger;
         private CharacterController suppressedPlayer;
 
         public string EncounterId => encounterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
         public bool IsDefeated { get; private set; }
+        public GmBossBattleProfile BossBattleProfile => bossBattleProfile;
 
-        public void Configure(GmEncounterFlow encounterFlow, string id, string enemyName)
+        public void Configure(GmEncounterFlow encounterFlow, string id, string enemyName, GmBossBattleProfile bossProfile = null)
         {
             flow = encounterFlow;
             encounterId = id;
             displayName = enemyName;
+            bossBattleProfile = bossProfile;
         }
 
         private void Reset()

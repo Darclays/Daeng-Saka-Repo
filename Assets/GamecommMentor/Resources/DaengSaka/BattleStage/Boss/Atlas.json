@@ -1,0 +1,180 @@
+{
+  "clips": [
+    {
+      "key": "pakandeIdle1",
+      "width": 20,
+      "height": 29,
+      "count": 1,
+      "anchorX": 10,
+      "anchorY": 28
+    },
+    {
+      "key": "pakandeSummon",
+      "width": 25,
+      "height": 29,
+      "count": 8,
+      "anchorX": 13,
+      "anchorY": 28
+    },
+    {
+      "key": "pakandeHit1",
+      "width": 44,
+      "height": 40,
+      "count": 4,
+      "anchorX": 18,
+      "anchorY": 39
+    },
+    {
+      "key": "pakandeIdle2",
+      "width": 38,
+      "height": 36,
+      "count": 1,
+      "anchorX": 10,
+      "anchorY": 35
+    },
+    {
+      "key": "pakandeBolt",
+      "width": 38,
+      "height": 37,
+      "count": 8,
+      "anchorX": 10,
+      "anchorY": 36
+    },
+    {
+      "key": "pakandeHit2",
+      "width": 56,
+      "height": 42,
+      "count": 4,
+      "anchorX": 31,
+      "anchorY": 41
+    },
+    {
+      "key": "pakandeCurse",
+      "width": 30,
+      "height": 27,
+      "count": 1,
+      "anchorX": 14,
+      "anchorY": 26
+    },
+    {
+      "key": "pakandeBoltImpact",
+      "width": 36,
+      "height": 26,
+      "count": 4,
+      "anchorX": 18,
+      "anchorY": 25
+    },
+    {
+      "key": "pakandeTransform2",
+      "width": 76,
+      "height": 48,
+      "count": 12,
+      "anchorX": 10,
+      "anchorY": 47
+    },
+    {
+      "key": "pakandeIdle3",
+      "width": 36,
+      "height": 63,
+      "count": 1,
+      "anchorX": 18,
+      "anchorY": 62
+    },
+    {
+      "key": "pakandeCharge",
+      "width": 36,
+      "height": 63,
+      "count": 8,
+      "anchorX": 18,
+      "anchorY": 62
+    },
+    {
+      "key": "pakandeShadow",
+      "width": 38,
+      "height": 63,
+      "count": 8,
+      "anchorX": 20,
+      "anchorY": 62
+    },
+    {
+      "key": "pakandeShadowImpact",
+      "width": 68,
+      "height": 63,
+      "count": 4,
+      "anchorX": 32,
+      "anchorY": 62
+    },
+    {
+      "key": "pakandeFireRain",
+      "width": 47,
+      "height": 64,
+      "count": 12,
+      "anchorX": 29,
+      "anchorY": 63
+    },
+    {
+      "key": "pakandeFireImpact",
+      "width": 160,
+      "height": 73,
+      "count": 6,
+      "anchorX": 80,
+      "anchorY": 72
+    },
+    {
+      "key": "pakandeTransformFromGround",
+      "width": 127,
+      "height": 99,
+      "count": 10,
+      "anchorX": 68,
+      "anchorY": 93
+    },
+    {
+      "key": "pakandeTransformFromBroom",
+      "width": 87,
+      "height": 71,
+      "count": 13,
+      "anchorX": 50,
+      "anchorY": 63
+    },
+    {
+      "key": "poppoIdle",
+      "width": 36,
+      "height": 34,
+      "count": 1,
+      "anchorX": 19,
+      "anchorY": 33
+    },
+    {
+      "key": "poppoAttack",
+      "width": 50,
+      "height": 40,
+      "count": 12,
+      "anchorX": 25,
+      "anchorY": 32
+    },
+    {
+      "key": "poppoImpact",
+      "width": 27,
+      "height": 39,
+      "count": 5,
+      "anchorX": 16,
+      "anchorY": 38
+    },
+    {
+      "key": "poppoHit",
+      "width": 42,
+      "height": 37,
+      "count": 5,
+      "anchorX": 21,
+      "anchorY": 36
+    },
+    {
+      "key": "poppoDeath",
+      "width": 45,
+      "height": 35,
+      "count": 5,
+      "anchorX": 21,
+      "anchorY": 33
+    }
+  ]
+}

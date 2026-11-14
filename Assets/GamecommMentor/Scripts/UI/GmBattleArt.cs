@@ -36,21 +36,10 @@ namespace GamecommMentor.DaengSaka
         {
             TextAsset data = Resources.Load<TextAsset>(ResourceFolder + "Atlas");
             if (data != null)
-            {
-                Manifest manifest = JsonUtility.FromJson<Manifest>(data.text);
-                if (manifest?.clips != null)
-                {
-                    foreach (Clip clip in manifest.clips)
-                    {
-                        if (clip == null || string.IsNullOrEmpty(clip.key) || clip.width <= 0 ||
-                            clip.height <= 0 || clip.count <= 0) continue;
-                        clip.Texture = Resources.Load<Texture2D>(ResourceFolder + clip.key);
-                        if (clip.Texture != null && clip.Texture.width == clip.width * clip.count &&
-                            clip.Texture.height == clip.height)
-                            clips[clip.key] = clip;
-                    }
-                }
-            }
+                LoadClips(data, ResourceFolder);
+            TextAsset bossData = Resources.Load<TextAsset>(ResourceFolder + "Boss/Atlas");
+            if (bossData != null)
+                LoadClips(bossData, ResourceFolder + "Boss/");
 
             Shader shader = Resources.Load<Shader>(ResourceFolder + "GmBattleBlur");
             if (shader != null && shader.isSupported)
@@ -58,6 +47,21 @@ namespace GamecommMentor.DaengSaka
                 blur = new Material(shader);
                 backdropBlur = new Material(shader);
                 backdropBlur.SetFloat("_Radius", 3f);
+            }
+        }
+
+        private void LoadClips(TextAsset data, string folder)
+        {
+            Manifest manifest = JsonUtility.FromJson<Manifest>(data.text);
+            if (manifest?.clips == null) return;
+            foreach (Clip clip in manifest.clips)
+            {
+                if (clip == null || string.IsNullOrEmpty(clip.key) || clip.width <= 0 ||
+                    clip.height <= 0 || clip.count <= 0) continue;
+                clip.Texture = Resources.Load<Texture2D>(folder + clip.key);
+                if (clip.Texture != null && clip.Texture.width == clip.width * clip.count &&
+                    clip.Texture.height == clip.height)
+                    clips[clip.key] = clip;
             }
         }
 
@@ -84,6 +88,12 @@ namespace GamecommMentor.DaengSaka
         }
 
         public Clip Impact(GmBattleMove move) => Find(move?.ImpactKey);
+
+        public Clip BossTransition(int phase, bool wasAirborne)
+        {
+            if (phase == 2) return Find("pakandeTransform2");
+            return Find(wasAirborne ? "pakandeTransformFromBroom" : "pakandeTransformFromGround");
+        }
 
         public void SetBlur(RawImage image, bool soft, bool isBackdrop = false)
         {
