@@ -27,6 +27,8 @@ namespace GamecommMentor.DaengSaka
         [SerializeField, Min(0f)] private float enemyActionDelay = 0.55f;
         [SerializeField, Range(0.035f, 0.15f)] private float animationFrameTime = 0.075f;
         [SerializeField, Range(0f, 0.08f)] private float hitZoom = 0.035f;
+        [SerializeField] private bool useEnhancedImpact = true;
+        [SerializeField, Range(0f, 1f)] private float impactSfxVolume = 0.8f;
 
         private GmEncounterBattleRoot encounter;
         private GmBattleSession session;
@@ -35,6 +37,7 @@ namespace GamecommMentor.DaengSaka
         private GmBattleMove selection;
         private bool resolving;
         private bool leaving;
+        private bool enhancedImpact;
         private int shownBossPhase;
         private string lastAction;
 
@@ -61,10 +64,11 @@ namespace GamecommMentor.DaengSaka
                 if (battleCanvas == null || !battleCanvas.isActiveAndEnabled)
                     throw new InvalidOperationException("Battle Core needs an active battle canvas.");
                 session = new GmBattleSession(party, enemies, restMp, encounter.Encounter.BossBattleProfile);
-                view = new GmBattleView(battleCanvas.transform, session, hitZoom, SelectUnit,
+                enhancedImpact = useEnhancedImpact;
+                view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
                     () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
-                    PickMove, Back, ConfirmMove, ExitBattle);
+                    PickMove, Back, ConfirmMove, ExitBattle, ToggleImpactMode);
                 Refresh();
                 if (session.IsOpeningEnemyPhase) StartCoroutine(PlayAutomaticTurns());
             }
@@ -111,6 +115,13 @@ namespace GamecommMentor.DaengSaka
             }
             if (!CanAct || menu != GmBattleMenu.Target || selection == null || selection.NeedsConfirm) return;
             StartMove(selection, index);
+        }
+
+        private void ToggleImpactMode()
+        {
+            if (session == null || leaving || resolving || session.Phase != GmBattlePhase.Party) return;
+            enhancedImpact = !enhancedImpact;
+            Refresh();
         }
 
         private void OpenMenu(GmBattleMenu next)
@@ -200,12 +211,24 @@ namespace GamecommMentor.DaengSaka
             lastAction = $"{GmBattleView.ShortName(actor)} · {move.Name}";
             Refresh();
 
-            int count = view.FrameCount(move, actor, session.Boss != null && !actor.IsParty && actorIndex != session.Boss.Index);
-            int impact = Mathf.Max(1, count / 2);
-            var wait = new WaitForSecondsRealtime(Mathf.Clamp(animationFrameTime, 0.035f, 0.15f));
+            GmBattleImpactCue cue = GmBattleImpactCue.For(move, actor.Character);
+            bool isMinion = session.Boss != null && !actor.IsParty && actorIndex != session.Boss.Index;
+            int count = view.FrameCount(move, actor, isMinion, cue);
+            int impact = cue != null ? cue.Contact : Mathf.Max(1, count / 2);
+            float step = Mathf.Clamp(animationFrameTime, 0.035f, 0.15f);
+            if (cue != null)
+            {
+                if (move == GmBattleMove.BasicAttack) step *= 0.70f;
+                count = Mathf.Max(count, impact + Mathf.CeilToInt(0.30f / step));
+            }
+            bool enhanced = cue != null && enhancedImpact;
+            var wait = new WaitForSecondsRealtime(step);
             GmBattleHit[] hits = null;
+            double hitAt = 0;
+            double frameStarted = Time.unscaledTimeAsDouble;
             for (int frame = 0; frame < count; frame++)
             {
+                if (cue != null && frame == cue.Windup) view.PlayImpactSound("swing");
                 if (frame == impact)
                 {
                     if (!session.TryUse(move, targetIndex, out hits))
@@ -216,9 +239,33 @@ namespace GamecommMentor.DaengSaka
                     }
                     lastAction = FormatAction(actor, move, hits, round);
                     Refresh(actorIndex, round);
+                    if (cue != null) view.PlayImpactSound(cue.Sound);
+                    hitAt = Time.unscaledTimeAsDouble;
                 }
-                view.DrawAction(session, actorIndex, move, targets, hits, frame, count, impact);
-                yield return wait;
+
+                if (cue == null)
+                {
+                    var pose = new GmBattleActionFrame(frame, count, impact, frame, -1f);
+                    view.DrawAction(session, actorIndex, move, targets, hits, pose);
+                    yield return wait;
+                    continue;
+                }
+
+                // Pause the contact pose locally while audio, hit reactions, and HUD continue.
+                float hold = enhanced && frame == impact ? cue.HitStop : 0f;
+                double now = Time.unscaledTimeAsDouble;
+                if (frame == impact || now - frameStarted >= step) frameStarted = now;
+                double frameEnds = frameStarted + step + hold;
+                do
+                {
+                    float progress = Mathf.Clamp01((float)(now - frameStarted - hold) / step);
+                    float hitAge = hits != null ? (float)(now - hitAt) : -1f;
+                    var pose = new GmBattleActionFrame(frame, count, impact, frame + progress, hitAge, cue, enhanced);
+                    view.DrawAction(session, actorIndex, move, targets, hits, pose);
+                    yield return null;
+                    now = Time.unscaledTimeAsDouble;
+                } while (now < frameEnds);
+                frameStarted = frameEnds;
             }
 
             view.ClearAction();
@@ -339,7 +386,7 @@ namespace GamecommMentor.DaengSaka
         {
             view.Render(session, menu, selection, lastAction, resolving,
                 actorIndex >= 0 ? actorIndex : session.ActorIndex,
-                round >= 0 ? round : session.RoundNumber);
+                round >= 0 ? round : session.RoundNumber, enhancedImpact);
         }
 
         private void ExitBattle()

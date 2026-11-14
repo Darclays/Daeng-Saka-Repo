@@ -37,6 +37,11 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform screen;
         private readonly Font font;
         private readonly GmBattleStageView stage;
+        private readonly AudioSource impactAudio;
+        private readonly AudioClip swingSound;
+        private readonly AudioClip basicSound;
+        private readonly AudioClip shieldSound;
+        private readonly AudioClip sharkSound;
         private readonly PartyHud[] party;
         private readonly Image[] queueChips = new Image[4];
         private readonly Text[] queueLabels = new Text[4];
@@ -53,18 +58,28 @@ namespace GamecommMentor.DaengSaka
         private readonly Button backButton;
         private readonly Button[] options = new Button[3];
         private readonly Button confirmButton;
+        private readonly Button impactModeButton;
         private readonly Button leaveButton;
         private readonly GameObject resultOverlay;
         private readonly Text resultTitle;
         private readonly Button resultButton;
 
-        public GmBattleView(Transform parent, GmBattleSession session, float hitZoom, Action<int> select, Action attack,
-            Action skill, Action item, Action rest, Action<int> pickMove, Action back, Action confirm, Action leave)
+        public GmBattleView(Transform parent, GmBattleSession session, float hitZoom, float impactSfxVolume,
+            Action<int> select, Action attack, Action skill, Action item, Action rest, Action<int> pickMove,
+            Action back, Action confirm, Action leave, Action toggleImpactMode)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             RectTransform frame = Rect("Battle Screen", parent, 0f, 0f, 1f, 1f);
             screen = frame;
             Fill(frame, new Color(0.12f, 0.16f, 0.19f));
+            impactAudio = frame.gameObject.AddComponent<AudioSource>();
+            impactAudio.playOnAwake = false;
+            impactAudio.spatialBlend = 0f;
+            impactAudio.volume = Mathf.Clamp01(impactSfxVolume);
+            swingSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/swing");
+            basicSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/basicHit");
+            shieldSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/shieldHit");
+            sharkSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/sharkHit");
             RectTransform content = Rect("Battle 16x9", frame, 0f, 0f, 1f, 1f);
             AspectRatioFitter fitter = content.gameObject.AddComponent<AspectRatioFitter>();
             fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
@@ -85,6 +100,7 @@ namespace GamecommMentor.DaengSaka
             }
             bossStatus = Label(font, header, "Boss Status", "", 17, 0.55f, 0.59f, 0.87f, 0.91f, TextAnchor.MiddleLeft);
             bossStatus.fontStyle = FontStyle.Bold;
+            impactModeButton = MakeButton(header, "Efek B", 0.894f, 0.70f, 0.98f, 0.96f, toggleImpactMode, 14);
             leaveButton = MakeButton(header, "Mundur", 0.894f, 0.22f, 0.98f, 0.66f, leave);
 
             RectTransform arena = Rect("Arena", content, 0f, 0.305f, 1f, 0.865f);
@@ -129,11 +145,13 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void Render(GmBattleSession session, GmBattleMenu menu, GmBattleMove selection, string lastAction,
-            bool resolving, int actingIndex, int displayRound)
+            bool resolving, int actingIndex, int displayRound, bool enhancedImpact)
         {
             bool choosingMember = !resolving && session.IsChoosingPartyMember;
             bool finished = !resolving && !session.IsActive;
             bool partyTurn = !resolving && session.IsPartyTurn && !session.Actor.IsStunned;
+            SetButton(impactModeButton, !finished, choosingMember || partyTurn);
+            ButtonLabel(impactModeButton).text = enhancedImpact ? "Efek B" : "Efek A";
             bool choosing = partyTurn && menu == GmBattleMenu.Target && selection != null;
             bool confirm = choosing && selection.NeedsConfirm;
             bool submenu = partyTurn && menu != GmBattleMenu.Command;
@@ -232,7 +250,8 @@ namespace GamecommMentor.DaengSaka
             FocusAvailableControl(preferred);
         }
 
-        public int FrameCount(GmBattleMove move, GmBattleUnit actor, bool isMinion) => stage.FrameCount(move, actor, isMinion);
+        public int FrameCount(GmBattleMove move, GmBattleUnit actor, bool isMinion, GmBattleImpactCue cue) =>
+            stage.FrameCount(move, actor, isMinion, cue);
 
         public int BossTransitionFrames(int phase, bool wasAirborne) => stage.BossTransitionFrames(phase, wasAirborne);
 
@@ -240,12 +259,25 @@ namespace GamecommMentor.DaengSaka
             stage.DrawBossTransition(index, phase, wasAirborne, frame);
 
         public void DrawAction(GmBattleSession session, int actor, GmBattleMove move, int[] targets,
-            GmBattleHit[] hits, int frame, int count, int impact) => stage.DrawAction(session, actor, move, targets, hits, frame, count, impact);
+            GmBattleHit[] hits, GmBattleActionFrame pose) => stage.DrawAction(session, actor, move, targets, hits, pose);
 
         public void ClearAction() => stage.ClearAction();
 
+        public void PlayImpactSound(string cue)
+        {
+            AudioClip clip = cue switch
+            {
+                "swing" => swingSound,
+                "shieldHit" => shieldSound,
+                "sharkHit" => sharkSound,
+                _ => basicSound
+            };
+            if (clip != null && impactAudio.volume > 0f) impactAudio.PlayOneShot(clip);
+        }
+
         public void Dispose()
         {
+            if (impactAudio != null) impactAudio.Stop();
             if (screen != null)
             {
                 screen.gameObject.SetActive(false);
