@@ -1,0 +1,13 @@
+Daeng Saka P01 - source preparation
+PNG images are unchanged. Import metadata is prepared for the P01 prototype.
+Original metadata backup: C:\Projects\Daeng-Saka-Repo\Library/GamecommMentor/P01\Backup_20261114_033628_8481
+Pixels Per Unit: 100. Point filter, no mipmaps, no compression.
+Pivots are a first-pass foot anchor per clip; validate visually in Unity.
+Idle_Front: 5 frames, 640x640; pivot (0.4453, 0.2500); texture limit 4096.
+Idle_Back: 5 frames, 640x640; pivot (0.4688, 0.2813); texture limit 4096.
+Idle_Left: 3 frames, 640x640; pivot (0.5391, 0.2969); texture limit 2048.
+Idle_Right: 3 frames, 640x640; pivot (0.4609, 0.2969); texture limit 2048.
+Walking_Front: 6 frames, 640x640; pivot (0.5000, 0.2969); texture limit 4096.
+Walking_Back: 6 frames, 640x640; pivot (0.5000, 0.2969); texture limit 4096.
+Walking_Left: 6 frames, 640x640; pivot (0.4813, 0.3125); texture limit 4096.
+Walking_Right: 6 frames, 640x640; pivot (0.5188, 0.3125); texture limit 4096.

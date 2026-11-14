@@ -1,0 +1,124 @@
+{
+  "clips": [
+    {
+      "key": "sakaIdle",
+      "width": 25,
+      "height": 31,
+      "count": 1,
+      "anchorX": 15,
+      "anchorY": 31
+    },
+    {
+      "key": "sakaSkill",
+      "width": 85,
+      "height": 44,
+      "count": 13,
+      "anchorX": 29,
+      "anchorY": 38
+    },
+    {
+      "key": "paccaIdle",
+      "width": 24,
+      "height": 34,
+      "count": 1,
+      "anchorX": 12,
+      "anchorY": 34
+    },
+    {
+      "key": "paccaSkill",
+      "width": 36,
+      "height": 37,
+      "count": 13,
+      "anchorX": 21,
+      "anchorY": 37
+    },
+    {
+      "key": "daungIdle",
+      "width": 23,
+      "height": 30,
+      "count": 1,
+      "anchorX": 7,
+      "anchorY": 30
+    },
+    {
+      "key": "daungSkill",
+      "width": 46,
+      "height": 38,
+      "count": 12,
+      "anchorX": 11,
+      "anchorY": 37
+    },
+    {
+      "key": "sharkImpact",
+      "width": 39,
+      "height": 28,
+      "count": 7,
+      "anchorX": 20,
+      "anchorY": 25
+    },
+    {
+      "key": "shieldImpact",
+      "width": 39,
+      "height": 43,
+      "count": 7,
+      "anchorX": 21,
+      "anchorY": 43
+    },
+    {
+      "key": "healingImpact",
+      "width": 55,
+      "height": 60,
+      "count": 7,
+      "anchorX": 27,
+      "anchorY": 60
+    },
+    {
+      "key": "sakaBasic",
+      "width": 31,
+      "height": 42,
+      "count": 8,
+      "anchorX": 16,
+      "anchorY": 40
+    },
+    {
+      "key": "paccaBasic",
+      "width": 33,
+      "height": 36,
+      "count": 9,
+      "anchorX": 21,
+      "anchorY": 35
+    },
+    {
+      "key": "daungBasic",
+      "width": 28,
+      "height": 31,
+      "count": 8,
+      "anchorX": 8,
+      "anchorY": 31
+    },
+    {
+      "key": "arena",
+      "width": 1280,
+      "height": 410,
+      "count": 1,
+      "anchorX": 0,
+      "anchorY": 0
+    },
+    {
+      "key": "enemyIdle",
+      "width": 26,
+      "height": 29,
+      "count": 1,
+      "anchorX": 13,
+      "anchorY": 29
+    },
+    {
+      "key": "ring",
+      "width": 64,
+      "height": 24,
+      "count": 1,
+      "anchorX": 0,
+      "anchorY": 0
+    }
+  ]
+}

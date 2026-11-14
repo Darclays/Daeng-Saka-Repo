@@ -39,7 +39,7 @@ TextureImporter:
     mipBias: 0
     wrapU: 1
     wrapV: 1
-    wrapW: 0
+    wrapW: 1
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
@@ -69,7 +69,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 0
@@ -141,10 +141,10 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 768
+        width: 640
         height: 640
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -161,12 +161,12 @@ TextureImporter:
       name: MC_Saka_Walking_Back_1
       rect:
         serializedVersion: 2
-        x: 768
+        x: 640
         y: 0
-        width: 768
+        width: 640
         height: 640
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -183,12 +183,12 @@ TextureImporter:
       name: MC_Saka_Walking_Back_2
       rect:
         serializedVersion: 2
-        x: 1536
+        x: 1280
         y: 0
-        width: 768
+        width: 640
         height: 640
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -205,12 +205,12 @@ TextureImporter:
       name: MC_Saka_Walking_Back_3
       rect:
         serializedVersion: 2
-        x: 2304
+        x: 1920
         y: 0
-        width: 768
+        width: 640
         height: 640
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -227,12 +227,12 @@ TextureImporter:
       name: MC_Saka_Walking_Back_4
       rect:
         serializedVersion: 2
-        x: 3072
+        x: 2560
         y: 0
-        width: 768
+        width: 640
         height: 640
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -241,6 +241,28 @@ TextureImporter:
       bones: []
       spriteID: 6a27bea4a429c7348bc79f45ab1780df
       internalID: 1768855238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MC_Saka_Walking_Back_5
+      rect:
+        serializedVersion: 2
+        x: 3200
+        y: 0
+        width: 640
+        height: 640
+      alignment: 9
+      pivot: {x: 0.5, y: 0.296875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ce4ba0c8e40bf184baebbd618bb7720e
+      internalID: -1824188651
       vertices: []
       indices: 
       edges: []
@@ -266,6 +288,7 @@ TextureImporter:
       MC_Saka_Walking_Back_2: 458013989
       MC_Saka_Walking_Back_3: 1936757891
       MC_Saka_Walking_Back_4: 1768855238
+      MC_Saka_Walking_Back_5: -1824188651
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

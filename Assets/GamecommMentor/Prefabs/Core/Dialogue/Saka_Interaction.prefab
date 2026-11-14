@@ -1,0 +1,142 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &878425925374734916
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1603755370435310513, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_Name
+      value: Saka_Interaction
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8661955084291286974, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1603755370435310513, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4950091991489691137}
+    - targetCorrespondingSourceObject: {fileID: 1603755370435310513, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6067571381507478002}
+    - targetCorrespondingSourceObject: {fileID: 1603755370435310513, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8818953803863118137}
+  m_SourcePrefab: {fileID: 100100000, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+--- !u!1 &1905414870369534453 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1603755370435310513, guid: 414f8b3269f51594d919aa1a3eb457f7, type: 3}
+  m_PrefabInstance: {fileID: 878425925374734916}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4950091991489691137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1905414870369534453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cf6adabe8035344a5fb623b08a40651, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GamecommMentor.DaengSaka.GmInteractInput
+  interactAction: {fileID: 0}
+--- !u!114 &6067571381507478002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1905414870369534453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caf31623f6af57efa768f20ff383ae05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GamecommMentor.DaengSaka.GmInteractor
+  movementCamera: {fileID: 0}
+  range: 1.8
+  minimumFacingDot: -0.1
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  obstructionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8818953803863118137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1905414870369534453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98ecce4c42e1b7a4f829f705273ded84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::PixelCrushers.DialogueSystem.DialogueActor
+  actor: Saka
+  persistentDataName: 
+  portrait: {fileID: 0}
+  spritePortrait: {fileID: 0}
+  cameraAngles: {fileID: 0}
+  audioSource: {fileID: 0}
+  barkUISettings:
+    barkUI: {fileID: 0}
+    barkUIOffset: {x: 0, y: 2, z: 0}
+  standardDialogueUISettings:
+    subtitlePanelNumber: 0
+    customSubtitlePanel: {fileID: 0}
+    customSubtitlePanelOffset: {x: 0, y: 0, z: 0}
+    menuPanelNumber: 0
+    customMenuPanel: {fileID: 0}
+    customMenuPanelOffset: {x: 0, y: 0, z: 0}
+    useMenuPanelFor: 0
+    portraitAnimatorController: {fileID: 0}
+    setSubtitleColor: 0
+    applyColorToPrependedName: 0
+    prependActorNameSeparator: ': '
+    prependActorNameFormat: '{0}{1}'
+    subtitleColor: {r: 1, g: 1, b: 1, a: 1}
