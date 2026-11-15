@@ -77,7 +77,14 @@ namespace GamecommMentor.DaengSaka
 
         public bool TryStartConversation(string title, GmInteractor requester, Transform conversant)
         {
-            if (!isActiveAndEnabled || starting || requester == null || conversant == null
+            return conversant != null && TryStart(title, requester, conversant, false);
+        }
+
+        public bool TryStartCutscene(string title, GmInteractor requester) => TryStart(title, requester, null, true);
+
+        private bool TryStart(string title, GmInteractor requester, Transform conversant, bool useAuthoredActors)
+        {
+            if (!isActiveAndEnabled || starting || requester == null || string.IsNullOrWhiteSpace(title)
                 || controller == null || !controller.isActiveAndEnabled || controller.isConversationActive
                 || !requester.ControlGate.CanExplore) return false;
             EnsureAdditionalDatabase();
@@ -90,17 +97,17 @@ namespace GamecommMentor.DaengSaka
             starting = true;
             gate.Block(this);
             player.SuppressInteraction();
-            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant));
+            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant, useAuthoredActors));
             return true;
         }
 
-        private IEnumerator StartOnNextFrame(string title, Transform actor, Transform conversant)
+        private IEnumerator StartOnNextFrame(string title, Transform actor, Transform conversant, bool useAuthoredActors)
         {
             // The E key used to open dialogue must not also advance its first subtitle.
             yield return null;
             int before = activityVersion;
             bool failed = false;
-            if (actor == null || conversant == null || controller == null)
+            if (actor == null || (!useAuthoredActors && conversant == null) || controller == null)
                 failed = true;
             else
             {

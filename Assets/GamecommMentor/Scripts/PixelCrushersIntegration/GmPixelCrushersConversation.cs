@@ -17,8 +17,13 @@ namespace GamecommMentor.DaengSaka
         [ConversationPopup]
         [SerializeField] private string afterPakande;
 
+        [Header("Main Quest")]
+        [SerializeField] private GmPixelCrushersMainQuestDialogue mainQuestDialogue;
+
         public string ConversationTitle => conversationTitle;
         public void SetConversation(string title) => conversationTitle = title;
+
+        public void SetMainQuestDialogue(GmPixelCrushersMainQuestDialogue sequence) => mainQuestDialogue = sequence;
 
         public void SetDemoConversations(GmDemoProgress progress, string poppoTitle, string pakandeTitle)
         {
@@ -32,6 +37,7 @@ namespace GamecommMentor.DaengSaka
 
         private string ResolveConversationTitle()
         {
+            if (mainQuestDialogue != null) return mainQuestDialogue.CurrentTitle;
             if (demoProgress == null) return conversationTitle;
             string title = demoProgress.Stage switch
             {
@@ -45,6 +51,7 @@ namespace GamecommMentor.DaengSaka
         public override bool TryInteract(GmInteractor requester)
         {
             if (!base.CanInteract(requester)) return false;
+            if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester);
             string title = ResolveConversationTitle();
             if (string.IsNullOrWhiteSpace(title)) return false;
             if (dialogueBridge == null && DialogueManager.hasInstance)

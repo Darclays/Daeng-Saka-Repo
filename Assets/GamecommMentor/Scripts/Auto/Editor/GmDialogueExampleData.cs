@@ -103,7 +103,7 @@ namespace GamecommMentor.DaengSaka.Editor
             return conversation;
         }
 
-        private static DialogueEntry Node(Template template, int conversationID, int id, int actor,
+        internal static DialogueEntry Node(Template template, int conversationID, int id, int actor,
             int conversant, string title, string text, float x, float y)
         {
             DialogueEntry node = template.CreateDialogueEntry(id, conversationID, title);

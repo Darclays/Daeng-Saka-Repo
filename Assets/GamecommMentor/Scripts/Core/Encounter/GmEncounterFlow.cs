@@ -28,12 +28,16 @@ namespace GamecommMentor.DaengSaka
         public GmEnemyEncounter CurrentEncounter { get; private set; }
         public GmSakaMotor CurrentPlayer { get; private set; }
 
+        public event Action<GmSakaMotor, GmEnemyEncounter> VictoryReturned;
+
         public void SetBattleScene(string scenePath) => battleScenePath = scenePath;
 
         internal bool TryBegin(GmSakaMotor hero, GmEnemyEncounter enemy)
         {
             if (!isActiveAndEnabled || phase != Phase.Exploring || pendingLoad != null || pendingUnload != null ||
                 hero == null || !hero.isActiveAndEnabled || enemy == null || enemy.IsDefeated) return false;
+            GmMainQuestProgress quest = GetComponent<GmMainQuestProgress>();
+            if (quest != null && !quest.CanStartEncounter(enemy)) return false;
 
             Scene source = gameObject.scene;
             if (hero.gameObject.scene != source || enemy.gameObject.scene != source) return false;
@@ -198,6 +202,8 @@ namespace GamecommMentor.DaengSaka
 
         private void FinishReturn()
         {
+            GmSakaMotor hero = CurrentPlayer;
+            GmEnemyEncounter enemy = CurrentEncounter;
             ReleaseControls();
             pendingLoad = null;
             pendingUnload = null;
@@ -209,6 +215,12 @@ namespace GamecommMentor.DaengSaka
             CurrentEncounter = null;
             suspendedRoots.Clear();
             phase = Phase.Exploring;
+
+            if (quitting || !isActiveAndEnabled || hero == null || !hero.isActiveAndEnabled ||
+                enemy == null || !enemy.IsDefeated) return;
+            GmMainQuestProgress quest = GetComponent<GmMainQuestProgress>();
+            if (quest != null) quest.OnEncounterWon(enemy);
+            VictoryReturned?.Invoke(hero, enemy);
         }
 
         private void OnDisable()
