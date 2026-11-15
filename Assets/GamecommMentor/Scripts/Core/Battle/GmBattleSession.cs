@@ -4,6 +4,8 @@ using System.Linq;
 
 namespace GamecommMentor.DaengSaka
 {
+    internal enum GmBattleEnemyKind { Generic, Poppo }
+
     [Serializable]
     internal struct GmBattleStats
     {
@@ -15,9 +17,11 @@ namespace GamecommMentor.DaengSaka
         public int attackDamage;
         public GmBattleCharacter character;
         public bool isBoss;
+        public GmBattleEnemyKind enemyKind;
 
         public GmBattleStats(string name, int hp, int mp, int initialMp, int speed, int damage,
-            GmBattleCharacter character = GmBattleCharacter.Unspecified, bool isBoss = false)
+            GmBattleCharacter character = GmBattleCharacter.Unspecified, bool isBoss = false,
+            GmBattleEnemyKind enemyKind = GmBattleEnemyKind.Generic)
         {
             displayName = name;
             maxHp = hp;
@@ -27,6 +31,7 @@ namespace GamecommMentor.DaengSaka
             attackDamage = damage;
             this.character = character;
             this.isBoss = isBoss;
+            this.enemyKind = enemyKind;
         }
     }
 
@@ -41,6 +46,7 @@ namespace GamecommMentor.DaengSaka
         {
             IsParty = isParty;
             IsBoss = !isParty && stats.isBoss;
+            EnemyKind = isParty ? GmBattleEnemyKind.Generic : stats.enemyKind;
             Name = string.IsNullOrWhiteSpace(stats.displayName)
                 ? (isParty ? "Anggota Party" : "Musuh") : stats.displayName;
             MaxHp = Math.Max(1, stats.maxHp);
@@ -55,6 +61,8 @@ namespace GamecommMentor.DaengSaka
 
         public bool IsParty { get; }
         public bool IsBoss { get; }
+        public GmBattleEnemyKind EnemyKind { get; }
+        public GmBattleMove EnemySkill => EnemyKind == GmBattleEnemyKind.Poppo ? GmBattleMove.GBite : null;
         public string Name { get; }
         public int MaxHp { get; }
         public int MaxMp { get; }
@@ -207,11 +215,17 @@ namespace GamecommMentor.DaengSaka
         public string UnavailableReason(GmBattleMove move)
         {
             if (Actor == null || Actor.IsStunned || move == null) return "Tidak tersedia";
-            if (move.IsEnemyMove) return !Actor.IsParty && Boss?.Index == ActorIndex ? null : "Tidak tersedia";
             if (move == GmBattleMove.BasicAttack) return null;
-            if (!Actor.IsParty) return "Tidak tersedia";
-            if (move.IsItem) return ItemCount(move) > 0 ? null : "Habis";
-            if (!Actor.Skills.Contains(move)) return "Tidak tersedia";
+            if (move.IsEnemyMove)
+            {
+                if (move != Actor.EnemySkill && (Boss?.Index != ActorIndex || !Boss.SupportsMove(move))) return "Tidak tersedia";
+            }
+            else
+            {
+                if (!Actor.IsParty) return "Tidak tersedia";
+                if (move.IsItem) return ItemCount(move) > 0 ? null : "Habis";
+                if (!Actor.Skills.Contains(move)) return "Tidak tersedia";
+            }
             int cooldown = Actor.CooldownRemaining(move);
             if (cooldown > 0) return $"CD {cooldown}";
             return Actor.Mp < move.MpCost ? "MP kurang" : null;
@@ -269,7 +283,7 @@ namespace GamecommMentor.DaengSaka
                 hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned);
             }
             if (move.IsDamaging && move.Buff != GmBattleBuff.None) Actor.ApplyBuff(move, RoundNumber);
-            if (move.IsEnemyMove) Boss.ResolveMove(move);
+            if (move.IsEnemyMove && Boss?.Index == ActorIndex) Boss.ResolveMove(move);
             if (!move.IsItem && !move.IsFreeAction) CompleteAction();
             return true;
         }
@@ -370,6 +384,8 @@ namespace GamecommMentor.DaengSaka
                 return move;
             }
             target = FindEnemyTarget();
+            GmBattleMove skill = Actor.EnemySkill;
+            if (Actor.CompletedActions > 0 && skill != null && UnavailableReason(skill) == null) return skill;
             return GmBattleMove.BasicAttack;
         }
 

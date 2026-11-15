@@ -19,6 +19,8 @@ namespace GamecommMentor.DaengSaka
         private bool starting;
         private int activityVersion;
 
+        public DialogueDatabase AdditionalDatabase => additionalDatabase;
+
         public void SetPlayer(GmInteractor interactor)
         {
             if (gate != null && player != interactor) gate.Unblock(this);

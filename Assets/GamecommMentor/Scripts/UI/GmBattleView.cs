@@ -173,9 +173,10 @@ namespace GamecommMentor.DaengSaka
             }
             else
             {
-                bool charging = session.Boss.IsCharging;
-                bossStatus.text = charging ? "FASE 3 · HUJAN API BERIKUTNYA" : $"FASE {session.Boss.Phase} · URUTAN MUSUH";
-                bossStatus.color = charging ? new Color(0.62f, 0.23f, 0.12f) : Ink;
+                GmBattleMove chargedMove = session.Boss.ChargedMove;
+                bossStatus.text = chargedMove != null ? $"FASE {session.Boss.Phase} · {chargedMove.Name.ToUpperInvariant()} BERIKUTNYA"
+                    : $"FASE {session.Boss.Phase} · URUTAN MUSUH";
+                bossStatus.color = chargedMove != null ? new Color(0.62f, 0.23f, 0.12f) : Ink;
             }
             Button firstParty = RenderParty(session, choosingMember, actingIndex, displayRound, targetMove);
             if (preferred == null) preferred = firstParty;
@@ -250,8 +251,8 @@ namespace GamecommMentor.DaengSaka
             FocusAvailableControl(preferred);
         }
 
-        public int FrameCount(GmBattleMove move, GmBattleUnit actor, bool isMinion, GmBattleImpactCue cue) =>
-            stage.FrameCount(move, actor, isMinion, cue);
+        public int FrameCount(GmBattleMove move, GmBattleUnit actor, GmBattleImpactCue cue) =>
+            stage.FrameCount(move, actor, cue);
 
         public int BossTransitionFrames(int phase, bool wasAirborne) => stage.BossTransitionFrames(phase, wasAirborne);
 

@@ -12,6 +12,12 @@ namespace GamecommMentor.DaengSaka
     {
         public static readonly GmBattleMove BasicAttack = new GmBattleMove(
             "Basic Attack", GmBattleTarget.Enemy, GmBattleEffect.Damage, 0);
+        public static readonly GmBattleMove GBite = new GmBattleMove(
+            "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 3,
+            animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true);
+        public static readonly GmBattleMove CaneStrike = new GmBattleMove(
+            "Cane Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 22, cooldown: 3,
+            animation: "pakandeCane", impact: "shieldImpact", impactScale: 0.72f, enemyOnly: true);
         public static readonly GmBattleMove TideResonance = new GmBattleMove(
             "Tide Resonance", GmBattleTarget.Enemy, GmBattleEffect.Damage, 36, 7, 3,
             animation: "tideCast", impact: "tideImpact");

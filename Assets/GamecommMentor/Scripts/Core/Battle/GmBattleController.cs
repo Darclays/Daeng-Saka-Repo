@@ -11,6 +11,12 @@ namespace GamecommMentor.DaengSaka
     [RequireComponent(typeof(GmEncounterBattleRoot))]
     public sealed class GmBattleController : MonoBehaviour
     {
+        private static readonly GmBattleStats[] PoppoEnemies =
+        {
+            new GmBattleStats("Poppo A", 48, 0, 0, 20, 8, enemyKind: GmBattleEnemyKind.Poppo),
+            new GmBattleStats("Poppo B", 42, 0, 0, 16, 7, enemyKind: GmBattleEnemyKind.Poppo)
+        };
+
         [SerializeField] private Canvas battleCanvas;
         [SerializeField] private GmBattleStats[] party =
         {
@@ -63,7 +69,8 @@ namespace GamecommMentor.DaengSaka
             {
                 if (battleCanvas == null || !battleCanvas.isActiveAndEnabled)
                     throw new InvalidOperationException("Battle Core needs an active battle canvas.");
-                session = new GmBattleSession(party, enemies, restMp, encounter.Encounter.BossBattleProfile);
+                GmEnemyEncounter source = encounter.Encounter;
+                session = new GmBattleSession(party, source.UsePoppoBattle ? PoppoEnemies : enemies, restMp, source.BossBattleProfile);
                 enhancedImpact = useEnhancedImpact;
                 view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
@@ -212,8 +219,7 @@ namespace GamecommMentor.DaengSaka
             Refresh();
 
             GmBattleImpactCue cue = GmBattleImpactCue.For(move, actor.Character);
-            bool isMinion = session.Boss != null && !actor.IsParty && actorIndex != session.Boss.Index;
-            int count = view.FrameCount(move, actor, isMinion, cue);
+            int count = view.FrameCount(move, actor, cue);
             int impact = cue != null ? cue.Contact : Mathf.Max(1, count / 2);
             float step = Mathf.Clamp(animationFrameTime, 0.035f, 0.15f);
             if (cue != null)
@@ -355,7 +361,8 @@ namespace GamecommMentor.DaengSaka
             string title = $"{GmBattleView.ShortName(actor)} · {move.Name} · ";
             if (move.Effect == GmBattleEffect.Buff) return title + GmBattleView.BuffDetail(move);
             if (move.Effect == GmBattleEffect.Summon) return "Nenek Pakande memanggil Poppo";
-            if (move.Effect == GmBattleEffect.Charge) return "Hujan Api siap menghantam party pada fase musuh berikutnya";
+            if (move.Effect == GmBattleEffect.Charge)
+                return $"{session.Boss.ChargedMove.Name} siap menghantam party pada fase musuh berikutnya";
 
             string[] effects = new string[hits.Length];
             for (int i = 0; i < hits.Length; i++)

@@ -13,6 +13,7 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color Target = new Color(0.78f, 0.48f, 0.16f);
         private static readonly Color GuardRing = new Color(0.26f, 0.50f, 0.69f);
         private static readonly Color LabelBackground = new Color(0.96f, 0.97f, 0.98f);
+        private static readonly Color ChargeRing = new Color(0.78f, 0.30f, 0.16f);
 
         private sealed class UnitView
         {
@@ -122,7 +123,7 @@ namespace GamecommMentor.DaengSaka
                 UnitView view = views[i];
                 GmBattleUnit unit = session.Units[i];
                 bool isBoss = session.Boss?.Index == i;
-                bool isMinion = session.Boss != null && !unit.IsParty && !isBoss;
+                bool isPoppo = unit.EnemyKind == GmBattleEnemyKind.Poppo;
                 view.Slot.gameObject.SetActive(unit.IsPresent);
                 if (!unit.IsPresent) continue;
                 bool acting = i == actor;
@@ -145,6 +146,11 @@ namespace GamecommMentor.DaengSaka
                 view.NameBackground.color = nameColor;
                 view.Name.text = guarding ? GmBattleView.ShortName(unit) + " · Guard"
                     : GmBattleView.UnitLabel(unit, round, acting);
+                if (isBoss && unit.IsAlive && session.Boss.IsCharging)
+                {
+                    view.Name.text += " · Charge";
+                    if (!marked) view.Ring.color = ChargeRing;
+                }
                 if (view.Hp != null)
                 {
                     int bonus = unit.IsAlive ? unit.BuffPercent(GmBattleBuff.Attack, round) : 0;
@@ -154,11 +160,11 @@ namespace GamecommMentor.DaengSaka
 
                 string idleKey = GmBattleArt.IdleKey(unit.Character) ?? "enemyIdle";
                 if (isBoss) idleKey = $"pakandeIdle{session.Boss.Phase}";
-                if (isMinion) idleKey = "poppoIdle";
+                if (isPoppo) idleKey = "poppoIdle";
                 view.Idle = art.Find(idleKey) ?? art.Find("enemyIdle");
-                view.Hit = isBoss ? art.Find($"pakandeHit{session.Boss.Phase}") : isMinion ? art.Find("poppoHit") : null;
-                view.Death = isMinion ? art.Find("poppoDeath") : null;
-                view.Scale = isBoss ? SpriteScale * 0.94f : unit.IsParty ? SpriteScale : SpriteScale * (isMinion ? 0.70f : 0.80f);
+                view.Hit = isBoss ? art.Find($"pakandeHit{session.Boss.Phase}") : isPoppo ? art.Find("poppoHit") : null;
+                view.Death = isPoppo ? art.Find("poppoDeath") : null;
+                view.Scale = isBoss ? SpriteScale * 0.94f : unit.IsParty ? SpriteScale : SpriteScale * (isPoppo ? 0.70f : 0.80f);
                 view.Amount.enabled = false;
                 if (!unit.IsAlive && view.Death != null)
                     GmBattleArt.Draw(view.Sprite, view.Death, view.Death.count - 1, view.Scale);
@@ -174,9 +180,10 @@ namespace GamecommMentor.DaengSaka
             return first;
         }
 
-        public int FrameCount(GmBattleMove move, GmBattleUnit actor, bool isMinion, GmBattleImpactCue cue)
+        public int FrameCount(GmBattleMove move, GmBattleUnit actor, GmBattleImpactCue cue)
         {
-            GmBattleArt.Clip animation = isMinion ? art.Find("poppoAttack") : art.Animation(move, actor.Character);
+            bool poppoBasic = move == GmBattleMove.BasicAttack && actor.EnemyKind == GmBattleEnemyKind.Poppo;
+            GmBattleArt.Clip animation = poppoBasic ? art.Find("poppoAttack") : art.Animation(move, actor.Character);
             int count = Mathf.Max(8, animation?.count ?? 0);
             if (cue == null) return count;
             int effectFrames = art.Impact(move)?.count ?? 0;
@@ -196,13 +203,14 @@ namespace GamecommMentor.DaengSaka
         {
             UnitView actor = views[actorIndex];
             GmBattleUnit unit = session.Units[actorIndex];
-            bool minion = session.Boss != null && !unit.IsParty && session.Boss.Index != actorIndex;
-            GmBattleArt.Clip animation = minion ? art.Find("poppoAttack") : art.Animation(move, unit.Character);
+            bool poppoBasic = move == GmBattleMove.BasicAttack && unit.EnemyKind == GmBattleEnemyKind.Poppo;
+            GmBattleArt.Clip animation = poppoBasic ? art.Find("poppoAttack") : art.Animation(move, unit.Character);
             GmBattleArt.Draw(actor.Sprite, animation ?? actor.Idle, pose.Index, actor.Scale);
             if (move.IsDamaging) FrameImpact(pose);
 
             bool approach = move == GmBattleMove.ShieldSwing || move == GmBattleMove.DominionStrike ||
-                (move == GmBattleMove.BasicAttack && (minion || unit.Character == GmBattleCharacter.Pacca));
+                move == GmBattleMove.GBite || move == GmBattleMove.CaneStrike || poppoBasic ||
+                (move == GmBattleMove.BasicAttack && unit.Character == GmBattleCharacter.Pacca);
             if (approach && targets.Length == 1)
             {
                 UnitView target = views[targets[0]];
@@ -215,7 +223,7 @@ namespace GamecommMentor.DaengSaka
                 actor.Slot.anchoredPosition = (delta - delta.normalized * stop) * travel;
             }
 
-            GmBattleArt.Clip effect = minion ? art.Find("poppoImpact") : art.Impact(move);
+            GmBattleArt.Clip effect = poppoBasic ? art.Find("poppoImpact") : art.Impact(move);
             int effectLead = pose.Cue?.EffectLead ?? 0;
             int effectFrame = pose.Index - pose.Contact + effectLead;
             if (hits == null)

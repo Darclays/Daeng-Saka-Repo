@@ -10,6 +10,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private string encounterId = "enemy-test-01";
         [SerializeField] private string displayName = "Musuh Uji";
         [SerializeField] private GmBossBattleProfile bossBattleProfile;
+        [SerializeField] private bool usePoppoBattle;
         private SphereCollider trigger;
         private CharacterController suppressedPlayer;
 
@@ -17,13 +18,16 @@ namespace GamecommMentor.DaengSaka
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
         public bool IsDefeated { get; private set; }
         public GmBossBattleProfile BossBattleProfile => bossBattleProfile;
+        public bool UsePoppoBattle => usePoppoBattle;
 
-        public void Configure(GmEncounterFlow encounterFlow, string id, string enemyName, GmBossBattleProfile bossProfile = null)
+        public void Configure(GmEncounterFlow encounterFlow, string id, string enemyName,
+            GmBossBattleProfile bossProfile = null, bool poppoBattle = false)
         {
             flow = encounterFlow;
             encounterId = id;
             displayName = enemyName;
             bossBattleProfile = bossProfile;
+            usePoppoBattle = poppoBattle;
         }
 
         private void Reset()

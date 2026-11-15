@@ -6,6 +6,8 @@ namespace GamecommMentor.DaengSaka
     [CreateAssetMenu(menuName = "Daeng Saka/Nenek Pakande Battle Profile")]
     public sealed class GmBossBattleProfile : ScriptableObject
     {
+        private const int DefaultGreaterShadowDamage = 40;
+
         [SerializeField, Min(1)] private int bossHp = 220;
         [SerializeField, Range(2, 99)] private int phaseTwoAt = 70;
         [SerializeField, Range(1, 98)] private int phaseThreeAt = 35;
@@ -15,6 +17,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField, Min(1)] private int waveDamage = 12;
         [SerializeField, Min(1)] private int shadowDamage = 24;
         [SerializeField, Min(1)] private int fireRainDamage = 30;
+        [SerializeField, Min(1)] private int greaterShadowDamage = DefaultGreaterShadowDamage;
 
         internal int PhaseTwoAt => Math.Max(2, Math.Min(99, phaseTwoAt));
         internal int PhaseThreeAt => Math.Max(1, Math.Min(PhaseTwoAt - 1, phaseThreeAt));
@@ -22,12 +25,13 @@ namespace GamecommMentor.DaengSaka
         internal int WaveDamage => Math.Max(1, waveDamage);
         internal int ShadowDamage => Math.Max(1, shadowDamage);
         internal int FireRainDamage => Math.Max(1, fireRainDamage);
+        internal int GreaterShadowDamage => greaterShadowDamage > 0 ? greaterShadowDamage : DefaultGreaterShadowDamage;
 
         internal GmBattleStats[] CreateRoster() => new[]
         {
             new GmBattleStats("Nenek Pakande", bossHp, 0, 0, 25, BoltDamage, isBoss: true),
-            new GmBattleStats("Poppo A", minionHp, 0, 0, 16, minionDamage),
-            new GmBattleStats("Poppo B", minionHp, 0, 0, 15, minionDamage)
+            new GmBattleStats("Poppo A", minionHp, 0, 0, 16, minionDamage, enemyKind: GmBattleEnemyKind.Poppo),
+            new GmBattleStats("Poppo B", minionHp, 0, 0, 15, minionDamage, enemyKind: GmBattleEnemyKind.Poppo)
         };
     }
 }

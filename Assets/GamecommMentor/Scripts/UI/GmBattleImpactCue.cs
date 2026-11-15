@@ -8,6 +8,8 @@ namespace GamecommMentor.DaengSaka
         private static readonly GmBattleImpactCue DaungBasic = new GmBattleImpactCue(5, 3, 0, "basicHit", 10f);
         private static readonly GmBattleImpactCue Shield = new GmBattleImpactCue(6, 4, 0, "shieldHit", 22f, 4f, 0.05f);
         private static readonly GmBattleImpactCue Shark = new GmBattleImpactCue(9, 6, 2, "sharkHit", 17f, 3f, 0.04f);
+        private static readonly GmBattleImpactCue Bite = new GmBattleImpactCue(7, 5, 2, "basicHit", 16f);
+        private static readonly GmBattleImpactCue Cane = new GmBattleImpactCue(5, 3, 0, "basicHit", 16f);
 
         private GmBattleImpactCue(int contact, int windup, int effectLead, string sound, float recoil,
             float shake = 0f, float hitStop = 0f)
@@ -33,6 +35,8 @@ namespace GamecommMentor.DaengSaka
         {
             if (move == GmBattleMove.ShieldSwing) return Shield;
             if (move == GmBattleMove.SharkBite) return Shark;
+            if (move == GmBattleMove.GBite) return Bite;
+            if (move == GmBattleMove.CaneStrike) return Cane;
             if (move != GmBattleMove.BasicAttack) return null;
             return character switch
             {

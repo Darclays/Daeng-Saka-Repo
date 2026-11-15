@@ -175,6 +175,38 @@
       "count": 5,
       "anchorX": 21,
       "anchorY": 33
+    },
+    {
+      "key": "pakandeCane",
+      "width": 25,
+      "height": 29,
+      "count": 12,
+      "anchorX": 13,
+      "anchorY": 28
+    },
+    {
+      "key": "pakandeMagicImpact",
+      "width": 27,
+      "height": 19,
+      "count": 4,
+      "anchorX": 14,
+      "anchorY": 18
+    },
+    {
+      "key": "poppoBite",
+      "width": 44,
+      "height": 42,
+      "count": 14,
+      "anchorX": 22,
+      "anchorY": 39
+    },
+    {
+      "key": "poppoBiteImpact",
+      "width": 28,
+      "height": 31,
+      "count": 6,
+      "anchorX": 14,
+      "anchorY": 30
     }
   ]
 }

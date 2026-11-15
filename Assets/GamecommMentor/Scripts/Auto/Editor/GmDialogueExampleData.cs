@@ -8,8 +8,12 @@ namespace GamecommMentor.DaengSaka.Editor
     internal static class GmDialogueExampleData
     {
         internal const string DataRoot = "Assets/GamecommMentor/Data/PixelCrushersIntegration/DialogueDatabase";
+        internal const string DatabasePath = DataRoot + "/Exploration_Dialogue_Example.asset";
         internal const string NelayanConversation = "DaengSaka/Examples/Nelayan";
         internal const string MerchantConversation = "DaengSaka/Examples/Pedagang";
+        internal const string DemoOpeningConversation = "DaengSaka/Demo/Sorelia";
+        internal const string DemoAfterPoppoConversation = "DaengSaka/Demo/Gua Lembayung";
+        internal const string DemoAfterPakandeConversation = "DaengSaka/Demo/Pusaka Acci";
         private const int Hero = 910001;
         private const int Fisher = 910002;
         private const int Merchant = 910003;
@@ -17,8 +21,7 @@ namespace GamecommMentor.DaengSaka.Editor
         internal static DialogueDatabase GetOrCreate()
         {
             EnsureFolder(DataRoot);
-            string path = DataRoot + "/Exploration_Dialogue_Example.asset";
-            DialogueDatabase existing = AssetDatabase.LoadAssetAtPath<DialogueDatabase>(path);
+            DialogueDatabase existing = AssetDatabase.LoadAssetAtPath<DialogueDatabase>(DatabasePath);
             if (existing != null)
             {
                 if (existing.GetConversation(NelayanConversation) == null || existing.GetConversation(MerchantConversation) == null)
@@ -40,8 +43,43 @@ namespace GamecommMentor.DaengSaka.Editor
                 "Selamat datang, Saka. Ada yang ingin kamu tanyakan?",
                 "Apa yang kamu jual?", "Aku hanya lewat.",
                 "Perlengkapan perjalanan. Datanglah lagi sebelum kamu berangkat jauh.", "Hati-hati di jalan."));
-            AssetDatabase.CreateAsset(database, path);
+            AssetDatabase.CreateAsset(database, DatabasePath);
             return database;
+        }
+
+        internal static void AddDemoConversations(DialogueDatabase database, Conversation guide)
+        {
+            Template template = Template.FromDefault();
+            AddDemoConversation(database, template, guide, DemoOpeningConversation,
+                "Tolong! Poppo mengepung keluargaku!");
+            AddDemoConversation(database, template, guide, DemoAfterPoppoConversation,
+                "Terima kasih nak sudah menyelamatkan keluarga saya.",
+                "Belakangan ini aura gelap mulai terlihat dari mulut Gua Lembayung.");
+            AddDemoConversation(database, template, guide, DemoAfterPakandeConversation,
+                "Nenek Pakande telah dikalahkan. Saat kalah, dia menyebut nama Ravi.",
+                "Selanjutnya, ambil bagian pusaka Acci. Playtest selesai.");
+        }
+
+        private static void AddDemoConversation(DialogueDatabase database, Template template, Conversation guide,
+            string title, params string[] subtitles)
+        {
+            if (database.GetConversation(title) != null) return;
+            int id = 910111;
+            while (database.GetConversation(id) != null) id++;
+            Conversation conversation = template.CreateConversation(id, title);
+            conversation.ActorID = guide.ActorID;
+            conversation.ConversantID = guide.ConversantID;
+            DialogueEntry entry = Node(template, id, 0, guide.ActorID, guide.ConversantID, "START", "", 250f, 0f);
+            conversation.dialogueEntries.Add(entry);
+            for (int index = 0; index < subtitles.Length; index++)
+            {
+                int entryId = index + 1;
+                entry.outgoingLinks.Add(new Link(id, entryId - 1, id, entryId));
+                entry = Node(template, id, entryId, guide.ConversantID, guide.ActorID,
+                    "Nelayan", subtitles[index], 250f, entryId * 140f);
+                conversation.dialogueEntries.Add(entry);
+            }
+            database.conversations.Add(conversation);
         }
 
         private static Conversation Create(Template template, int id, int npc, string title,
