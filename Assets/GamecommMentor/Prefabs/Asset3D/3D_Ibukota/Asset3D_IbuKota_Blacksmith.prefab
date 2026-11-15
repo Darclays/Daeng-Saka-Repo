@@ -1,0 +1,411 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &894382773354928632
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6764299143838123876}
+  m_Layer: 0
+  m_Name: Asset3D_IbuKota_Blacksmith
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6764299143838123876
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894382773354928632}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 105.71935, y: -25.29961, z: 236.10023}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3565498089106568741}
+  - {fileID: 2398984161729709970}
+  - {fileID: 4470938771456162710}
+  - {fileID: 4073823394885820268}
+  - {fileID: 7146692720987108769}
+  - {fileID: 7175435244151781316}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &2792335256257912953
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -7.5948105
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.09371948
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_Anvil
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+--- !u!4 &2398984161729709970 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 542be224d3b7ba94187f23b1e54b4b98, type: 3}
+  m_PrefabInstance: {fileID: 2792335256257912953}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3959096053662912974
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5.2093506
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.5197601
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_Bangunan
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+--- !u!4 &3565498089106568741 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5669f5493e733b94e98daf636b7795f0, type: 3}
+  m_PrefabInstance: {fileID: 3959096053662912974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4143679317581700221
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.2193527
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2.37883
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 86b84b699cc361242802109af422ec68, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_Ember
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 86b84b699cc361242802109af422ec68, type: 3}
+--- !u!4 &4470938771456162710 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 86b84b699cc361242802109af422ec68, type: 3}
+  m_PrefabInstance: {fileID: 4143679317581700221}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4540641857748940935
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -7.3843536
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.6476097
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 4.85376
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_Sekop
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+--- !u!4 &4073823394885820268 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f92dbbb1b1de5ff43a2c43c700b612d1, type: 3}
+  m_PrefabInstance: {fileID: 4540641857748940935}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7214482014668410927
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.625351
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 3.8896103
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.87576294
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_AlatDinding
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+--- !u!4 &7175435244151781316 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 31d4cb47ee5199245819fce161c320d9, type: 3}
+  m_PrefabInstance: {fileID: 7214482014668410927}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7252095397679796810
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6764299143838123876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.4593506
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.009765625
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+      propertyPath: m_Name
+      value: Asset3D_IbuKota_Blacksmith_MejaBS
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+--- !u!4 &7146692720987108769 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5eeda21d8253dd2459c795b1d3e2ca3b, type: 3}
+  m_PrefabInstance: {fileID: 7252095397679796810}
+  m_PrefabAsset: {fileID: 0}
