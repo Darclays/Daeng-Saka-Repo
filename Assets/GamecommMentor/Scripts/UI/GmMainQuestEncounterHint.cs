@@ -9,16 +9,28 @@ namespace GamecommMentor.DaengSaka
     {
         [SerializeField] private GmMainQuestProgress quest;
         [SerializeField] private GmControlGate controls;
+        [SerializeField] private GmWorldPortal routePortal;
+        [SerializeField] private string routeDestination;
+        [SerializeField] private Camera viewCamera;
+        [SerializeField] private bool showQuestCompletion;
         private RectTransform canvasRect;
         private RectTransform objectivePanel;
         private Text objectiveLabel;
         private Text markerLabel;
-        private GmEnemyEncounter displayedEncounter;
+        private Transform displayedTarget;
 
-        public void Configure(GmMainQuestProgress progress, GmControlGate controlGate)
+        public void Configure(GmMainQuestProgress progress, GmControlGate controlGate, bool showQuestCompletion = false)
         {
             quest = progress;
             controls = controlGate;
+            this.showQuestCompletion = showQuestCompletion;
+        }
+
+        public void SetRoute(GmWorldPortal portal, string destination, Camera camera)
+        {
+            routePortal = portal;
+            routeDestination = destination;
+            viewCamera = camera;
         }
 
         private void Awake()
@@ -63,30 +75,39 @@ namespace GamecommMentor.DaengSaka
         private void LateUpdate()
         {
             GmEnemyEncounter encounter = quest != null && quest.isActiveAndEnabled ? quest.ActiveEncounter : null;
-            bool visible = encounter != null && encounter.isActiveAndEnabled && !encounter.IsDefeated &&
-                controls != null && controls.CanExplore;
+            bool trackingEncounter = encounter != null && encounter.isActiveAndEnabled && !encounter.IsDefeated;
+            Transform target = trackingEncounter ? encounter.transform :
+                routePortal != null && routePortal.isActiveAndEnabled && routePortal.IsOpen ? routePortal.transform : null;
+            bool completed = showQuestCompletion && quest != null && quest.isActiveAndEnabled &&
+                quest.Step == GmMainQuestStep.Selesai;
+            bool visible = (target != null || completed) && controls != null && controls.CanExplore;
             objectivePanel.gameObject.SetActive(visible);
-            if (!visible)
+            if (!visible || completed)
             {
                 markerLabel.gameObject.SetActive(false);
+                if (visible)
+                {
+                    displayedTarget = null;
+                    objectiveLabel.text = "Quest utama selesai";
+                }
                 return;
             }
 
-            if (displayedEncounter != encounter)
+            if (displayedTarget != target)
             {
-                displayedEncounter = encounter;
-                string name = encounter.gameObject.name;
-                objectiveLabel.text = "Kalahkan " + name;
+                displayedTarget = target;
+                string name = trackingEncounter ? encounter.gameObject.name : routeDestination;
+                objectiveLabel.text = (trackingEncounter ? "Kalahkan " : "Pergi ke ") + name;
                 markerLabel.text = "▼ " + name;
             }
 
-            Camera camera = Camera.main;
+            Camera camera = viewCamera != null ? viewCamera : Camera.main;
             if (camera == null)
             {
                 markerLabel.gameObject.SetActive(false);
                 return;
             }
-            Vector3 screen = camera.WorldToScreenPoint(encounter.transform.position + Vector3.up * 1.65f);
+            Vector3 screen = camera.WorldToScreenPoint(target.position + Vector3.up * 1.65f);
             bool onScreen = screen.z > 0f && camera.pixelRect.Contains((Vector2)screen);
             Vector2 local = Vector2.zero;
             bool positioned = onScreen && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out local);

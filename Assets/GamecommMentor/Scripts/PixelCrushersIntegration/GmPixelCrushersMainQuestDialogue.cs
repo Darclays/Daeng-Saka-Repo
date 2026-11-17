@@ -25,6 +25,7 @@ namespace GamecommMentor.DaengSaka
 
         [SerializeField] private GmPixelCrushersDialogueBridge bridge;
         [SerializeField] private StepDialogue[] dialogues = Array.Empty<StepDialogue>();
+        [SerializeField] private GmEnemyEncounter revealAfterEncounter;
         private GmMainQuestProgress quest;
         private GmEncounterFlow flow;
         private DialogueSystemController controller;
@@ -40,10 +41,12 @@ namespace GamecommMentor.DaengSaka
             }
         }
 
-        public void Configure(GmPixelCrushersDialogueBridge dialogueBridge, StepDialogue[] stepDialogues)
+        public void Configure(GmPixelCrushersDialogueBridge dialogueBridge, StepDialogue[] stepDialogues,
+            GmEnemyEncounter revealAfter = null)
         {
             bridge = dialogueBridge;
             dialogues = stepDialogues ?? Array.Empty<StepDialogue>();
+            revealAfterEncounter = revealAfter;
         }
 
         private void OnEnable()
@@ -69,7 +72,9 @@ namespace GamecommMentor.DaengSaka
 
         private void OnVictoryReturned(GmSakaMotor player, GmEnemyEncounter enemy)
         {
-            if (quest.Step == GmMainQuestStep.Penutup && enemy == quest.PakandeEncounter)
+            bool reveal = quest.Step == GmMainQuestStep.TemuiPakande && enemy == revealAfterEncounter;
+            bool ending = quest.Step == GmMainQuestStep.Penutup && enemy == quest.PakandeEncounter;
+            if (reveal || ending)
                 TryStartCurrent(player.GetComponent<GmInteractor>());
         }
 

@@ -9,7 +9,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private Transform focusPoint;
         [SerializeField] private Vector3 focusOffset = new Vector3(0f, 0.8f, 0f);
 
-        public string Prompt => "[E] " + actionLabel + " — " + displayName;
+        public virtual string Prompt => "[E] " + actionLabel + " — " + displayName;
         public Vector3 FocusPosition => focusPoint != null ? focusPoint.position : transform.TransformPoint(focusOffset);
 
         public void SetPresentation(string label, string action)

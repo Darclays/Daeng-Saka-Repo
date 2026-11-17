@@ -64,15 +64,22 @@ namespace GamecommMentor.DaengSaka
 
         public void ConfigureView(float heading, float downwardAngle, float followDistance, float height)
         {
-            yaw = Mathf.Repeat(heading, 360f);
+            SetStartingHeading(heading);
             pitch = Mathf.Clamp(downwardAngle, 10f, 60f);
             orbitPitch = pitch;
-            requestedYaw = yaw;
             requestedPitch = pitch;
             distance = Mathf.Max(0.5f, followDistance);
             focusHeight = Mathf.Max(0.1f, height);
+        }
+
+        public void SetStartingHeading(float heading)
+        {
+            yaw = Mathf.Repeat(heading, 360f);
+            requestedYaw = yaw;
             initialized = false;
         }
+
+        public void SetVerticalOrbit(bool enabled) => allowVerticalOrbit = enabled;
 
         public void SetIgnoredRoots(Transform[] roots) => ignoredRoots = roots ?? new Transform[0];
 

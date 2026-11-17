@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace GamecommMentor.DaengSaka
@@ -25,8 +26,12 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmEnemyEncounter soreliaEncounter;
         [SerializeField] private GmEnemyEncounter caveEncounter;
         [SerializeField] private GmEnemyEncounter pakandeEncounter;
+        [SerializeField] private bool shareAcrossWorldScenes;
+        private static QuestRun worldRun = new QuestRun();
+        private readonly QuestRun localRun = new QuestRun();
 
-        public GmMainQuestStep Step { get; private set; }
+        private QuestRun Run => shareAcrossWorldScenes ? worldRun : localRun;
+        public GmMainQuestStep Step => Run.Step;
         public GmEnemyEncounter PakandeEncounter => pakandeEncounter;
         public GmEnemyEncounter ActiveEncounter => Step switch
         {
@@ -36,12 +41,32 @@ namespace GamecommMentor.DaengSaka
             _ => null
         };
 
-        public void Configure(GmEnemyEncounter sorelia, GmEnemyEncounter cave, GmEnemyEncounter pakande)
+        public void Configure(GmEnemyEncounter sorelia, GmEnemyEncounter cave, GmEnemyEncounter pakande,
+            bool shareAcrossScenes = false)
         {
             soreliaEncounter = sorelia;
             caveEncounter = cave;
             pakandeEncounter = pakande;
+            shareAcrossWorldScenes = shareAcrossScenes;
         }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetWorldRun() => worldRun = new QuestRun();
+
+        private void Awake()
+        {
+            RestoreDefeat(soreliaEncounter, GmMainQuestStep.SelamatkanKeluargaNelayan);
+            RestoreDefeat(caveEncounter, GmMainQuestStep.SelidikiGua);
+            RestoreDefeat(pakandeEncounter, GmMainQuestStep.LawanPakande);
+            RefreshCaveEncounters();
+        }
+
+        private void RestoreDefeat(GmEnemyEncounter encounter, GmMainQuestStep step)
+        {
+            if (encounter != null && HasCompleted(step)) encounter.MarkDefeated();
+        }
+
+        public bool HasCompleted(GmMainQuestStep step) => Run.Completed.Contains(step);
 
         public bool TryCompleteDialogue(GmMainQuestStep completedStep)
         {
@@ -71,6 +96,50 @@ namespace GamecommMentor.DaengSaka
             if (required != null && required == encounter && required.IsDefeated) Advance();
         }
 
-        private void Advance() => Step = (GmMainQuestStep)((int)Step + 1);
+        private void Advance()
+        {
+            Run.Advance();
+            RefreshCaveEncounters();
+        }
+
+        private void RefreshCaveEncounters()
+        {
+            if (!shareAcrossWorldScenes) return;
+            SetEncounterPresence(caveEncounter, Step == GmMainQuestStep.SelidikiGua);
+            SetEncounterPresence(pakandeEncounter,
+                Step == GmMainQuestStep.TemuiPakande || Step == GmMainQuestStep.LawanPakande);
+        }
+
+        private static void SetEncounterPresence(GmEnemyEncounter encounter, bool show)
+        {
+            if (encounter == null) return;
+            bool active = show && !encounter.IsDefeated;
+            if (encounter.gameObject.activeSelf != active) encounter.gameObject.SetActive(active);
+        }
+
+        private sealed class QuestRun
+        {
+            public GmMainQuestStep Step { get; private set; } = GmMainQuestStep.PersiapanSebelumBertarung;
+            public readonly HashSet<GmMainQuestStep> Completed = new HashSet<GmMainQuestStep>();
+
+            public void Advance()
+            {
+                Completed.Add(Step);
+                Step = Step switch
+                {
+                    GmMainQuestStep.PersiapanSebelumBertarung => GmMainQuestStep.KunjungiMerchant,
+                    GmMainQuestStep.KunjungiMerchant => GmMainQuestStep.KunjungiPenempaBesi,
+                    GmMainQuestStep.KunjungiPenempaBesi => GmMainQuestStep.TemuiKeluargaNelayan,
+                    GmMainQuestStep.TemuiKeluargaNelayan => GmMainQuestStep.SelamatkanKeluargaNelayan,
+                    GmMainQuestStep.SelamatkanKeluargaNelayan => GmMainQuestStep.BicaraDenganNelayan,
+                    GmMainQuestStep.BicaraDenganNelayan => GmMainQuestStep.MasukGuaLembayung,
+                    GmMainQuestStep.MasukGuaLembayung => GmMainQuestStep.SelidikiGua,
+                    GmMainQuestStep.SelidikiGua => GmMainQuestStep.TemuiPakande,
+                    GmMainQuestStep.TemuiPakande => GmMainQuestStep.LawanPakande,
+                    GmMainQuestStep.LawanPakande => GmMainQuestStep.Penutup,
+                    _ => GmMainQuestStep.Selesai
+                };
+            }
+        }
     }
 }
