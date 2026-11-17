@@ -18,6 +18,9 @@ namespace GamecommMentor.DaengSaka
         private Text objectiveLabel;
         private Text markerLabel;
         private Transform displayedTarget;
+        private GmQuestJournal journal;
+        private Text questTitle;
+        private Text journalKeys;
 
         public void Configure(GmMainQuestProgress progress, GmControlGate controlGate, bool showQuestCompletion = false)
         {
@@ -35,6 +38,7 @@ namespace GamecommMentor.DaengSaka
 
         private void Awake()
         {
+            journal = GetComponent<GmQuestJournal>();
             Canvas canvas = GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 39;
@@ -70,10 +74,42 @@ namespace GamecommMentor.DaengSaka
             outline.effectColor = new Color(0.02f, 0.025f, 0.03f, 0.94f);
             outline.effectDistance = new Vector2(1f, -1f);
             markerLabel.gameObject.SetActive(false);
+
+            if (journal != null)
+            {
+                objectivePanel.sizeDelta = new Vector2(430f, 62f);
+                textRect.offsetMax = new Vector2(-14f, -23f);
+                questTitle = CreateLabel("Tracked Quest", objectivePanel, font, TextAnchor.MiddleLeft);
+                questTitle.fontSize = 14;
+                questTitle.color = new Color(0.76f, 0.89f, 0.77f);
+                RectTransform titleRect = questTitle.rectTransform;
+                titleRect.anchorMin = titleRect.anchorMax = new Vector2(0f, 1f);
+                titleRect.pivot = new Vector2(0f, 1f);
+                titleRect.anchoredPosition = new Vector2(14f, -6f);
+                titleRect.sizeDelta = new Vector2(400f, 20f);
+                journalKeys = CreateLabel("Journal Shortcuts", canvasRect, font, TextAnchor.MiddleRight);
+                journalKeys.text = "[J] Jurnal     [M] Peta";
+                journalKeys.gameObject.AddComponent<Outline>().effectColor = Color.black;
+                RectTransform keysRect = journalKeys.rectTransform;
+                keysRect.anchorMin = keysRect.anchorMax = keysRect.pivot = Vector2.one;
+                keysRect.anchoredPosition = new Vector2(-24f, -24f);
+                keysRect.sizeDelta = new Vector2(240f, 32f);
+            }
         }
 
         private void LateUpdate()
         {
+            if (journal != null && journal.isActiveAndEnabled)
+            {
+                displayedTarget = null;
+                UpdateJournalHint();
+                return;
+            }
+            if (journalKeys != null)
+            {
+                journalKeys.gameObject.SetActive(false);
+                questTitle.text = "";
+            }
             GmEnemyEncounter encounter = quest != null && quest.isActiveAndEnabled ? quest.ActiveEncounter : null;
             bool trackingEncounter = encounter != null && encounter.isActiveAndEnabled && !encounter.IsDefeated;
             Transform target = trackingEncounter ? encounter.transform :
@@ -101,6 +137,42 @@ namespace GamecommMentor.DaengSaka
                 markerLabel.text = "▼ " + name;
             }
 
+            PlaceMarker(target);
+        }
+
+        private void UpdateJournalHint()
+        {
+            bool exploring = controls != null && controls.CanExplore;
+            journalKeys.gameObject.SetActive(exploring);
+            GmQuestEntry tracked = exploring ? journal.Tracked : null;
+            bool showCompletion = exploring && showQuestCompletion && journal.ShowMainCompletion;
+            objectivePanel.gameObject.SetActive(tracked != null || showCompletion);
+            if (tracked == null)
+            {
+                markerLabel.gameObject.SetActive(false);
+                if (showCompletion)
+                {
+                    questTitle.text = "Quest Utama";
+                    objectiveLabel.text = "Quest utama selesai";
+                }
+                return;
+            }
+
+            GmQuestGoal goal = tracked.CurrentGoal;
+            questTitle.text = tracked.Title;
+            objectiveLabel.text = string.IsNullOrEmpty(goal.Progress) ? goal.Text : goal.Text + "   " + goal.Progress;
+            if (!journal.TryGetNavigation(goal, out GmQuestLandmark landmark))
+            {
+                markerLabel.gameObject.SetActive(false);
+                return;
+            }
+
+            markerLabel.text = "▼ " + landmark.Label;
+            PlaceMarker(landmark.Point);
+        }
+
+        private void PlaceMarker(Transform target)
+        {
             Camera camera = viewCamera != null ? viewCamera : Camera.main;
             if (camera == null)
             {
