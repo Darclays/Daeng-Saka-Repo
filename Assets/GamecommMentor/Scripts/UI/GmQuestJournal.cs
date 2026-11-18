@@ -210,32 +210,40 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
 
-            bool journalPressed, mapPressed, closePressed;
+            GmJournalPage? requested = null;
+            bool closePressed = false;
 #if ENABLE_INPUT_SYSTEM
             Keyboard keyboard = Keyboard.current;
-            journalPressed = keyboard != null && keyboard.jKey.wasPressedThisFrame;
-            mapPressed = keyboard != null && keyboard.mKey.wasPressedThisFrame;
-            closePressed = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+            if (keyboard != null)
+            {
+                if (keyboard.jKey.wasPressedThisFrame) requested = GmJournalPage.Journal;
+                else if (keyboard.mKey.wasPressedThisFrame) requested = GmJournalPage.Map;
+                else if (keyboard.iKey.wasPressedThisFrame) requested = GmJournalPage.Bag;
+                closePressed = keyboard.escapeKey.wasPressedThisFrame;
+            }
 #elif ENABLE_LEGACY_INPUT_MANAGER
-            journalPressed = Input.GetKeyDown(KeyCode.J);
-            mapPressed = Input.GetKeyDown(KeyCode.M);
+            if (Input.GetKeyDown(KeyCode.J)) requested = GmJournalPage.Journal;
+            else if (Input.GetKeyDown(KeyCode.M)) requested = GmJournalPage.Map;
+            else if (Input.GetKeyDown(KeyCode.I)) requested = GmJournalPage.Bag;
             closePressed = Input.GetKeyDown(KeyCode.Escape);
-#else
-            journalPressed = mapPressed = closePressed = false;
 #endif
             if (view != null && view.IsOpen)
             {
-                if (closePressed || (journalPressed && !view.IsMap) || (mapPressed && view.IsMap)) Close();
-                else if (journalPressed) view.ShowJournal();
-                else if (mapPressed) view.ShowMap(Tracked);
-                else if (RefreshEntries()) view.Refresh();
+                if (closePressed || requested == view.Page) Close();
+                else if (requested.HasValue) ShowPage(requested.Value);
+                else if (view.Page == GmJournalPage.Bag || RefreshEntries()) view.Refresh();
                 return;
             }
-
-            if ((!journalPressed && !mapPressed) || !player.ControlGate.CanExplore) return;
+            if (!requested.HasValue || !player.ControlGate.CanExplore) return;
             view ??= new GmQuestJournalView((RectTransform)transform, this);
             player.ControlGate.Block(this);
-            if (mapPressed) view.ShowMap(Tracked);
+            ShowPage(requested.Value);
+        }
+
+        private void ShowPage(GmJournalPage page)
+        {
+            if (page == GmJournalPage.Bag) view.ShowBag();
+            else if (page == GmJournalPage.Map) view.ShowMap(Tracked);
             else view.ShowJournal();
         }
 

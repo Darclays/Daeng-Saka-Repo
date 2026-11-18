@@ -8,6 +8,8 @@ using static GamecommMentor.DaengSaka.GmBattleView;
 
 namespace GamecommMentor.DaengSaka
 {
+    internal enum GmJournalPage { Journal, Map, Bag }
+
     internal sealed class GmQuestJournalView
     {
         internal static readonly Color Paper = new Color32(249, 246, 236, 255);
@@ -24,17 +26,19 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform root;
         private readonly RectTransform journalPanel;
         private readonly GmQuestAreaMapView mapView;
+        private readonly GmPartyBagView bagView;
         private readonly RectTransform list;
         private readonly ScrollRect scroll;
         private readonly List<(GmQuestEntry entry, Image background, Text label)> rows =
             new List<(GmQuestEntry, Image, Text)>();
-        private readonly Button journalTab, mapTab, activeTab, completeTab, trackAction, mapAction;
+        private readonly Button journalTab, mapTab, bagTab, activeTab, completeTab, trackAction, mapAction;
         private readonly Text category, title, description, objectives, trackLabel;
         private bool showCompleted;
         private string selectedId, mapQuestId;
 
         internal bool IsOpen => root.gameObject.activeSelf;
-        internal bool IsMap { get; private set; }
+        internal GmJournalPage Page { get; private set; }
+        internal bool IsMap => Page == GmJournalPage.Map;
 
         public GmQuestJournalView(RectTransform canvas, GmQuestJournal journal)
         {
@@ -46,9 +50,10 @@ namespace GamecommMentor.DaengSaka
             RectTransform header = Rect("Header", window, 0f, .865f, 1f, 1f);
             Fill(header, Inset);
             AddText(font, header, "Game", "Daeng Saka", 26, .026f, 0f, .31f, 1f, bold: true);
-            journalTab = AddButton(font, header, "Jurnal  [J]", .49f, .21f, .645f, .79f, ShowJournal);
-            mapTab = AddButton(font, header, "Peta  [M]", .657f, .21f, .798f, .79f, () => ShowMap(journal.Tracked));
-            AddButton(font, header, "Tutup  [Esc]", .81f, .21f, .973f, .79f, journal.Close);
+            journalTab = AddButton(font, header, "Jurnal  [J]", .35f, .21f, .50f, .79f, ShowJournal);
+            mapTab = AddButton(font, header, "Peta  [M]", .51f, .21f, .64f, .79f, () => ShowMap(journal.Tracked));
+            bagTab = AddButton(font, header, "Tas  [I]", .65f, .21f, .78f, .79f, ShowBag);
+            AddButton(font, header, "Tutup  [Esc]", .79f, .21f, .973f, .79f, journal.Close);
 
             journalPanel = Rect("Jurnal", window, .026f, .045f, .974f, .833f);
             RectTransform sidebar = Rect("Quest List", journalPanel, 0f, 0f, .328f, 1f);
@@ -73,35 +78,45 @@ namespace GamecommMentor.DaengSaka
 
             RectTransform mapPanel = Rect("Peta Area", window, .026f, .045f, .974f, .833f);
             mapView = new GmQuestAreaMapView(mapPanel, journal, font);
+            bagView = new GmPartyBagView(window, font);
             root.gameObject.SetActive(false);
+        }
+
+        private void SelectPage(GmJournalPage page)
+        {
+            Page = page;
+            root.gameObject.SetActive(true);
+            journalPanel.gameObject.SetActive(page == GmJournalPage.Journal);
+            mapView.Panel.gameObject.SetActive(page == GmJournalPage.Map);
+            bagView.Panel.gameObject.SetActive(page == GmJournalPage.Bag);
+            SetSelected(journalTab, page == GmJournalPage.Journal);
+            SetSelected(mapTab, page == GmJournalPage.Map);
+            SetSelected(bagTab, page == GmJournalPage.Bag);
         }
 
         internal void ShowJournal()
         {
-            IsMap = false;
-            root.gameObject.SetActive(true);
-            mapView.Panel.gameObject.SetActive(false);
-            journalPanel.gameObject.SetActive(true);
+            SelectPage(GmJournalPage.Journal);
             RenderJournal();
-            SetSelected(journalTab, true);
-            SetSelected(mapTab, false);
         }
 
         internal void ShowMap(GmQuestEntry quest)
         {
-            IsMap = true;
             mapQuestId = quest?.Id;
-            root.gameObject.SetActive(true);
-            journalPanel.gameObject.SetActive(false);
-            mapView.Panel.gameObject.SetActive(true);
+            SelectPage(GmJournalPage.Map);
             mapView.Render(quest);
-            SetSelected(journalTab, false);
-            SetSelected(mapTab, true);
+        }
+
+        internal void ShowBag()
+        {
+            SelectPage(GmJournalPage.Bag);
+            bagView.Render();
         }
 
         internal void Refresh()
         {
             if (IsMap) mapView.Render(FindEntry(mapQuestId));
+            else if (Page == GmJournalPage.Bag) bagView.RefreshStock();
             else RenderJournal();
         }
 

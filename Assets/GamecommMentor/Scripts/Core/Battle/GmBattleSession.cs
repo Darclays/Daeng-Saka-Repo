@@ -19,6 +19,29 @@ namespace GamecommMentor.DaengSaka
         public bool isBoss;
         public GmBattleEnemyKind enemyKind;
 
+        public static GmBattleStats[] CreateDefaultParty() => new[]
+        {
+            new GmBattleStats("Saka Barani", 110, 20, 8, 24, 24, GmBattleCharacter.Saka),
+            new GmBattleStats("Pacca Andi", 138, 16, 5, 17, 17, GmBattleCharacter.Pacca),
+            new GmBattleStats("Daung", 84, 28, 12, 20, 12, GmBattleCharacter.Daung)
+        };
+
+        public GmBattleCharacter ResolvedCharacter
+        {
+            get
+            {
+                if (character != GmBattleCharacter.Unspecified) return character;
+                // Scenes saved by 1B.1A have no character field yet.
+                return displayName?.Trim().ToLowerInvariant() switch
+                {
+                    "saka" or "saka barani" => GmBattleCharacter.Saka,
+                    "pacca" or "pacca andi" => GmBattleCharacter.Pacca,
+                    "daung" => GmBattleCharacter.Daung,
+                    _ => GmBattleCharacter.Unspecified
+                };
+            }
+        }
+
         public GmBattleStats(string name, int hp, int mp, int initialMp, int speed, int damage,
             GmBattleCharacter character = GmBattleCharacter.Unspecified, bool isBoss = false,
             GmBattleEnemyKind enemyKind = GmBattleEnemyKind.Generic)
@@ -42,20 +65,17 @@ namespace GamecommMentor.DaengSaka
         private readonly Dictionary<GmBattleMove, int> cooldowns = new Dictionary<GmBattleMove, int>();
         private readonly Dictionary<GmBattleMove, int> buffEndRounds = new Dictionary<GmBattleMove, int>();
 
-        public GmBattleUnit(GmBattleStats stats, bool isParty)
+        private readonly GmPartyVitals vitals;
+
+        public GmBattleUnit(GmBattleStats stats, bool isParty, GmPartyVitals partyVitals = null)
         {
             IsParty = isParty;
             IsBoss = !isParty && stats.isBoss;
             EnemyKind = isParty ? GmBattleEnemyKind.Generic : stats.enemyKind;
-            Name = string.IsNullOrWhiteSpace(stats.displayName)
-                ? (isParty ? "Anggota Party" : "Musuh") : stats.displayName;
-            MaxHp = Math.Max(1, stats.maxHp);
-            MaxMp = Math.Max(0, stats.maxMp);
+            vitals = partyVitals ?? new GmPartyVitals(stats, isParty);
             Speed = Math.Max(1, stats.speed);
             AttackDamage = Math.Max(1, stats.attackDamage);
-            Hp = MaxHp;
-            Mp = Math.Max(0, Math.Min(stats.startingMp, MaxMp));
-            Character = isParty ? ResolveCharacter(stats) : GmBattleCharacter.Unspecified;
+            Character = isParty ? stats.ResolvedCharacter : GmBattleCharacter.Unspecified;
             Skills = GmBattleMove.ForCharacter(Character);
         }
 
@@ -63,17 +83,17 @@ namespace GamecommMentor.DaengSaka
         public bool IsBoss { get; }
         public GmBattleEnemyKind EnemyKind { get; }
         public GmBattleMove EnemySkill => EnemyKind == GmBattleEnemyKind.Poppo ? GmBattleMove.GBite : null;
-        public string Name { get; }
-        public int MaxHp { get; }
-        public int MaxMp { get; }
+        public string Name => vitals.Name;
+        public int MaxHp => vitals.MaxHp;
+        public int MaxMp => vitals.MaxMp;
         public int Speed { get; }
         public int AttackDamage { get; }
         public GmBattleCharacter Character { get; }
         public IReadOnlyList<GmBattleMove> Skills { get; }
         public bool IsPresent { get; internal set; } = true;
         public bool IsAlive => IsPresent && Hp > 0;
-        public int Hp { get; internal set; }
-        public int Mp { get; internal set; }
+        public int Hp { get => vitals.Hp; internal set => vitals.Hp = value; }
+        public int Mp { get => vitals.Mp; internal set => vitals.Mp = value; }
         public int LastActedRound { get; internal set; } = -1;
         public int GuardRound { get; internal set; } = -1;
         public int CompletedActions { get; internal set; }
@@ -102,21 +122,6 @@ namespace GamecommMentor.DaengSaka
                     percent = Math.Max(percent, active.Key.BuffPercent);
             return percent;
         }
-
-        private static GmBattleCharacter ResolveCharacter(GmBattleStats stats)
-        {
-            if (stats.character != GmBattleCharacter.Unspecified) return stats.character;
-            // Scenes saved by 1B.1A have no character field yet.
-            return stats.displayName?.Trim().ToLowerInvariant() switch
-            {
-                "saka" => GmBattleCharacter.Saka,
-                "saka barani" => GmBattleCharacter.Saka,
-                "pacca" => GmBattleCharacter.Pacca,
-                "pacca andi" => GmBattleCharacter.Pacca,
-                "daung" => GmBattleCharacter.Daung,
-                _ => GmBattleCharacter.Unspecified
-            };
-        }
     }
 
     internal sealed class GmBattleSession
@@ -126,19 +131,22 @@ namespace GamecommMentor.DaengSaka
         private readonly int[] enemyOrder;
         private readonly int restRecovery;
         private readonly Random random = new Random();
-        private int hpItems = 1;
-        private int mpItems = 1;
+        private readonly GmPartyInventory inventory;
 
-        public GmBattleSession(GmBattleStats[] party, GmBattleStats[] enemies, int restMp, GmBossBattleProfile bossProfile = null)
+        public GmBattleSession(GmBattleStats[] party, GmBattleStats[] enemies, int restMp,
+            GmBossBattleProfile bossProfile = null, GmPartyRun run = null)
         {
             if (bossProfile != null) enemies = bossProfile.CreateRoster();
             if (party == null || party.Length == 0 || enemies == null || enemies.Length == 0)
                 throw new ArgumentException("Battle needs at least one party member and one enemy.");
 
+            run ??= GmPartyRun.Current;
+            inventory = run.Inventory;
+            GmPartyVitals[] members = run.BindRoster(party);
             PartyCount = party.Length;
             units = new GmBattleUnit[party.Length + enemies.Length];
             enemyOrder = new int[enemies.Length];
-            for (int i = 0; i < party.Length; i++) units[i] = new GmBattleUnit(party[i], true);
+            for (int i = 0; i < party.Length; i++) units[i] = new GmBattleUnit(party[i], true, members[i]);
             for (int i = 0; i < enemies.Length; i++)
             {
                 int index = PartyCount + i;
@@ -151,9 +159,10 @@ namespace GamecommMentor.DaengSaka
                 return bySpeed != 0 ? bySpeed : left.CompareTo(right);
             });
             restRecovery = Math.Max(1, restMp);
-            if (bossProfile != null)
+            if (bossProfile != null) Boss = new GmBossBattle(bossProfile, enemies, units, PartyCount);
+            if (run.PartyWiped) Phase = GmBattlePhase.Defeat;
+            else if (Boss != null)
             {
-                Boss = new GmBossBattle(bossProfile, enemies, units, PartyCount);
                 RoundNumber = 0;
                 Phase = GmBattlePhase.Enemy;
                 ActorIndex = Boss.Index;
@@ -210,7 +219,7 @@ namespace GamecommMentor.DaengSaka
             return true;
         }
 
-        public int ItemCount(GmBattleMove move) => move == GmBattleMove.HpItem ? hpItems : mpItems;
+        public int ItemCount(GmBattleMove move) => inventory.Count(move?.Item);
 
         public string UnavailableReason(GmBattleMove move)
         {
@@ -223,7 +232,13 @@ namespace GamecommMentor.DaengSaka
             else
             {
                 if (!Actor.IsParty) return "Tidak tersedia";
-                if (move.IsItem) return ItemCount(move) > 0 ? null : "Habis";
+                if (move.IsItem)
+                {
+                    if (ItemCount(move) == 0) return "Habis";
+                    for (int i = 0; i < PartyCount; i++)
+                        if (CanTarget(move, i)) return null;
+                    return move.Effect == GmBattleEffect.RestoreMp ? "MP target penuh" : "HP target penuh";
+                }
                 if (!Actor.Skills.Contains(move)) return "Tidak tersedia";
             }
             int cooldown = Actor.CooldownRemaining(move);
@@ -236,6 +251,8 @@ namespace GamecommMentor.DaengSaka
             if (move == null || Actor == null || index < 0 || index >= units.Length || !units[index].IsAlive) return false;
             if (move.IsEnemyMove && move.Target == GmBattleTarget.AllAllies && index == ActorIndex) return false;
             GmBattleUnit unit = units[index];
+            if (move.IsItem && ((move.Effect == GmBattleEffect.Heal && unit.Hp >= unit.MaxHp) ||
+                                (move.Effect == GmBattleEffect.RestoreMp && unit.Mp >= unit.MaxMp))) return false;
             bool ally = unit.IsParty == Actor.IsParty;
             return move.Target switch
             {
@@ -266,10 +283,9 @@ namespace GamecommMentor.DaengSaka
             int[] targets = TargetsFor(move, targetIndex);
             if (targets.Length == 0) return false;
 
+            if (move.IsItem && !inventory.TryRemove(move.Item)) return false;
             Actor.Mp -= move.MpCost;
             Actor.StartCooldown(move);
-            if (move == GmBattleMove.HpItem) hpItems--;
-            if (move == GmBattleMove.MpItem) mpItems--;
 
             hits = new GmBattleHit[targets.Length];
             for (int index = 0; index < targets.Length; index++)

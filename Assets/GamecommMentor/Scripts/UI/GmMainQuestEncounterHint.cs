@@ -88,12 +88,12 @@ namespace GamecommMentor.DaengSaka
                 titleRect.anchoredPosition = new Vector2(14f, -6f);
                 titleRect.sizeDelta = new Vector2(400f, 20f);
                 journalKeys = CreateLabel("Journal Shortcuts", canvasRect, font, TextAnchor.MiddleRight);
-                journalKeys.text = "[J] Jurnal     [M] Peta";
+                journalKeys.text = "[J] Jurnal     [M] Peta     [I] Tas";
                 journalKeys.gameObject.AddComponent<Outline>().effectColor = Color.black;
                 RectTransform keysRect = journalKeys.rectTransform;
                 keysRect.anchorMin = keysRect.anchorMax = keysRect.pivot = Vector2.one;
                 keysRect.anchoredPosition = new Vector2(-24f, -24f);
-                keysRect.sizeDelta = new Vector2(240f, 32f);
+                keysRect.sizeDelta = new Vector2(330f, 32f);
             }
         }
 

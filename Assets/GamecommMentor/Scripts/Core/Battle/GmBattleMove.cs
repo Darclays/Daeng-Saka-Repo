@@ -46,16 +46,16 @@ namespace GamecommMentor.DaengSaka
             "Sanctuary Bloom", GmBattleTarget.AllAllies, GmBattleEffect.HealPercent, 50, 12, 5,
             animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f);
         public static readonly GmBattleMove HpItem = new GmBattleMove(
-            "Ramuan HP", GmBattleTarget.Ally, GmBattleEffect.Heal, 25, isItem: true, impact: "healingImpact");
+            GmItemDefinition.HpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, 25, item: GmItemDefinition.HpPotion, impact: "healingImpact");
         public static readonly GmBattleMove MpItem = new GmBattleMove(
-            "Ramuan MP", GmBattleTarget.Ally, GmBattleEffect.RestoreMp, 8, isItem: true);
+            GmItemDefinition.MpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, 8, item: GmItemDefinition.MpPotion);
 
         private static readonly IReadOnlyList<GmBattleMove> SakaSkills = Array.AsReadOnly(new[] { TideResonance, SharkBite, LegacyOfBarani });
         private static readonly IReadOnlyList<GmBattleMove> PaccaSkills = Array.AsReadOnly(new[] { ShieldSwing, BattleAura, DominionStrike });
         private static readonly IReadOnlyList<GmBattleMove> DaungSkills = Array.AsReadOnly(new[] { RayOfHealing, GrimoireInvocation, SanctuaryBloom });
 
         public GmBattleMove(string name, GmBattleTarget target, GmBattleEffect effect,
-            int amount, int mpCost = 0, int cooldown = 0, bool isItem = false,
+            int amount, int mpCost = 0, int cooldown = 0, GmItemDefinition item = null,
             GmBattleBuff buff = GmBattleBuff.None, int buffPercent = 0, int buffRounds = 0, int bossStunChance = 100,
             string animation = null, string impact = null, float impactScale = 0.94f,
             bool enemyOnly = false, bool freeAction = false)
@@ -66,7 +66,7 @@ namespace GamecommMentor.DaengSaka
             Amount = amount;
             MpCost = mpCost;
             Cooldown = cooldown;
-            IsItem = isItem;
+            Item = item;
             Buff = buff;
             BuffPercent = buffPercent;
             BuffRounds = buffRounds;
@@ -84,7 +84,8 @@ namespace GamecommMentor.DaengSaka
         public int Amount { get; }
         public int MpCost { get; }
         public int Cooldown { get; }
-        public bool IsItem { get; }
+        public GmItemDefinition Item { get; }
+        public bool IsItem => Item != null;
         public GmBattleBuff Buff { get; }
         public int BuffPercent { get; }
         public int BuffRounds { get; }

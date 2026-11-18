@@ -19,6 +19,12 @@ namespace GamecommMentor.DaengSaka
 
         [Header("Main Quest")]
         [SerializeField] private GmPixelCrushersMainQuestDialogue mainQuestDialogue;
+        private GmFishingQuestDialogue fishingQuest;
+
+        private bool OffersFishingLoan => fishingQuest != null && fishingQuest.CanBorrow &&
+            (mainQuestDialogue == null || string.IsNullOrWhiteSpace(mainQuestDialogue.CurrentTitle));
+
+        public override string Prompt => OffersFishingLoan ? "[E] Pinjam alat pancing — Nelayan" : base.Prompt;
 
         public string ConversationTitle => conversationTitle;
         public void SetConversation(string title) => conversationTitle = title;
@@ -32,8 +38,10 @@ namespace GamecommMentor.DaengSaka
             afterPakande = pakandeTitle;
         }
 
+        private void Awake() => fishingQuest = GetComponent<GmFishingQuestDialogue>();
+
         public override bool CanInteract(GmInteractor requester) => base.CanInteract(requester)
-            && !string.IsNullOrWhiteSpace(ResolveConversationTitle());
+            && (OffersFishingLoan || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
         {
@@ -51,6 +59,7 @@ namespace GamecommMentor.DaengSaka
         public override bool TryInteract(GmInteractor requester)
         {
             if (!base.CanInteract(requester)) return false;
+            if (OffersFishingLoan) return fishingQuest.TryBorrow(requester);
             if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester);
             string title = ResolveConversationTitle();
             if (string.IsNullOrWhiteSpace(title)) return false;

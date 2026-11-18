@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PixelCrushers.DialogueSystem;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -62,7 +63,13 @@ namespace GamecommMentor.DaengSaka.Editor
                 };
                 foreach (SceneSetup setup in setups)
                 {
-                    if (!AttachJournal(setup)) continue;
+                    bool changed = AttachJournal(setup);
+                    if (setup.Area == GmQuestArea.DesaSorelia)
+                    {
+                        AttachFishingDialogue(setup);
+                        changed = true;
+                    }
+                    if (!changed) continue;
                     EditorSceneManager.MarkSceneDirty(setup.Scene);
                     if (!EditorSceneManager.SaveScene(setup.Scene))
                         throw new InvalidOperationException("Gagal menyimpan " + setup.Scene.path);
@@ -70,7 +77,7 @@ namespace GamecommMentor.DaengSaka.Editor
 
                 Scene capital = EditorSceneManager.OpenScene(Capital, OpenSceneMode.Single);
                 Selection.activeGameObject = RequireChild(RequireRoot(capital, WorldRoot), "Quest Encounter Hint").gameObject;
-                Debug.Log("[Daeng Saka 1C.5B] Jurnal dan peta terpasang di Kerajaan, Desa Sorelia, dan Goa Lembayung. Mulai Play dari IbuKota.");
+                Debug.Log("[Daeng Saka 1C.5B-R1] Jurnal, peta, dan dialog peminjaman Nelayan siap. Mulai Play dari IbuKota.");
             }
             catch (Exception exception)
             {
@@ -189,6 +196,32 @@ namespace GamecommMentor.DaengSaka.Editor
             return true;
         }
 
+        private static void AttachFishingDialogue(SceneSetup setup)
+        {
+            Transform world = RequireRoot(setup.Scene, WorldRoot);
+            var nelayan = RequireComponent<GmPixelCrushersConversation>(RequireChild(world, "Nelayan (Uji)"));
+            Transform manager = RequireChild(world, "Dialogue Manager");
+            var controller = RequireComponent<DialogueSystemController>(manager);
+            var bridge = RequireComponent<GmPixelCrushersDialogueBridge>(manager);
+            DialogueDatabase database = AssetDatabase.LoadAssetAtPath<DialogueDatabase>(GmDialogueExampleData.DatabasePath);
+            if (database == null || (controller.initialDatabase != database && bridge.AdditionalDatabase != database))
+                throw new InvalidOperationException("Database dialog Daeng Saka belum terhubung ke Dialogue Manager Desa Sorelia.");
+
+            if (GmMainQuestDialogueData.EnsureFishingLoanConversation(database))
+            {
+                EditorUtility.SetDirty(database);
+                AssetDatabase.SaveAssetIfDirty(database);
+            }
+
+            var fishing = nelayan.GetComponent<GmFishingQuestDialogue>();
+            if (fishing == null) fishing = Undo.AddComponent<GmFishingQuestDialogue>(nelayan.gameObject);
+            Undo.RecordObject(fishing, "Configure Fishing Dialogue");
+            fishing.Configure(setup.Progress, RequireComponent<GmQuestJournal>(setup.Hint.transform), bridge);
+            EditorUtility.SetDirty(fishing);
+            if (PrefabUtility.IsPartOfPrefabInstance(fishing))
+                PrefabUtility.RecordPrefabInstancePropertyModifications(fishing);
+        }
+
         [MenuItem(PreviewMenu, true)]
         private static bool CanPreview() =>
             EditorApplication.isPlaying && SceneManager.GetActiveScene().path == Village;
@@ -198,23 +231,26 @@ namespace GamecommMentor.DaengSaka.Editor
         {
             if (!CanPreview()) return;
             Scene scene = SceneManager.GetActiveScene();
+            Transform world = RequireRoot(scene, WorldRoot);
+            if (!RequireChild(world, "Nelayan (Uji)").TryGetComponent(out GmFishingQuestDialogue _))
+            {
+                Debug.LogWarning("[Daeng Saka 1C.5B-R1] Jalankan Install Quest Journal di Edit Mode untuk memasang dialog Nelayan.");
+                return;
+            }
+
             var progress = RequireComponent<GmMainQuestProgress>(RequireRoot(scene, FlowRoot));
             if (!progress.HasCompleted(GmMainQuestStep.BicaraDenganNelayan))
             {
                 Debug.Log("[Daeng Saka] Selesaikan percakapan dengan Nelayan setelah battle Poppo untuk menguji quest sampingan.");
                 return;
             }
-            Transform hint = RequireChild(RequireRoot(scene, WorldRoot), "Quest Encounter Hint");
+            Transform hint = RequireChild(world, "Quest Encounter Hint");
             var journal = RequireComponent<GmQuestJournal>(hint);
             GmSideQuestDefinition fishing = GmQuestCatalog.Fishing;
-            if (journal.TryStartSideQuest(fishing))
-            {
-                Debug.Log("[Daeng Saka] Preview Memancing di Sorelia aktif. Buka Jurnal untuk menguji pelacakan.");
-                return;
-            }
+            journal.TryStartSideQuest(fishing);
             int step = journal.CompletedSideSteps(fishing.Id);
-            if (journal.TryCompleteSideStep(fishing.Id, step))
-                Debug.Log("[Daeng Saka] Preview selesai: " + fishing.Goals[step].Text);
+            if (step < fishing.Goals.Count)
+                Debug.Log("[Daeng Saka] Objektif Memancing di Sorelia — " + fishing.Goals[step].Text);
         }
 
         private static Transform RequireRoot(Scene scene, string name) =>

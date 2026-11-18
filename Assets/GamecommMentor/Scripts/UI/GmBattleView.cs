@@ -63,10 +63,11 @@ namespace GamecommMentor.DaengSaka
         private readonly GameObject resultOverlay;
         private readonly Text resultTitle;
         private readonly Button resultButton;
+        private readonly Button recoverButton;
 
         public GmBattleView(Transform parent, GmBattleSession session, float hitZoom, float impactSfxVolume,
             Action<int> select, Action attack, Action skill, Action item, Action rest, Action<int> pickMove,
-            Action back, Action confirm, Action leave, Action toggleImpactMode)
+            Action back, Action confirm, Action leave, Action recoverAndLeave, Action toggleImpactMode)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             RectTransform frame = Rect("Battle Screen", parent, 0f, 0f, 1f, 1f);
@@ -137,9 +138,11 @@ namespace GamecommMentor.DaengSaka
             resultOverlay = overlay.gameObject;
             RectTransform result = Rect("Result Panel", overlay, 0.29f, 0.33f, 0.71f, 0.66f);
             Fill(result, Panel);
-            resultTitle = Label(font, result, "Result", "", 42, 0.08f, 0.50f, 0.92f, 0.88f);
+            resultTitle = Label(font, result, "Result", "", 42, 0.08f, 0.66f, 0.92f, 0.96f);
             resultTitle.fontStyle = FontStyle.Bold;
-            resultButton = MakeButton(result, "Kembali ke Eksplorasi", 0.13f, 0.15f, 0.87f, 0.43f, leave);
+            recoverButton = MakeButton(result, $"Pulihkan {GmPartyRun.WipeRecoveryPercent}% HP & kembali",
+                0.10f, 0.36f, 0.90f, 0.61f, recoverAndLeave);
+            resultButton = MakeButton(result, "Kembali ke Eksplorasi", 0.10f, 0.07f, 0.90f, 0.32f, leave);
             resultButton.targetGraphic.color = Focus;
             resultOverlay.SetActive(false);
         }
@@ -245,7 +248,9 @@ namespace GamecommMentor.DaengSaka
             leaveButton.interactable = session.IsActive;
             if (finished)
             {
-                resultTitle.text = session.Phase == GmBattlePhase.Victory ? "Menang" : "Kalah";
+                bool defeated = session.Phase == GmBattlePhase.Defeat;
+                SetButton(recoverButton, defeated, defeated);
+                resultTitle.text = defeated ? "Kalah" : "Menang";
                 preferred = resultButton;
             }
             FocusAvailableControl(preferred);
@@ -443,9 +448,10 @@ namespace GamecommMentor.DaengSaka
             EventSystem events = EventSystem.current;
             if (events == null) return;
             GameObject current = events.currentSelectedGameObject;
-            if (resultOverlay.activeSelf && current != resultButton.gameObject)
+            if (resultOverlay.activeSelf)
             {
-                events.SetSelectedGameObject(resultButton.gameObject);
+                if (current != resultButton.gameObject && !(recoverButton.isActiveAndEnabled && current == recoverButton.gameObject))
+                    events.SetSelectedGameObject(resultButton.gameObject);
                 return;
             }
             Button selected = current != null ? current.GetComponent<Button>() : null;

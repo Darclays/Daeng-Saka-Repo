@@ -79,7 +79,25 @@ namespace GamecommMentor.DaengSaka.Editor
         {
             title = Prefix + title;
             dialogues.Add(new GmPixelCrushersMainQuestDialogue.StepDialogue(step, title));
-            if (database.GetConversation(title) != null) return;
+            string completionEntry = GmMainQuestProgress.IsEncounterStep(step)
+                ? null : GmPixelCrushersMainQuestDialogue.CompletionEntryTitle;
+            AddConversation(database, template, title, completionEntry, lines);
+        }
+
+        internal static bool EnsureFishingLoanConversation(DialogueDatabase database)
+        {
+            return AddConversation(database, Template.FromDefault(), GmFishingQuestDialogue.LoanConversation,
+                GmFishingQuestDialogue.LoanCompletionEntry,
+                (Nelayan, "Jadi mau mencoba memancing, Nak?"),
+                (Saka, "Iya, Pak. Boleh pinjam alat pancing? Punyaku rusak."),
+                (Nelayan, "Baiklah, ini alat pancing dan umpannya."),
+                (Nelayan, "Coba memancing dari tepi air, di tempat ikan berkumpul."));
+        }
+
+        private static bool AddConversation(DialogueDatabase database, Template template,
+            string title, string completionEntry, params (string actor, string text)[] lines)
+        {
+            if (database.GetConversation(title) != null) return false;
 
             Actor hero = GetOrCreateActor(database, template, Saka);
             Actor firstSpeaker = GetOrCreateActor(database, template, lines[0].actor);
@@ -110,16 +128,17 @@ namespace GamecommMentor.DaengSaka.Editor
                 previous = entry;
             }
 
-            if (!GmMainQuestProgress.IsEncounterStep(step))
+            if (completionEntry != null)
             {
                 int completionId = lines.Length + 1;
                 DialogueEntry completion = GmDialogueExampleData.Node(template, id, completionId, firstSpeaker.id, hero.id,
-                    GmPixelCrushersMainQuestDialogue.CompletionEntryTitle, "", 250f, completionId * 140f);
+                    completionEntry, "", 250f, completionId * 140f);
                 completion.Sequence = "None()";
                 previous.outgoingLinks.Add(new Link(id, previous.id, id, completionId));
                 conversation.dialogueEntries.Add(completion);
             }
             database.conversations.Add(conversation);
+            return true;
         }
 
         private static Actor GetOrCreateActor(DialogueDatabase database, Template template, string name)

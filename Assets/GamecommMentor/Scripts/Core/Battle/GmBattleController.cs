@@ -18,12 +18,7 @@ namespace GamecommMentor.DaengSaka
         };
 
         [SerializeField] private Canvas battleCanvas;
-        [SerializeField] private GmBattleStats[] party =
-        {
-            new GmBattleStats("Saka Barani", 110, 20, 8, 24, 24, GmBattleCharacter.Saka),
-            new GmBattleStats("Pacca Andi", 138, 16, 5, 17, 17, GmBattleCharacter.Pacca),
-            new GmBattleStats("Daung", 84, 28, 12, 20, 12, GmBattleCharacter.Daung)
-        };
+        [SerializeField] private GmBattleStats[] party = GmBattleStats.CreateDefaultParty();
         [SerializeField] private GmBattleStats[] enemies =
         {
             new GmBattleStats("Musuh Uji A", 60, 0, 0, 22, 15),
@@ -75,7 +70,7 @@ namespace GamecommMentor.DaengSaka
                 view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
                     () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
-                    PickMove, Back, ConfirmMove, ExitBattle, ToggleImpactMode);
+                    PickMove, Back, ConfirmMove, ExitBattle, RecoverAndExitBattle, ToggleImpactMode);
                 Refresh();
                 if (session.IsOpeningEnemyPhase) StartCoroutine(PlayAutomaticTurns());
             }
@@ -396,16 +391,27 @@ namespace GamecommMentor.DaengSaka
                 round >= 0 ? round : session.RoundNumber, enhancedImpact);
         }
 
-        private void ExitBattle()
+        private void RecoverAndExitBattle()
         {
-            if (session == null || leaving) return;
+            if (session == null || session.Phase != GmBattlePhase.Defeat || leaving) return;
+            // Resolve can disable the battle root synchronously. Recover only after it accepts the return.
+            GmPartyRun run = GmPartyRun.Current;
+            if (TryExitBattle()) run.TryRecoverWipedParty();
+        }
+
+        private void ExitBattle() => TryExitBattle();
+
+        private bool TryExitBattle()
+        {
+            if (session == null || leaving) return false;
             leaving = true;
             GmEncounterOutcome outcome = session.Phase == GmBattlePhase.Victory
                 ? GmEncounterOutcome.Victory : GmEncounterOutcome.Retreat;
-            if (encounter.Resolve(outcome)) return;
+            if (encounter.Resolve(outcome)) return true;
 
             leaving = false;
             Debug.LogWarning("[Daeng Saka] Encounter belum bisa kembali ke eksplorasi.", this);
+            return false;
         }
     }
 }
