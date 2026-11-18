@@ -8,8 +8,10 @@ namespace GamecommMentor.DaengSaka
         public static readonly GmItemDefinition HpPotion = new GmItemDefinition("potion.hp", "Ramuan HP");
         public static readonly GmItemDefinition MpPotion = new GmItemDefinition("potion.mp", "Ramuan MP");
         public static readonly GmItemDefinition Wader = new GmItemDefinition("fish.wader", "Ikan Wader");
+        public static readonly GmItemDefinition Nila = new GmItemDefinition("fish.nila", "Ikan Nila");
+        public static readonly GmItemDefinition Gabus = new GmItemDefinition("fish.gabus", "Ikan Gabus");
         public static IReadOnlyList<GmItemDefinition> All { get; } =
-            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader });
+            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader, Nila, Gabus });
 
         public string Id { get; }
         public string Name { get; }
