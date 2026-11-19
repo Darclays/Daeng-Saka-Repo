@@ -23,8 +23,19 @@ namespace GamecommMentor.DaengSaka
 
         private bool OffersFishingLoan => fishingQuest != null && fishingQuest.CanBorrow &&
             (mainQuestDialogue == null || string.IsNullOrWhiteSpace(mainQuestDialogue.CurrentTitle));
+        private bool OffersMerchant => mainQuestDialogue != null && mainQuestDialogue.OffersMerchant;
 
-        public override string Prompt => OffersFishingLoan ? "[E] Pinjam alat pancing — Nelayan" : base.Prompt;
+        public override string Prompt
+        {
+            get
+            {
+                if (OffersFishingLoan) return "[E] Pinjam alat pancing — Nelayan";
+                if (!OffersMerchant) return base.Prompt;
+                return string.IsNullOrWhiteSpace(mainQuestDialogue.CurrentTitle)
+                    ? "[E] Belanja — Merchant"
+                    : "[E] Bicara atau belanja — Pemandu Kerajaan";
+            }
+        }
 
         public string ConversationTitle => conversationTitle;
         public void SetConversation(string title) => conversationTitle = title;
@@ -41,7 +52,7 @@ namespace GamecommMentor.DaengSaka
         private void Awake() => fishingQuest = GetComponent<GmFishingQuestDialogue>();
 
         public override bool CanInteract(GmInteractor requester) => base.CanInteract(requester)
-            && (OffersFishingLoan || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
+            && (OffersFishingLoan || OffersMerchant || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
         {
@@ -60,6 +71,12 @@ namespace GamecommMentor.DaengSaka
         {
             if (!base.CanInteract(requester)) return false;
             if (OffersFishingLoan) return fishingQuest.TryBorrow(requester);
+            if (OffersMerchant)
+            {
+                var counter = GetComponent<GmMerchantCounter>();
+                if (counter == null) counter = gameObject.AddComponent<GmMerchantCounter>();
+                return counter.TryOpen(mainQuestDialogue, requester);
+            }
             if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester);
             string title = ResolveConversationTitle();
             if (string.IsNullOrWhiteSpace(title)) return false;

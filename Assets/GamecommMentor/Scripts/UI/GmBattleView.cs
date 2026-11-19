@@ -56,7 +56,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Button itemButton;
         private readonly Button restButton;
         private readonly Button backButton;
-        private readonly Button[] options = new Button[3];
+        private readonly Button[] options = new Button[Math.Max(3, GmBattleMove.Items.Count)];
         private readonly Button confirmButton;
         private readonly Button impactModeButton;
         private readonly Button leaveButton;
@@ -121,11 +121,12 @@ namespace GamecommMentor.DaengSaka
             itemButton = MakeButton(panel, "Item", 0.509f, 0.23f, 0.733f, 0.61f, item);
             restButton = MakeButton(panel, "Rest", 0.750f, 0.23f, 0.974f, 0.61f, rest);
             backButton = MakeButton(panel, "Kembali", 0.759f, 0.72f, 0.974f, 0.96f, back, 16);
+            float optionStep = .63f / options.Length;
             for (int i = 0; i < options.Length; i++)
             {
                 int index = i;
-                float top = 0.665f - 0.21f * i;
-                options[i] = MakeButton(panel, "", 0.026f, top - 0.19f, 0.974f, top,
+                float top = 0.665f - optionStep * i;
+                options[i] = MakeButton(panel, "", 0.026f, top - optionStep + .02f, 0.974f, top,
                     () => pickMove(index), 17, TextAnchor.MiddleLeft);
             }
             hint = Label(font, panel, "Target Prompt", "", 17, 0.026f, 0.39f, 0.974f, 0.68f, TextAnchor.MiddleLeft);
@@ -370,13 +371,10 @@ namespace GamecommMentor.DaengSaka
             switch (menu)
             {
                 case GmBattleMenu.Skill:
-                    for (int i = 0; i < options.Length; i++)
-                        RenderMove(options[i], i < session.Actor.Skills.Count ? session.Actor.Skills[i] : null, session);
-                    break;
                 case GmBattleMenu.Item:
-                    RenderMove(options[0], GmBattleMove.HpItem, session);
-                    RenderMove(options[1], GmBattleMove.MpItem, session);
-                    SetButton(options[2], false, false);
+                    var moves = menu == GmBattleMenu.Item ? GmBattleMove.Items : session.Actor.Skills;
+                    for (int i = 0; i < options.Length; i++)
+                        RenderMove(options[i], i < moves.Count ? moves[i] : null, session);
                     break;
                 case GmBattleMenu.Rest:
                     int amount = session.RechargeAmount;
@@ -384,7 +382,7 @@ namespace GamecommMentor.DaengSaka
                     ButtonLabel(options[1]).text = $"Guard  ·  −{GmBattleSession.GuardReductionPercent}% damage selama fase musuh";
                     SetButton(options[0], true, true);
                     SetButton(options[1], true, true);
-                    SetButton(options[2], false, false);
+                    for (int i = 2; i < options.Length; i++) SetButton(options[i], false, false);
                     break;
             }
         }
@@ -405,16 +403,20 @@ namespace GamecommMentor.DaengSaka
                 GmBattleTarget.Self => "Diri",
                 _ => "1 musuh"
             };
-            if (move.IsItem) detail = $"×{session.ItemCount(move)}";
+            if (move.IsItem)
+            {
+                string stat = move.Effect == GmBattleEffect.RestoreMp ? "MP" : "HP";
+                detail = $"×{session.ItemCount(move)} · +{move.Amount} {stat}";
+            }
             else
             {
                 string effect = move.Effect switch
                 {
-                    GmBattleEffect.StunDamage => $"{move.Amount} DMG + Stun",
+                    GmBattleEffect.StunDamage => $"{session.Actor.PowerFor(move)} DMG + Stun",
                     GmBattleEffect.Heal => $"+{move.Amount} HP",
                     GmBattleEffect.HealPercent => $"+{move.Amount}% maks. HP",
                     GmBattleEffect.Buff => BuffDetail(move),
-                    _ => $"{move.Amount} DMG"
+                    _ => $"{session.Actor.PowerFor(move)} DMG"
                 };
                 if (move.IsDamaging && move.Buff != GmBattleBuff.None)
                     effect += $" · Diri tahan {move.BuffPercent}%";

@@ -7,6 +7,8 @@ namespace GamecommMentor.DaengSaka
     internal sealed class GmPartyVitals
     {
         public string Name { get; private set; }
+        internal GmBattleCharacter Character { get; private set; }
+        internal int BaseAttack { get; private set; }
         public int MaxHp { get; private set; }
         public int MaxMp { get; private set; }
         private int hp, mp;
@@ -45,6 +47,8 @@ namespace GamecommMentor.DaengSaka
         private void SetLimits(GmBattleStats stats, bool party)
         {
             Name = string.IsNullOrWhiteSpace(stats.displayName) ? (party ? "Anggota Party" : "Musuh") : stats.displayName;
+            Character = party ? stats.ResolvedCharacter : GmBattleCharacter.Unspecified;
+            BaseAttack = Math.Max(1, stats.attackDamage);
             MaxHp = Math.Max(1, stats.maxHp);
             MaxMp = Math.Max(0, stats.maxMp);
         }
@@ -55,6 +59,33 @@ namespace GamecommMentor.DaengSaka
         internal const int WipeRecoveryPercent = 50;
         public static GmPartyRun Current { get; private set; } = new GmPartyRun();
         public GmPartyInventory Inventory { get; } = new GmPartyInventory();
+        public GmPartyWallet Wallet { get; } = new GmPartyWallet();
+        private GmEconomyCatalog economy;
+        private GmPartyEquipment equipment;
+
+        internal GmEconomyCatalog Economy
+        {
+            get
+            {
+                if (economy == null) economy = Resources.Load<GmEconomyCatalog>(GmEconomyCatalog.ResourcePath);
+                return economy;
+            }
+        }
+
+        public GmPartyEquipment Equipment
+        {
+            get
+            {
+                if (equipment == null)
+                {
+                    // Load Unity assets on first gameplay/UI access, outside static run initialization.
+                    equipment = new GmPartyEquipment(Resources.Load<GmWeaponCatalog>(GmWeaponCatalog.ResourcePath));
+                    foreach (var member in Members) equipment.BindMember(member);
+                }
+                return equipment;
+            }
+        }
+
         private readonly Dictionary<(string id, int copy), GmPartyVitals> membersById =
             new Dictionary<(string, int), GmPartyVitals>();
         internal IReadOnlyList<GmPartyVitals> Members { get; private set; }
@@ -90,6 +121,7 @@ namespace GamecommMentor.DaengSaka
                     existing = new GmPartyVitals(stats, true, awaitingSceneStats);
                     membersById.Add(key, existing);
                 }
+                equipment?.BindMember(existing);
                 active[i] = existing;
             }
             Members = active;

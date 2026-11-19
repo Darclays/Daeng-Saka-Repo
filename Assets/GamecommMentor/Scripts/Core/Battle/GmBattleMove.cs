@@ -46,9 +46,16 @@ namespace GamecommMentor.DaengSaka
             "Sanctuary Bloom", GmBattleTarget.AllAllies, GmBattleEffect.HealPercent, 50, 12, 5,
             animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f);
         public static readonly GmBattleMove HpItem = new GmBattleMove(
-            GmItemDefinition.HpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, 25, item: GmItemDefinition.HpPotion, impact: "healingImpact");
+            GmItemDefinition.HpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.HpPotion.HpRecovery,
+            item: GmItemDefinition.HpPotion, impact: "healingImpact");
         public static readonly GmBattleMove MpItem = new GmBattleMove(
-            GmItemDefinition.MpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, 8, item: GmItemDefinition.MpPotion);
+            GmItemDefinition.MpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, GmItemDefinition.MpPotion.MpRecovery,
+            item: GmItemDefinition.MpPotion);
+        public static readonly GmBattleMove GrilledWader = new GmBattleMove(
+            GmItemDefinition.GrilledWader.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.GrilledWader.HpRecovery,
+            item: GmItemDefinition.GrilledWader, impact: "healingImpact");
+        public static IReadOnlyList<GmBattleMove> Items { get; } =
+            Array.AsReadOnly(new[] { HpItem, MpItem, GrilledWader });
 
         private static readonly IReadOnlyList<GmBattleMove> SakaSkills = Array.AsReadOnly(new[] { TideResonance, SharkBite, LegacyOfBarani });
         private static readonly IReadOnlyList<GmBattleMove> PaccaSkills = Array.AsReadOnly(new[] { ShieldSwing, BattleAura, DominionStrike });
@@ -98,6 +105,14 @@ namespace GamecommMentor.DaengSaka
         public bool TargetsAll => Target == GmBattleTarget.AllEnemies || Target == GmBattleTarget.AllAllies;
         public bool NeedsConfirm => TargetsAll || Target == GmBattleTarget.Self;
         public bool IsDamaging => Effect == GmBattleEffect.Damage || Effect == GmBattleEffect.StunDamage;
+
+        // Raw power before attack buffs, weaken, guard, or the target's remaining HP.
+        internal int PowerWithWeapon(int baseAttack, int weaponBonus)
+        {
+            if (!IsDamaging || IsItem) return Amount;
+            int power = this == BasicAttack ? baseAttack : Amount;
+            return (int)Math.Min(int.MaxValue, (long)power + Math.Max(0, weaponBonus));
+        }
 
         public static IReadOnlyList<GmBattleMove> ForCharacter(GmBattleCharacter character) => character switch
         {

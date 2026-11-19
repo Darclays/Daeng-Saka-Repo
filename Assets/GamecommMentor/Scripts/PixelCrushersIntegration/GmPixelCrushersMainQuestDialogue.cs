@@ -30,15 +30,19 @@ namespace GamecommMentor.DaengSaka
         private GmEncounterFlow flow;
         private DialogueSystemController controller;
 
-        public string CurrentTitle
+        private bool HasActiveQuest => isActiveAndEnabled && quest != null && quest.isActiveAndEnabled;
+
+        internal bool OffersMerchant => HasActiveQuest &&
+            quest.HasCompleted(GmMainQuestStep.KunjungiMerchant) &&
+            !string.IsNullOrWhiteSpace(TitleFor(GmMainQuestStep.KunjungiMerchant));
+
+        public string CurrentTitle => HasActiveQuest ? TitleFor(quest.Step) : null;
+
+        private string TitleFor(GmMainQuestStep step)
         {
-            get
-            {
-                if (quest == null || !quest.isActiveAndEnabled || !isActiveAndEnabled) return null;
-                foreach (StepDialogue dialogue in dialogues)
-                    if (dialogue.step == quest.Step) return dialogue.conversationTitle;
-                return null;
-            }
+            foreach (StepDialogue dialogue in dialogues)
+                if (dialogue.step == step) return dialogue.conversationTitle;
+            return null;
         }
 
         public void Configure(GmPixelCrushersDialogueBridge dialogueBridge, StepDialogue[] stepDialogues,
@@ -85,7 +89,7 @@ namespace GamecommMentor.DaengSaka
 
             string title = CurrentTitle;
             if (string.IsNullOrWhiteSpace(title) || controller.lastConversationStarted != title ||
-                controller.masterDatabase.GetConversation(title)?.id != entry.conversationID) return;
+                controller.masterDatabase?.GetConversation(title)?.id != entry.conversationID) return;
 
             // This terminal entry is reached only after advancing the final visible subtitle.
             quest.TryCompleteDialogue(quest.Step);

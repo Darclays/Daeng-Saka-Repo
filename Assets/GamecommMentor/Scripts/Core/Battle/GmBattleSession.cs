@@ -67,14 +67,18 @@ namespace GamecommMentor.DaengSaka
 
         private readonly GmPartyVitals vitals;
 
-        public GmBattleUnit(GmBattleStats stats, bool isParty, GmPartyVitals partyVitals = null)
+        private readonly int baseAttack;
+        private readonly int weaponBonus;
+
+        public GmBattleUnit(GmBattleStats stats, bool isParty, GmPartyVitals partyVitals = null, int weaponBonus = 0)
         {
             IsParty = isParty;
             IsBoss = !isParty && stats.isBoss;
             EnemyKind = isParty ? GmBattleEnemyKind.Generic : stats.enemyKind;
             vitals = partyVitals ?? new GmPartyVitals(stats, isParty);
             Speed = Math.Max(1, stats.speed);
-            AttackDamage = Math.Max(1, stats.attackDamage);
+            baseAttack = vitals.BaseAttack;
+            this.weaponBonus = isParty ? weaponBonus : 0;
             Character = isParty ? stats.ResolvedCharacter : GmBattleCharacter.Unspecified;
             Skills = GmBattleMove.ForCharacter(Character);
         }
@@ -87,7 +91,8 @@ namespace GamecommMentor.DaengSaka
         public int MaxHp => vitals.MaxHp;
         public int MaxMp => vitals.MaxMp;
         public int Speed { get; }
-        public int AttackDamage { get; }
+        public int AttackDamage => PowerFor(GmBattleMove.BasicAttack);
+        internal int PowerFor(GmBattleMove move) => move.PowerWithWeapon(baseAttack, weaponBonus);
         public GmBattleCharacter Character { get; }
         public IReadOnlyList<GmBattleMove> Skills { get; }
         public bool IsPresent { get; internal set; } = true;
@@ -146,7 +151,12 @@ namespace GamecommMentor.DaengSaka
             PartyCount = party.Length;
             units = new GmBattleUnit[party.Length + enemies.Length];
             enemyOrder = new int[enemies.Length];
-            for (int i = 0; i < party.Length; i++) units[i] = new GmBattleUnit(party[i], true, members[i]);
+            GmPartyEquipment equipment = run.Equipment;
+            for (int i = 0; i < party.Length; i++)
+            {
+                int bonus = equipment.Equipped(members[i])?.Bonus ?? 0;
+                units[i] = new GmBattleUnit(party[i], true, members[i], bonus);
+            }
             for (int i = 0; i < enemies.Length; i++)
             {
                 int index = PartyCount + i;
@@ -326,7 +336,7 @@ namespace GamecommMentor.DaengSaka
                 return move.BuffPercent;
             }
 
-            long power = move == GmBattleMove.BasicAttack ? Actor.AttackDamage : move.Amount;
+            long power = Actor.PowerFor(move);
             power += power * Actor.BuffPercent(GmBattleBuff.Attack, RoundNumber) / 100;
             power -= power * Actor.BuffPercent(GmBattleBuff.Weaken, RoundNumber) / 100;
             power -= power * target.BuffPercent(GmBattleBuff.Defense, RoundNumber) / 100;

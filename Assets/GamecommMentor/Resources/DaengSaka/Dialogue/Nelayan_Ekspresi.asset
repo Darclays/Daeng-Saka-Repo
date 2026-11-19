@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef56264cba4ec6f438cc02d890e8c338, type: 3}
+  m_Name: Nelayan_Ekspresi
+  m_EditorClassIdentifier:
+  actorKey: nelayan
+  defaultExpressionKey: netral
+  expressions:
+  - expressionKey: netral
+    displayName: Netral
+    defaultVariantKey: depan
+    variants:
+    - variantKey: depan
+      displayName: Depan
+      sprite: {fileID: 21300000, guid: 9cc976aa377359428a3266f2a4ab4a82, type: 3}
+      authoringOrigin: 0
+      scannerSourceAssetPath:
+      aliases: []
+    aliases: []
+  importSettings:
+    importFolderAssetPath:
+    filenamePrefix:
+    separator: _
+    expressionTokenIndex: 0
+    requireFilenamePrefix: 1
+    includeSubfolders: 1
+  warnOnRuntimeFallback: 0

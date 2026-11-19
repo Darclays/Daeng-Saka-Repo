@@ -98,7 +98,17 @@ namespace GamecommMentor.DaengSaka
 
         private void Advance()
         {
+            GmMainQuestStep completed = Step;
             Run.Advance();
+            if (completed == GmMainQuestStep.PersiapanSebelumBertarung ||
+                completed == GmMainQuestStep.SelamatkanKeluargaNelayan)
+            {
+                GmPartyRun party = GmPartyRun.Current;
+                if (completed == GmMainQuestStep.PersiapanSebelumBertarung)
+                    party.Wallet.TryGrantOnce("main.pua.sangu", party.Economy?.PuaAllowance ?? GmEconomyCatalog.DefaultAllowance);
+                else
+                    party.Wallet.TryGrantOnce("main.sorelia.poppo", party.Economy?.PoppoReward ?? GmEconomyCatalog.DefaultPoppoReward);
+            }
             RefreshCaveEncounters();
         }
 

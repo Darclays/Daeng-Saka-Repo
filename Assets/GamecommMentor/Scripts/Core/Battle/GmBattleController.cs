@@ -141,12 +141,10 @@ namespace GamecommMentor.DaengSaka
             switch (menu)
             {
                 case GmBattleMenu.Skill:
-                    if (index >= session.Actor.Skills.Count) return;
-                    move = session.Actor.Skills[index];
-                    break;
                 case GmBattleMenu.Item:
-                    if (index > 1) return;
-                    move = index == 0 ? GmBattleMove.HpItem : GmBattleMove.MpItem;
+                    var moves = menu == GmBattleMenu.Item ? GmBattleMove.Items : session.Actor.Skills;
+                    if (index >= moves.Count) return;
+                    move = moves[index];
                     break;
                 case GmBattleMenu.Rest:
                     if (index > 1) return;

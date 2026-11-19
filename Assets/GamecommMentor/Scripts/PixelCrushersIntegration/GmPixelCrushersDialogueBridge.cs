@@ -18,6 +18,7 @@ namespace GamecommMentor.DaengSaka
         private bool databaseAdded;
         private bool starting;
         private int activityVersion;
+        private GmVnDialogueUI loanPresentation;
 
         public DialogueDatabase AdditionalDatabase => additionalDatabase;
 
@@ -71,8 +72,14 @@ namespace GamecommMentor.DaengSaka
             }
             subscribed = false;
             starting = false;
+            if (loanPresentation != null) loanPresentation.EndIfActive();
             if (gate != null) gate.Unblock(this);
             if (player != null) player.SuppressInteraction();
+        }
+
+        private void OnDestroy()
+        {
+            if (loanPresentation != null) Destroy(loanPresentation.gameObject);
         }
 
         public bool TryStartConversation(string title, GmInteractor requester, Transform conversant)
@@ -111,7 +118,12 @@ namespace GamecommMentor.DaengSaka
                 failed = true;
             else
             {
-                try { controller.StartConversation(title, actor, conversant); }
+                try
+                {
+                    var ui = GmVnDialogueUI.ForConversation(title, controller, ref loanPresentation);
+                    if (ui != null) controller.StartConversation(title, actor, conversant, -1, ui);
+                    else controller.StartConversation(title, actor, conversant);
+                }
                 catch (Exception exception) { failed = true; Debug.LogException(exception, this); }
                 if (!failed && !controller.isConversationActive && activityVersion == before)
                 {
@@ -124,6 +136,7 @@ namespace GamecommMentor.DaengSaka
                 try { controller.StopConversation(); }
                 catch (Exception exception) { Debug.LogException(exception, this); }
             }
+            if (failed && loanPresentation != null) loanPresentation.RestoreAfterFailedStart();
             starting = false;
             if (failed && gate != null && (controller == null || !controller.isConversationActive)) gate.Unblock(this);
         }
