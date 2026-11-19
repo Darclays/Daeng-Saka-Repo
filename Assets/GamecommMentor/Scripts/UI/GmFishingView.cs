@@ -11,7 +11,9 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color Water = new Color32(35, 66, 75, 255);
         private static readonly Color Mint = new Color32(144, 216, 155, 255);
         private static readonly Color Gold = new Color32(255, 204, 108, 255);
-        private readonly RectTransform root, line, floatIcon, reel, bar, fish, fill, result, exit;
+        private readonly RectTransform root, line, floatIcon, ripple, reel, bar, fish, fill, result, exit;
+        private readonly Image curtain;
+        private readonly bool hasRipple;
         private readonly Text heading, hint, action, progress, contact, bite, catchTitle, catchDetail, quest;
         private GmFishingPhase lastPhase;
         private int lastPercent;
@@ -23,6 +25,12 @@ namespace GamecommMentor.DaengSaka
             root = Rect("Memancing di Sorelia", canvas, 0, 0, 1, 1);
             Fill(root, new Color(0, 0, 0, 0)).raycastTarget = true;
 
+            ripple = Rect("Riak pelampung", root, .5f, .5f, .5f, .5f);
+            RawImage waterRing = ripple.gameObject.AddComponent<RawImage>();
+            waterRing.texture = Resources.Load<Texture2D>("DaengSaka/Fishing/FloatRipple");
+            hasRipple = waterRing.texture != null;
+            waterRing.raycastTarget = false;
+            waterRing.color = new Color(.88f, 1f, .91f, .78f);
             line = Rect("Senar", root, .5f, .5f, .5f, .5f);
             line.pivot = new Vector2(0, .5f);
             Fill(line, new Color(1f, .96f, .79f, .88f));
@@ -63,7 +71,7 @@ namespace GamecommMentor.DaengSaka
             progress = AddText(font,reel,"Angka","",16,.54f,.10f,.90f,.19f,TextAnchor.MiddleCenter,true);
             contact = AddText(font,reel,"Kontak","",15,.04f,.015f,.96f,.105f,TextAnchor.MiddleCenter);
 
-            result = Rect("Hasil",root,.29f,.67f,.70f,.85f);
+            result = Rect("Hasil",root,.55f,.67f,.969f,.85f);
             Fill(result, Paper);
             catchTitle = AddText(font,result,"Tangkapan","",24,.07f,.48f,.95f,.92f,bold:true);
             catchDetail = AddText(font,result,"Status","",16,.07f,.08f,.95f,.48f);
@@ -78,6 +86,10 @@ namespace GamecommMentor.DaengSaka
             exit = Rect("Keluar",controls,.825f,.16f,.98f,.84f);
             Fill(exit, Inset);
             AddText(font,exit,"Tutup","Keluar  [Esc]",17,.015f,0,.985f,1,TextAnchor.MiddleCenter,true);
+            // Independent sibling so the scene can fade before and after the HUD is shown.
+            curtain = Fill(Rect("Transisi memancing", canvas, 0f, 0f, 1f, 1f), Color.black);
+            curtain.raycastTarget = true;
+            curtain.gameObject.SetActive(false);
             root.gameObject.SetActive(false);
         }
 
@@ -85,14 +97,16 @@ namespace GamecommMentor.DaengSaka
         {
             lastPhase = (GmFishingPhase)(-1);
             lastPercent = -1;
+            ripple.gameObject.SetActive(false);
             line.gameObject.SetActive(false);
             floatIcon.gameObject.SetActive(false);
             root.SetAsLastSibling();
+            if (curtain.gameObject.activeSelf) curtain.transform.SetAsLastSibling();
             root.gameObject.SetActive(true);
         }
 
         internal bool HitExit(Vector2 screenPoint) =>
-            RectTransformUtility.RectangleContainsScreenPoint(exit, screenPoint, null);
+            root.gameObject.activeInHierarchy && RectTransformUtility.RectangleContainsScreenPoint(exit, screenPoint, null);
 
         internal void Render(GmFishingRound round, bool questOpen, bool added, bool completed)
         {
@@ -149,33 +163,70 @@ namespace GamecommMentor.DaengSaka
             rect.anchorMax = new Vector2(rect.anchorMax.x, max);
         }
 
-        internal void DrawLine(Camera camera, Vector3 hand, Vector3 waterPoint, GmFishingRound round)
+        internal void DrawLine(Camera camera, Vector3 rodTip, Vector3 surface, GmFishingRound round)
         {
-            bool wet = (round.Phase == GmFishingPhase.Waiting && round.Elapsed >= .45f) ||
+            bool casting = round.Phase == GmFishingPhase.Waiting;
+            bool visible = (casting && round.Elapsed >= GmFishingPose.ReleaseTime) ||
                 round.Phase == GmFishingPhase.Bite || round.Phase == GmFishingPhase.Reeling;
-            Vector2 a = default, b = default;
-            if (wet && camera != null)
-            {
-                waterPoint.y += .06f + .035f * Mathf.Sin(round.Elapsed * (round.Phase == GmFishingPhase.Bite ? 14f : 4f));
-                if (round.Phase == GmFishingPhase.Waiting)
-                    waterPoint = Vector3.Lerp(hand, waterPoint, Mathf.Clamp01((round.Elapsed - .45f) / .25f));
-                Vector3 from = camera.WorldToScreenPoint(hand), to = camera.WorldToScreenPoint(waterPoint);
-                wet = from.z > 0f && to.z > 0f && camera.pixelRect.Contains((Vector2)to) &&
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(root, from, null, out a) &&
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(root, to, null, out b);
-            }
-            else wet = false;
-            floatIcon.gameObject.SetActive(wet);
-            line.gameObject.SetActive(wet);
-            if (!wet) return;
-            floatIcon.anchoredPosition = b;
-            Vector2 delta = b - a;
-            line.anchoredPosition = a;
+            float flight = casting ? Mathf.Clamp01((round.Elapsed - GmFishingPose.ReleaseTime) / .28f) : 1f;
+            Vector3 bobber = surface + Vector3.up * (.06f + .035f *
+                Mathf.Sin(round.Elapsed * (round.Phase == GmFishingPhase.Bite ? 14f : 4f)));
+            if (flight < 1f)
+                bobber = Vector3.Lerp(rodTip, bobber, flight) + Vector3.up * (.34f * 4f * flight * (1f - flight));
+            Vector2 start = default, end = default;
+            visible = visible && camera != null && Project(camera, rodTip, out start) && Project(camera, bobber, out end);
+            line.gameObject.SetActive(visible);
+            floatIcon.gameObject.SetActive(visible);
+            bool onWater = visible && flight >= 1f && hasRipple;
+            ripple.gameObject.SetActive(onWater);
+            if (!visible) return;
+            floatIcon.anchoredPosition = end;
+            // Meet the top of the bobber once it is on the water. At release both ends coincide.
+            end += Vector2.up * (floatIcon.sizeDelta.y * .35f * flight);
+            Vector2 delta = end - start;
+            line.anchoredPosition = start;
             line.sizeDelta = new Vector2(delta.magnitude, 1.8f);
             line.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+            if (!onWater) return;
+
+            float radius = .24f + .024f * Mathf.Sin(round.Elapsed * 4f);
+            Vector3 flatForward = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up).normalized;
+            Vector3 center = surface + Vector3.up * .015f;
+            if (Project(camera, center, out Vector2 c) && Project(camera, center + camera.transform.right * radius, out Vector2 r) &&
+                Project(camera, center + flatForward * radius, out Vector2 f))
+            {
+                ripple.anchoredPosition = c;
+                ripple.sizeDelta = new Vector2(2f * Mathf.Abs(r.x - c.x), 2f * Mathf.Abs(f.y - c.y));
+            }
+            else ripple.gameObject.SetActive(false);
+        }
+
+        private bool Project(Camera camera, Vector3 world, out Vector2 local)
+        {
+            Vector3 screen = camera.WorldToScreenPoint(world);
+            local = default;
+            return screen.z > 0f && camera.pixelRect.Contains((Vector2)screen) &&
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
+        }
+
+        internal void SetFade(float alpha)
+        {
+            if (curtain == null) return;
+            if (alpha <= 0f) { curtain.gameObject.SetActive(false); return; }
+            if (!curtain.gameObject.activeSelf)
+            {
+                curtain.transform.SetAsLastSibling();
+                curtain.gameObject.SetActive(true);
+            }
+            curtain.color = new Color(0f, 0f, 0f, alpha);
         }
 
         internal void Hide() { if (root != null) root.gameObject.SetActive(false); }
-        public void Dispose() { if (root != null) UnityEngine.Object.Destroy(root.gameObject); }
+
+        public void Dispose()
+        {
+            if (curtain != null) UnityEngine.Object.Destroy(curtain.gameObject);
+            if (root != null) UnityEngine.Object.Destroy(root.gameObject);
+        }
     }
 }

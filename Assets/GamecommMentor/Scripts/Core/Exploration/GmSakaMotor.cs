@@ -21,6 +21,25 @@ namespace GamecommMentor.DaengSaka
         private Vector3 horizontalVelocity;
         private float verticalVelocity;
 
+        private Object stepOwner;
+        private Vector3 stepTarget;
+
+        // A modal interaction can guide one short walk while it owns the exploration gate.
+        internal void BeginInteractionStep(Object owner, Vector3 target)
+        {
+            stepOwner = owner;
+            stepTarget = target;
+            horizontalVelocity = Vector3.zero;
+        }
+
+        internal void EndInteractionStep(Object owner)
+        {
+            if (!ReferenceEquals(stepOwner, owner)) return;
+            stepOwner = null;
+            horizontalVelocity = Vector3.zero;
+            IsMoving = false;
+        }
+
         public Vector2 Facing { get; private set; } = Vector2.down;
         public Vector3 WorldFacing { get; private set; } = Vector3.back;
         public bool IsMoving { get; private set; }
@@ -40,6 +59,7 @@ namespace GamecommMentor.DaengSaka
 
         private void OnDisable()
         {
+            stepOwner = null;
             horizontalVelocity = Vector3.zero;
             verticalVelocity = 0f;
             IsMoving = false;
@@ -49,6 +69,18 @@ namespace GamecommMentor.DaengSaka
         {
             float dt = Time.deltaTime;
             if (dt <= 0f || controller == null || !controller.enabled) return;
+
+            if (stepOwner != null && !gate.CanExplore)
+            {
+                Vector3 remaining = Vector3.ProjectOnPlane(stepTarget - transform.position, Vector3.up);
+                if (remaining.sqrMagnitude > .0004f)
+                {
+                    WorldFacing = remaining.normalized;
+                    Facing = GmCardinalFacing.FromWorld(WorldFacing, movementCamera, Facing, directionHysteresis);
+                }
+                MoveOnGround(Vector3.ClampMagnitude(remaining, moveSpeed * dt), dt);
+                return;
+            }
 
             Vector2 move = gate.CanExplore ? input.ReadMove() : Vector2.zero;
             Vector3 forward = movementCamera != null
@@ -71,16 +103,22 @@ namespace GamecommMentor.DaengSaka
                     (move.sqrMagnitude > 0.001f ? acceleration : deceleration) * dt)
                 : Vector3.zero;
 
+            MoveOnGround(horizontalVelocity * dt, dt);
+        }
+
+        private void MoveOnGround(Vector3 planarTravel, float dt)
+        {
             if (controller.isGrounded && verticalVelocity < 0f) verticalVelocity = -2f;
             verticalVelocity = Mathf.Max(verticalVelocity - gravity * dt, -50f);
             Vector3 previous = transform.position;
-            controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * dt);
+            controller.Move(planarTravel + Vector3.up * (verticalVelocity * dt));
             IsMoving = Vector3.ProjectOnPlane(transform.position - previous, Vector3.up).sqrMagnitude
                 > 0.0004f * dt * dt;
         }
 
         public void Teleport(Vector3 position)
         {
+            stepOwner = null;
             if (controller == null) controller = GetComponent<CharacterController>();
             bool wasEnabled = controller.enabled;
             controller.enabled = false;

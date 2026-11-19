@@ -7,20 +7,29 @@ using UnityEngine.InputSystem;
 
 namespace GamecommMentor.DaengSaka
 {
+    // Project the rod attachment after the exploration billboard (execution order 200).
+    [DefaultExecutionOrder(250)]
     [DisallowMultipleComponent]
     public sealed class GmFishingSpot : GmInteractable
     {
         public const string ArtPath = "Assets/GamecommMentor/Resources/DaengSaka/Fishing/SakaFishing.png";
         private const int CatchStep = 1;
+        private const float CoverSeconds = .14f, RevealSeconds = .16f;
+        private enum Stage { Approach, RevealFishing, Fishing, CoverExit, RevealWorld }
+
         [SerializeField] private GmQuestJournal journal;
         [SerializeField] private Transform castPoint;
         [SerializeField] private Texture2D sakaAtlas;
         [SerializeField] private Camera worldCamera;
         private readonly System.Random random = new System.Random();
         private GmInteractor player, poseOwner;
+        private GmSakaMotor motor;
         private GmFishingRound round;
         private GmFishingView view;
         private GmFishingPose pose;
+        private GmFishingShot shot;
+        private Stage stage;
+        private float fade, approachTime;
         private bool added, questCompleted;
         private bool focused = true, paused;
         private int openedFrame;
@@ -45,10 +54,14 @@ namespace GamecommMentor.DaengSaka
         public override bool TryInteract(GmInteractor requester)
         {
             if (!CanInteract(requester)) return false;
+            Camera camera = worldCamera != null && worldCamera.isActiveAndEnabled ? worldCamera : Camera.main;
+            if (camera == null || camera.gameObject.scene != gameObject.scene) return false;
             player = requester;
             round = new GmFishingRound(random);
             added = questCompleted = false;
             openedFrame = Time.frameCount;
+            stage = Stage.Approach;
+            fade = approachTime = 0f;
             player.ControlGate.Block(this);
             try
             {
@@ -63,9 +76,9 @@ namespace GamecommMentor.DaengSaka
                     if (source == null) source = player.GetComponentInChildren<SpriteRenderer>();
                     if (source != null && sakaAtlas != null) pose = new GmFishingPose(source, sakaAtlas);
                 }
-                pose?.Show();
-                view.Show();
-                Draw();
+                shot = new GmFishingShot(camera, player.transform, transform, castPoint);
+                motor = player.GetComponent<GmSakaMotor>();
+                if (motor != null) motor.BeginInteractionStep(this, shot.Stand);
                 return true;
             }
             catch (Exception error)
@@ -80,7 +93,8 @@ namespace GamecommMentor.DaengSaka
         {
             if (round == null) return;
             if (player == null || !player.isActiveAndEnabled || journal == null || !journal.isActiveAndEnabled ||
-                castPoint == null || SceneManager.GetActiveScene() != gameObject.scene)
+                castPoint == null || shot.Camera == null || !shot.Camera.isActiveAndEnabled ||
+                SceneManager.GetActiveScene() != gameObject.scene)
             {
                 Close();
                 return;
@@ -110,8 +124,58 @@ namespace GamecommMentor.DaengSaka
             close = Input.GetKeyDown(KeyCode.Escape) ||
                 (Input.GetMouseButtonDown(0) && view.HitExit(Input.mousePosition));
 #endif
-            if (close) { Close(); return; }
-            Step(action, held, Time.unscaledDeltaTime);
+            if (close) RequestExit();
+            if (stage == Stage.Fishing) Step(action, held, Time.unscaledDeltaTime);
+            else TickTransition(Mathf.Min(Time.unscaledDeltaTime, .05f));
+        }
+
+        private void TickTransition(float dt)
+        {
+            switch (stage)
+            {
+                case Stage.Approach:
+                    approachTime += dt;
+                    Vector3 offset = Vector3.ProjectOnPlane(shot.Stand - player.transform.position, Vector3.up);
+                    if (motor != null && offset.sqrMagnitude > .45f * .45f && approachTime < .85f) return;
+                    if (!FadeTo(1f, dt)) return;
+                    if (motor != null) motor.EndInteractionStep(this);
+                    // A blocked or interrupted approach uses the actual grounded position.
+                    shot.Enter();
+                    pose?.Show();
+                    view.Show();
+                    Draw();
+                    stage = Stage.RevealFishing;
+                    break;
+                case Stage.RevealFishing:
+                    if (FadeTo(0f, dt)) stage = Stage.Fishing;
+                    break;
+                case Stage.CoverExit:
+                    if (!FadeTo(1f, dt)) return;
+                    RestoreWorld();
+                    stage = Stage.RevealWorld;
+                    break;
+                case Stage.RevealWorld:
+                    if (FadeTo(0f, dt)) Close();
+                    break;
+            }
+        }
+
+        private bool FadeTo(float target, float dt)
+        {
+            float duration = target > 0f ? CoverSeconds : RevealSeconds;
+            fade = Mathf.MoveTowards(fade, target, dt / duration);
+            view.SetFade(fade);
+            return fade == target;
+        }
+
+        private void RequestExit()
+        {
+            if (stage == Stage.Approach)
+            {
+                if (motor != null) motor.EndInteractionStep(this);
+                stage = Stage.RevealWorld;
+            }
+            else if (stage == Stage.Fishing || stage == Stage.RevealFishing) stage = Stage.CoverExit;
         }
 
         private void Step(bool action, bool held, float delta)
@@ -135,22 +199,34 @@ namespace GamecommMentor.DaengSaka
 
         private void LateUpdate()
         {
-            if (round == null || player == null || castPoint == null) return;
-            Vector3 hand = pose != null ? pose.Hand : player.transform.position + Vector3.up * .85f;
-            view.DrawLine(worldCamera != null ? worldCamera : Camera.main, hand, castPoint.position, round);
+            if (round == null || player == null || shot.Camera == null ||
+                stage == Stage.Approach || stage == Stage.RevealWorld) return;
+            pose?.FaceCamera(shot.Camera);
+            Vector3 tip = pose != null ? pose.RodTip : player.transform.position + Vector3.up * .8f;
+            view.DrawLine(shot.Camera, tip, shot.Float, round);
+        }
+
+        private void RestoreWorld()
+        {
+            if (motor != null) motor.EndInteractionStep(this);
+            shot?.Restore();
+            pose?.Hide();
+            view?.Hide();
         }
 
         private void Close()
         {
-            round = null;
-            view?.Hide();
-            pose?.Hide();
+            RestoreWorld();
+            view?.SetFade(0f);
             if (player != null)
             {
                 GmControlGate gate = player.ControlGate;
                 if (gate != null) gate.Unblock(this);
                 player.SuppressInteraction();
             }
+            shot = null;
+            round = null;
+            motor = null;
             player = null;
         }
 
