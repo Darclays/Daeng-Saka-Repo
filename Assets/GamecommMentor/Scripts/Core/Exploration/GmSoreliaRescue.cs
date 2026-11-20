@@ -32,6 +32,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmEnemyEncounter poppo;
         [SerializeField] private Resident[] residents = Array.Empty<Resident>();
         [SerializeField] private GameObject postRescueResidents;
+        [SerializeField] private GmSoreliaRescueCutscene victoryCutscene;
         private GmMainQuestProgress progress;
         private GmEncounterFlow flow;
 
@@ -42,6 +43,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void SetPostRescueResidents(GameObject group) => postRescueResidents = group;
+        public void SetVictoryCutscene(GmSoreliaRescueCutscene cutscene) => victoryCutscene = cutscene;
 
         private void OnEnable()
         {
@@ -58,8 +60,10 @@ namespace GamecommMentor.DaengSaka
 
         private void OnVictoryReturned(GmSakaMotor player, GmEnemyEncounter enemy)
         {
-            if (enemy == poppo && progress.HasCompleted(GmMainQuestStep.SelamatkanKeluargaNelayan))
-                PlaceResidents(true);
+            if (enemy != poppo || !progress.HasCompleted(GmMainQuestStep.SelamatkanKeluargaNelayan)) return;
+            PlaceResidents(true);
+            if (victoryCutscene != null && progress.Step == GmMainQuestStep.BicaraDenganNelayan)
+                victoryCutscene.TryPlay(player);
         }
 
         private void PlaceResidents(bool rescued)
