@@ -31,6 +31,7 @@ namespace GamecommMentor.DaengSaka
 
         [SerializeField] private GmEnemyEncounter poppo;
         [SerializeField] private Resident[] residents = Array.Empty<Resident>();
+        [SerializeField] private GameObject postRescueResidents;
         private GmMainQuestProgress progress;
         private GmEncounterFlow flow;
 
@@ -39,6 +40,8 @@ namespace GamecommMentor.DaengSaka
             poppo = encounter;
             residents = placements ?? Array.Empty<Resident>();
         }
+
+        public void SetPostRescueResidents(GameObject group) => postRescueResidents = group;
 
         private void OnEnable()
         {
@@ -62,6 +65,7 @@ namespace GamecommMentor.DaengSaka
         private void PlaceResidents(bool rescued)
         {
             foreach (Resident resident in residents) resident.Place(rescued);
+            if (postRescueResidents != null) postRescueResidents.SetActive(rescued);
             Physics.SyncTransforms();
         }
     }
