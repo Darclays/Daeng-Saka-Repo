@@ -13,14 +13,19 @@ namespace GamecommMentor.DaengSaka
     [DisallowMultipleComponent]
     public sealed class GmVnDialogueUI : AbstractDialogueUI
     {
+        private enum BackdropMode { Clear, Dim, DimWithBlur }
+
+        private const string BackdropKey = "GamecommMentor.DaengSaka.Dialogue.Backdrop";
         private DialogueSystemController owner;
         private AbstractDialogueUI stock;
         private GmVnDialoguePilot cast;
         private string conversationTitle;
         private GmVnDialogueStage stage;
+        private GmDialogueWorldBlur worldBlur;
         private Subtitle current;
         private readonly GmVnTextReveal reveal = new GmVnTextReveal();
         private VNTextSpeedMode speed;
+        private BackdropMode backdropMode;
         private bool canContinue, showingResponses;
         private int shownFrame, acceptedFrame = -1;
         private int completedFrame = -1, focusFrame = -1;
@@ -63,7 +68,7 @@ namespace GamecommMentor.DaengSaka
                     ui.owner = controller;
                     ui.stock = stockUI;
                     ui.stage = new GmVnDialogueStage((RectTransform)host.transform, font,
-                        ui.OnContinueConversation, ui.ChangeSpeed);
+                        ui.OnContinueConversation, ui.ChangeSpeed, ui.ChangeBackdrop);
                     cached = ui;
                 }
                 catch (Exception exception)
@@ -86,8 +91,18 @@ namespace GamecommMentor.DaengSaka
 
         internal void SetWorldFraming(bool value)
         {
-            stage.SetWorldFraming(value);
+            stage.SetWorldFraming(value, cast.UsesSpeakerPortraits);
+            if (!value) SetWorldBackdropCamera(null);
+            else ApplyBackdrop();
             if (current != null) stage.Show(cast, conversationTitle, current, reveal);
+        }
+
+        internal void SetWorldBackdropCamera(Camera camera)
+        {
+            worldBlur?.Dispose();
+            worldBlur = camera != null && HasBackdropOptions
+                ? GmDialogueWorldBlur.TryCreate(camera) : null;
+            ApplyBackdrop();
         }
 
         internal void SetCameraFade(float alpha) => stage.SetCameraFade(alpha);
@@ -100,11 +115,19 @@ namespace GamecommMentor.DaengSaka
             speed = GmVnReadingSpeed.Load();
             stage.SetSpeed(speed);
             isOpen = true;
+            backdropMode = PlayerPrefs.GetInt(BackdropKey, 0) switch
+            {
+                (int)BackdropMode.Dim => BackdropMode.Dim,
+                (int)BackdropMode.DimWithBlur => BackdropMode.DimWithBlur,
+                _ => BackdropMode.Clear
+            };
+            ApplyBackdrop();
         }
 
         public override void Close()
         {
             isOpen = false;
+            SetWorldBackdropCamera(null);
             HideResponses();
             ClearLine();
         }
@@ -179,11 +202,13 @@ namespace GamecommMentor.DaengSaka
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                if (keyboard.tKey.wasPressedThisFrame) ChangeSpeed();
+                if (HasBackdropOptions && keyboard.bKey.wasPressedThisFrame) ChangeBackdrop();
+                else if (keyboard.tKey.wasPressedThisFrame) ChangeSpeed();
                 else if (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame) OnContinueConversation();
             }
 #elif ENABLE_LEGACY_INPUT_MANAGER
-            if (UnityEngine.Input.GetKeyDown(KeyCode.T)) ChangeSpeed();
+            if (HasBackdropOptions && UnityEngine.Input.GetKeyDown(KeyCode.B)) ChangeBackdrop();
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.T)) ChangeSpeed();
             else if (UnityEngine.Input.GetKeyDown(KeyCode.E) || UnityEngine.Input.GetKeyDown(KeyCode.Space))
                 OnContinueConversation();
 #endif
@@ -223,6 +248,40 @@ namespace GamecommMentor.DaengSaka
             speed = GmVnReadingSpeed.Cycle(speed);
             stage.SetSpeed(speed);
             if (speed == VNTextSpeedMode.Instant && reveal.IsWriting) CompleteLineText();
+        }
+
+        private bool HasBackdropOptions => isOpen && cast != null && cast.UsesSpeakerPortraits;
+
+        private BackdropMode EffectiveBackdrop => backdropMode == BackdropMode.DimWithBlur && worldBlur == null
+            ? BackdropMode.Dim : backdropMode;
+
+        private void ChangeBackdrop()
+        {
+            if (!HasBackdropOptions || !AcceptsInput) return;
+            acceptedFrame = Time.frameCount;
+            backdropMode = EffectiveBackdrop switch
+            {
+                BackdropMode.Clear => BackdropMode.Dim,
+                BackdropMode.Dim when worldBlur != null => BackdropMode.DimWithBlur,
+                _ => BackdropMode.Clear
+            };
+            PlayerPrefs.SetInt(BackdropKey, (int)backdropMode);
+            PlayerPrefs.Save();
+            ApplyBackdrop();
+        }
+
+        private void ApplyBackdrop()
+        {
+            var mode = EffectiveBackdrop;
+            bool available = HasBackdropOptions;
+            worldBlur?.SetEnabled(available && mode == BackdropMode.DimWithBlur);
+            string caption = mode switch
+            {
+                BackdropMode.Dim => "Redup   [B]",
+                BackdropMode.DimWithBlur => "Redup + blur   [B]",
+                _ => "Jernih   [B]"
+            };
+            stage?.SetBackdropMode(available, mode != BackdropMode.Clear, caption);
         }
 
         private void CompleteLineText()

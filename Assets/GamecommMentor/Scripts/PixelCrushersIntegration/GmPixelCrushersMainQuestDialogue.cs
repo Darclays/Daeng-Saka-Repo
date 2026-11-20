@@ -23,8 +23,22 @@ namespace GamecommMentor.DaengSaka
             }
         }
 
+        [Serializable]
+        public struct StepSpeaker
+        {
+            public GmMainQuestStep step;
+            public Transform speaker;
+
+            public StepSpeaker(GmMainQuestStep step, Transform speaker)
+            {
+                this.step = step;
+                this.speaker = speaker;
+            }
+        }
+
         [SerializeField] private GmPixelCrushersDialogueBridge bridge;
         [SerializeField] private StepDialogue[] dialogues = Array.Empty<StepDialogue>();
+        [SerializeField] private StepSpeaker[] speakers = Array.Empty<StepSpeaker>();
         [SerializeField] private GmEnemyEncounter revealAfterEncounter;
         private GmMainQuestProgress quest;
         private GmEncounterFlow flow;
@@ -32,11 +46,24 @@ namespace GamecommMentor.DaengSaka
 
         private bool HasActiveQuest => isActiveAndEnabled && quest != null && quest.isActiveAndEnabled;
 
-        internal bool OffersMerchant => HasActiveQuest &&
+        internal bool OffersMerchantTo(Transform partner) => HasActiveQuest &&
             quest.HasCompleted(GmMainQuestStep.KunjungiMerchant) &&
+            IsSpeaker(GmMainQuestStep.KunjungiMerchant, partner) &&
             !string.IsNullOrWhiteSpace(TitleFor(GmMainQuestStep.KunjungiMerchant));
 
         public string CurrentTitle => HasActiveQuest ? TitleFor(quest.Step) : null;
+
+        internal string CurrentTitleFor(Transform partner) =>
+            HasActiveQuest && IsSpeaker(quest.Step, partner) ? TitleFor(quest.Step) : null;
+
+        private bool IsSpeaker(GmMainQuestStep step, Transform partner)
+        {
+            foreach (var binding in speakers)
+                if (binding.step == step) return binding.speaker != null && binding.speaker == partner;
+            return true;
+        }
+
+        public void SetSpeakers(params StepSpeaker[] bindings) => speakers = bindings ?? Array.Empty<StepSpeaker>();
 
         private string TitleFor(GmMainQuestStep step)
         {
@@ -72,7 +99,7 @@ namespace GamecommMentor.DaengSaka
 
         internal bool TryStartCurrent(GmInteractor requester, Transform partner)
         {
-            string title = CurrentTitle;
+            string title = CurrentTitleFor(partner);
             if (bridge == null || string.IsNullOrWhiteSpace(title)) return false;
 
             if (partner != null)

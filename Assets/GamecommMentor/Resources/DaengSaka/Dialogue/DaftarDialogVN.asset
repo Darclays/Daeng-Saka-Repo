@@ -14,13 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   percakapan:
   - judul: DaengSaka/Main Quest/Persiapan Sebelum Bertarung
-    profil: {fileID: 11400000, guid: 788f9fd61e2a5798ac7411e99046c4bb, type: 2}
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Kunjungi Merchant
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Kunjungi Penempa Besi
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
     kameraQuestUtama: 0
   - judul: DaengSaka/Main Quest/Keluarga Nelayan di Sorelia
-    profil: {fileID: 11400000, guid: bc4515a6976e530d85efb19074861db3, type: 2}
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
     kameraQuestUtama: 1
   - judul: DaengSaka/Main Quest/Petunjuk Gua Lembayung
-    profil: {fileID: 11400000, guid: bc4515a6976e530d85efb19074861db3, type: 2}
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
     kameraQuestUtama: 1
+  - judul: DaengSaka/Main Quest/Masuk Gua Lembayung
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Temui Nenek Pakande
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Ravi dan Pusaka Acci
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
   - judul: DaengSaka/Side Quest/Pinjam Alat Pancing
-    profil: {fileID: 11400000, guid: bc4515a6976e530d85efb19074861db3, type: 2}
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}

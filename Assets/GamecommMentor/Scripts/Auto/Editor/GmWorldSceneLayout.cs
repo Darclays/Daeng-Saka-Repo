@@ -19,7 +19,8 @@ namespace GamecommMentor.DaengSaka.Editor
         public Transform PortalGuide { get; }
         public Vector3 IntoLevel { get; }
 
-        public GmWorldSceneLayout(Scene scene, string startName, string portalName, CharacterController body)
+        public GmWorldSceneLayout(Scene scene, string startName, string portalName, CharacterController body,
+            params string[] extraFloorNames)
         {
             this.scene = scene;
             Transform[] transforms = scene.GetRootGameObjects()
@@ -28,7 +29,8 @@ namespace GamecommMentor.DaengSaka.Editor
             PortalGuide = startName == portalName ? StartGuide : FindGuide(transforms, portalName);
             floors = transforms.SelectMany(t => t.GetComponents<Collider>())
                 .Where(c => c.enabled && c.gameObject.activeInHierarchy && !c.isTrigger &&
-                    (c is TerrainCollider || (c is MeshCollider && (c.name == "Plane" || c.name == "Plane (1)"))))
+                    (c is TerrainCollider || (c is MeshCollider && (c.name == "Plane" || c.name == "Plane (1)" ||
+                        Array.IndexOf(extraFloorNames, c.name) >= 0))))
                 .ToArray();
             if (floors.Length == 0)
                 throw new InvalidOperationException($"Ground collider tidak ditemukan di {scene.path}.");

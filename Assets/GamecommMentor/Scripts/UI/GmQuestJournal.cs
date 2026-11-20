@@ -109,6 +109,19 @@ namespace GamecommMentor.DaengSaka
             lastRevision = -1;
         }
 
+        public void SetAreaLandmarks(Rect bounds, params GmQuestLandmark[] updatedLandmarks)
+        {
+            var merged = new List<GmQuestLandmark>(landmarks);
+            foreach (var landmark in updatedLandmarks)
+            {
+                int index = merged.FindIndex(existing => existing.Id == landmark.Id);
+                if (index >= 0) merged[index] = landmark;
+                else merged.Add(landmark);
+            }
+            landmarks = merged.ToArray();
+            if (mapArtwork == null) mapBoundsXZ = bounds;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetRun()
         {
@@ -193,7 +206,15 @@ namespace GamecommMentor.DaengSaka
 
         internal bool TryGetNavigation(GmQuestGoal goal, out GmQuestLandmark landmark)
         {
-            if (goal.Area == area) return TryGetLandmark(goal.Landmark, out landmark);
+            if (goal.Area == area)
+            {
+                if (TryGetLandmark(goal.Landmark, out landmark)) return true;
+                // The original IbuKota scene uses its guide for all three conversations.
+                return area == GmQuestArea.Kerajaan &&
+                    (goal.Landmark == GmQuestCatalog.Merchant || goal.Landmark == GmQuestCatalog.Blacksmith) &&
+                    !Array.Exists(landmarks, point => point.Id == goal.Landmark) &&
+                    TryGetLandmark(GmQuestCatalog.Guide, out landmark);
+            }
             bool leadsToGoal = goal.Area == exitArea ||
                 (area == GmQuestArea.Kerajaan && goal.Area == GmQuestArea.GoaLembayung);
             if (leadsToGoal && ExitOpen)

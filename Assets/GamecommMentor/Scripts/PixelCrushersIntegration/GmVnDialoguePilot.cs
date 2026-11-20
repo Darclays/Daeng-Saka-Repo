@@ -1,6 +1,7 @@
 using System;
 using ProjectVN.Presentation.Actors;
 using UnityEngine;
+using UnityEngine.Serialization;
 using DialogueCharacterInfo = PixelCrushers.DialogueSystem.CharacterInfo;
 
 namespace GamecommMentor.DaengSaka
@@ -18,15 +19,24 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private VNActorVisualProfile aktorKanan;
         [Tooltip("Atur cara munculnya ucapan dalam percakapan ini.")]
         [SerializeField] private GmVnRevealMode animasiTeks = GmVnRevealMode.PerKata;
+        [FormerlySerializedAs("portraitSaatShotDunia")]
+        [Tooltip("Daftar profil untuk menampilkan satu portrait pembicara aktif.")]
+        [SerializeField] private VNActorVisualProfile[] portraitPembicara = Array.Empty<VNActorVisualProfile>();
 
         internal bool Enabled => gunakanTampilanVN;
         internal VNActorVisualProfile Left => aktorKiri;
         internal VNActorVisualProfile Right => aktorKanan;
         internal GmVnRevealMode RevealMode => animasiTeks;
+        internal bool UsesSpeakerPortraits => portraitPembicara != null && portraitPembicara.Length > 0;
 
         internal VNActorVisualProfile Speaker(DialogueCharacterInfo info)
         {
             if (info == null) return null;
+            if (UsesSpeakerPortraits)
+            {
+                foreach (var profile in portraitPembicara)
+                    if (Matches(profile, info)) return profile;
+            }
             if (Matches(aktorKiri, info)) return aktorKiri;
             return Matches(aktorKanan, info) ? aktorKanan : null;
         }

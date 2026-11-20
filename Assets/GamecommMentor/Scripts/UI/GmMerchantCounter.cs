@@ -41,14 +41,14 @@ namespace GamecommMentor.DaengSaka
 
         private bool CanUseCounter => isActiveAndEnabled && player != null && player.isActiveAndEnabled &&
             player.gameObject.scene == gameObject.scene && gameObject.scene == SceneManager.GetActiveScene() &&
-            sequence != null && sequence.OffersMerchant && run == GmPartyRun.Current;
+            sequence != null && sequence.OffersMerchantTo(transform) && run == GmPartyRun.Current;
 
-        private bool CanTalk => sequence != null && !string.IsNullOrWhiteSpace(sequence.CurrentTitle);
+        private bool CanTalk => sequence != null && !string.IsNullOrWhiteSpace(sequence.CurrentTitleFor(transform));
 
         internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester)
         {
             if (page != Page.Closed || !isActiveAndEnabled || requester == null || !requester.isActiveAndEnabled ||
-                dialogue == null || !dialogue.OffersMerchant || requester.gameObject.scene != gameObject.scene ||
+                dialogue == null || !dialogue.OffersMerchantTo(transform) || requester.gameObject.scene != gameObject.scene ||
                 gameObject.scene != SceneManager.GetActiveScene() || !requester.ControlGate.CanExplore) return false;
 
             run = GmPartyRun.Current;
@@ -75,7 +75,7 @@ namespace GamecommMentor.DaengSaka
             var current = sequence;
             var requester = player;
             Close();
-            current.TryStartCurrent(requester);
+            current.TryStartCurrent(requester, transform);
         }
 
         private void OpenShop()

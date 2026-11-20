@@ -12,7 +12,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Image image, outgoing;
         private readonly RectTransform rect, outgoingRect;
         private readonly float direction;
-        private VNActorVisualProfile actor;
+        private Object actor;
         private Sprite requested;
         private Vector2 rest;
         private float entry, focus, fromFocus, toFocus, focusTime, blend;
@@ -39,7 +39,7 @@ namespace GamecommMentor.DaengSaka
 
         internal void Present(VNActorVisualProfile profile, Sprite sprite, bool speaking)
         {
-            if (profile == null || !profile.HasStageVisual || sprite == null)
+            if (sprite == null || (profile != null && !profile.HasStageVisual))
             {
                 Clear();
                 return;
@@ -47,9 +47,10 @@ namespace GamecommMentor.DaengSaka
 
             requested = sprite;
             float target = speaking ? 1f : 0f;
-            if (actor != profile)
+            Object currentActor = profile != null ? (Object)profile : sprite;
+            if (actor != currentActor)
             {
-                actor = profile;
+                actor = currentActor;
                 entry = 0f;
                 focusTime = FocusTime;
                 fromFocus = focus = toFocus = target;
@@ -67,8 +68,9 @@ namespace GamecommMentor.DaengSaka
                 BeginBlendIfReady();
             }
 
-            rest = profile.DefaultLocalOffset;
-            rect.localScale = outgoingRect.localScale = Vector3.one * profile.DefaultScale;
+            rest = profile != null ? profile.DefaultLocalOffset : Vector2.zero;
+            float scale = profile != null ? profile.DefaultScale : 1f;
+            rect.localScale = outgoingRect.localScale = Vector3.one * scale;
             image.enabled = true;
             Paint();
         }

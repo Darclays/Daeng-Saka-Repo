@@ -68,6 +68,8 @@ namespace GamecommMentor.DaengSaka
     public static class GmQuestCatalog
     {
         public const string Guide = "guide";
+        public const string Merchant = "merchant";
+        public const string Blacksmith = "blacksmith";
         public const string Exit = "exit";
         public const string Encounter = "encounter";
         public const string Pakande = "pakande";
@@ -104,9 +106,9 @@ namespace GamecommMentor.DaengSaka
         {
             new Chapter("main.preparation", "Persiapan Sebelum Bertarung",
                 "Siapkan perbekalan dan perlengkapan di Kerajaan sebelum berangkat.",
-                (GmMainQuestStep.PersiapanSebelumBertarung, new GmQuestGoal("Bicara dengan Pemandu Kerajaan", GmQuestArea.Kerajaan, Guide)),
-                (GmMainQuestStep.KunjungiMerchant, new GmQuestGoal("Kunjungi toko Merchant", GmQuestArea.Kerajaan, Guide)),
-                (GmMainQuestStep.KunjungiPenempaBesi, new GmQuestGoal("Kunjungi Penempa Besi", GmQuestArea.Kerajaan, Guide))),
+                (GmMainQuestStep.PersiapanSebelumBertarung, new GmQuestGoal("Bicara dengan Pua’", GmQuestArea.Kerajaan, Guide)),
+                (GmMainQuestStep.KunjungiMerchant, new GmQuestGoal("Kunjungi toko Merchant", GmQuestArea.Kerajaan, Merchant)),
+                (GmMainQuestStep.KunjungiPenempaBesi, new GmQuestGoal("Kunjungi Penempa Besi", GmQuestArea.Kerajaan, Blacksmith))),
             new Chapter("main.sorelia", "Pergi ke Goa Lembayung",
                 "Lewati Desa Sorelia dan cari jalan menuju sumber serangan monster.",
                 (GmMainQuestStep.TemuiKeluargaNelayan, new GmQuestGoal("Temui keluarga Nelayan", GmQuestArea.DesaSorelia, Guide)),

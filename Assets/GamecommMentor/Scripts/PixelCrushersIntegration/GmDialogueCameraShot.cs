@@ -59,6 +59,7 @@ namespace GamecommMentor.DaengSaka
                 if (playerAnimator != null) playerAnimator.SetDialogueFacing(partner, camera);
                 if (partnerAnimator != null) partnerAnimator.SetDialogueFront(true);
                 applied = true;
+                if (presentation != null) presentation.SetWorldBackdropCamera(camera);
             }
             else if (presentation != null) presentation.SetWorldFraming(false);
             yield return FadeTo(0f);
@@ -89,6 +90,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!applied) return;
             applied = false;
+            if (presentation != null) presentation.SetWorldBackdropCamera(null);
             if (camera != null) camera.transform.SetPositionAndRotation(exploration.position, exploration.rotation);
             if (playerAnimator != null) playerAnimator.SetDialogueFacing(null, null);
             if (partnerAnimator != null) partnerAnimator.SetDialogueFront(false);

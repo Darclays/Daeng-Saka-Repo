@@ -15,20 +15,22 @@ namespace GamecommMentor.DaengSaka
         private const float LineChangeGrace = .12f, PanelEntryTime = .13f;
         private static readonly Color Ochre = new Color32(226, 180, 105, 255);
         private static readonly Color PortraitBackdrop = new Color32(12, 26, 21, 105);
-        private readonly RectTransform stage;
+        private static readonly Color DimBackdrop = new Color32(12, 26, 21, 48);
+        private readonly RectTransform stage, actors;
         private readonly CanvasGroup stageOpacity;
         private readonly Image backdrop, cameraFade;
         private readonly GmVnPortraitMotion left, right;
         private readonly GmVnPortraitCues portraitCues;
         private readonly GmVnLineFade lineFade;
-        private readonly Text speaker, line, actionCaption, speedCaption;
-        private readonly Button advance;
+        private readonly Text speaker, line, actionCaption, speedCaption, backdropCaption;
+        private readonly Button advance, backdropButton;
         private readonly VNNextIndicatorController indicator;
         private float clearCaptionAfter = -1f;
         private float panelTime;
         private bool worldFraming;
 
-        internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance, Action onChangeSpeed)
+        internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance, Action onChangeSpeed,
+            Action onChangeBackdrop)
         {
             portraitCues = Resources.Load<GmVnPortraitCues>(GmVnPortraitCues.ResourcePath);
             // This layer stays behind the dialogue panel and can finish the cut after the panel closes.
@@ -47,7 +49,7 @@ namespace GamecommMentor.DaengSaka
             plate.sizeDelta = new Vector2(1560f, 188f);
             Fill(plate, Paper);
 
-            var actors = Rect("Aktor", plate, 0f, 1f, 1f, 1f);
+            actors = Rect("Aktor", plate, 0f, 1f, 1f, 1f);
             actors.offsetMin = Vector2.zero;
             actors.offsetMax = new Vector2(0f, 360f);
             left = Portrait(actors, "Aktor kiri", .035f, .34f, -1f);
@@ -68,6 +70,16 @@ namespace GamecommMentor.DaengSaka
             speedCaption = AddText(font, tempo, "Label tempo", "", 22, .07f, 0f, .96f, 1f,
                 TextAnchor.MiddleLeft, true);
             speedCaption.color = Paper;
+
+            var backdropControl = Rect("Mode latar", plate, .28f, 0f, .67f, 0f);
+            backdropControl.offsetMin = new Vector2(0f, -42f);
+            backdropControl.offsetMax = Vector2.zero;
+            backdropButton = Clickable(Fill(backdropControl, Leaf), onChangeBackdrop);
+            backdropButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            backdropCaption = AddText(font, backdropControl, "Label mode latar", "", 22, .04f, 0f, .96f, 1f,
+                TextAnchor.MiddleCenter, true);
+            backdropCaption.color = Paper;
+            backdropButton.gameObject.SetActive(false);
 
             var key = Rect("Lanjut", plate, .68f, 0f, 1f, 0f);
             key.offsetMin = new Vector2(0f, -42f);
@@ -99,12 +111,16 @@ namespace GamecommMentor.DaengSaka
             clearCaptionAfter = -1f;
             var info = subtitle.speakerInfo;
             var active = cast.Speaker(info);
-            var listener = cast.Speaker(subtitle.listenerInfo);
             var identity = new VNActorIdentity(info?.id ?? 0, info?.nameInDatabase, info?.Name);
             speaker.text = active != null ? active.GetResolvedDisplayName(identity) :
                 string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.PixelActorName : identity.DisplayName;
-            if (!worldFraming)
+            if (cast.UsesSpeakerPortraits)
             {
+                SetPortrait(left, active, active, null, conversation, subtitle, allowUnmappedSpeaker: true);
+            }
+            else if (!worldFraming)
+            {
+                var listener = cast.Speaker(subtitle.listenerInfo);
                 SetPortrait(left, cast.Left, active, listener, conversation, subtitle);
                 SetPortrait(right, cast.Right, active, listener, conversation, subtitle);
             }
@@ -112,15 +128,23 @@ namespace GamecommMentor.DaengSaka
             stage.gameObject.SetActive(true);
         }
 
-        internal void SetWorldFraming(bool value)
+        internal void SetWorldFraming(bool value, bool singlePortrait)
         {
             worldFraming = value;
-            backdrop.color = value ? Color.clear : PortraitBackdrop;
-            if (value)
+            backdrop.color = value || singlePortrait ? Color.clear : PortraitBackdrop;
+            actors.offsetMax = new Vector2(0f, singlePortrait ? 264f : 360f);
+            if (value || singlePortrait)
             {
                 left.Clear();
                 right.Clear();
             }
+        }
+
+        internal void SetBackdropMode(bool available, bool dim, string caption)
+        {
+            backdropButton.gameObject.SetActive(available);
+            backdropCaption.text = caption;
+            if (available) backdrop.color = dim ? DimBackdrop : Color.clear;
         }
 
         internal void SetCameraFade(float alpha)
@@ -130,7 +154,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         private void SetPortrait(GmVnPortraitMotion slot, VNActorVisualProfile profile, VNActorVisualProfile active,
-            VNActorVisualProfile listener, string conversation, Subtitle subtitle)
+            VNActorVisualProfile listener, string conversation, Subtitle subtitle, bool allowUnmappedSpeaker = false)
         {
             Sprite sprite = profile != null ? profile.DefaultPortraitSprite : null;
             if (profile != null)
@@ -145,6 +169,8 @@ namespace GamecommMentor.DaengSaka
                 if (portraitCues != null && subtitle.dialogueEntry != null)
                     sprite = portraitCues.Resolve(conversation, subtitle.dialogueEntry.id, profile, sprite);
             }
+            else if (allowUnmappedSpeaker)
+                sprite = subtitle.speakerInfo?.portrait;
             slot.Present(profile, sprite, profile == active);
         }
 

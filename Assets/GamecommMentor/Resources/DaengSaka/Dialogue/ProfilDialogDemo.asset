@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2c44d4c971b530092b0607a788036d0, type: 3}
+  m_Name: ProfilDialogDemo
+  m_EditorClassIdentifier:
+  gunakanTampilanVN: 1
+  animasiTeks: 0
+  portraitPembicara:
+  - {fileID: 11400000, guid: dcb01a4e11094b2ca6380832903a8d97, type: 2}
+  - {fileID: 11400000, guid: 4cdf993bc7bd4fbd9668c47c52cf936c, type: 2}
+  - {fileID: 11400000, guid: 965ad3fbff9c415db64e49846bd244f3, type: 2}
+  - {fileID: 11400000, guid: b0572430ccf459c3a9f2c05903368917, type: 2}
+  - {fileID: 11400000, guid: 105887e7c79140aca63599a25bb7a03d, type: 2}
+  - {fileID: 11400000, guid: 04e03cf6c56a4908be63e9dff2c259e8, type: 2}
+  - {fileID: 11400000, guid: efc9dac49d7252bb800b874eabc59d44, type: 2}
+  - {fileID: 11400000, guid: 3886f6ed97e140dcaa027ca044a6f96b, type: 2}

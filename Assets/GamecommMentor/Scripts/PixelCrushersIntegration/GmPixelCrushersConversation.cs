@@ -21,9 +21,11 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmPixelCrushersMainQuestDialogue mainQuestDialogue;
         private GmFishingQuestDialogue fishingQuest;
 
+        private string QuestTitle => mainQuestDialogue != null ? mainQuestDialogue.CurrentTitleFor(transform) : null;
+
         private bool OffersFishingLoan => fishingQuest != null && fishingQuest.CanBorrow &&
-            (mainQuestDialogue == null || string.IsNullOrWhiteSpace(mainQuestDialogue.CurrentTitle));
-        private bool OffersMerchant => mainQuestDialogue != null && mainQuestDialogue.OffersMerchant;
+            string.IsNullOrWhiteSpace(QuestTitle);
+        private bool OffersMerchant => mainQuestDialogue != null && mainQuestDialogue.OffersMerchantTo(transform);
 
         public override string Prompt
         {
@@ -31,7 +33,7 @@ namespace GamecommMentor.DaengSaka
             {
                 if (OffersFishingLoan) return "[E] Pinjam alat pancing — Nelayan";
                 if (!OffersMerchant) return base.Prompt;
-                return string.IsNullOrWhiteSpace(mainQuestDialogue.CurrentTitle)
+                return string.IsNullOrWhiteSpace(QuestTitle)
                     ? "[E] Belanja — Merchant"
                     : "[E] Bicara atau belanja — Pemandu Kerajaan";
             }
@@ -56,7 +58,7 @@ namespace GamecommMentor.DaengSaka
 
         private string ResolveConversationTitle()
         {
-            if (mainQuestDialogue != null) return mainQuestDialogue.CurrentTitle;
+            if (mainQuestDialogue != null) return QuestTitle;
             if (demoProgress == null) return conversationTitle;
             string title = demoProgress.Stage switch
             {
