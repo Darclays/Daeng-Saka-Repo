@@ -181,7 +181,7 @@ namespace GamecommMentor.DaengSaka
             get
             {
                 if (view == null || orbit == null || terrain == null || questHud == null ||
-                    overlay == null || fade == null || caption == null || cast.Length == 0 || shots.Length != 4)
+                    overlay == null || fade == null || caption == null || cast.Length == 0 || shots.Length < 4)
                     return false;
                 foreach (Shot shot in shots)
                     if (shot == null || !shot.IsReady) return false;
@@ -190,6 +190,14 @@ namespace GamecommMentor.DaengSaka
         }
 
         public bool TerraceShotsInstalled => terraceShotsInstalled;
+
+        public void HideDuringCutscene(SpriteRenderer sprite)
+        {
+            if (sprite == null || Array.IndexOf(explorationSprites, sprite) >= 0) return;
+            int index = explorationSprites.Length;
+            Array.Resize(ref explorationSprites, index + 1);
+            explorationSprites[index] = sprite;
+        }
 
         public void SetTerraceShots(Shot wide, Shot close)
         {

@@ -71,7 +71,8 @@ namespace GamecommMentor.DaengSaka.Editor
                     BuildStreetShots(root, terrain, timber.House, red.House, poppo.position, actors)).ToArray();
                 var overlay = MakeOverlay(root, out Image fade, out Text subtitle);
                 SpriteRenderer[] hidden = new[] { player, RequireChild(world, "Nelayan (Uji)"),
-                    RequireChild(world, "Keluarga Nelayan"), RequireChild(world, "Warga Sorelia Setelah Ditolong") }
+                    RequireChild(world, "Keluarga Nelayan"), RequireChild(world, "Warga Sorelia Setelah Ditolong"),
+                    world.Find(InvasionGuardGroup) }.Where(actor => actor != null)
                     .SelectMany(actor => actor.GetComponentsInChildren<SpriteRenderer>(true)).Distinct().ToArray();
 
                 Undo.RecordObject(director, UndoName);
@@ -92,7 +93,8 @@ namespace GamecommMentor.DaengSaka.Editor
             return director;
         }
 
-        private static Dictionary<string, GmCutsceneSprite> CreateCast(Transform parent, SpriteRenderer reference)
+        private static Dictionary<string, GmCutsceneSprite> CreateCast(Transform parent, SpriteRenderer reference,
+            params string[] artKeys)
         {
             var cast = new Dictionary<string, GmCutsceneSprite>();
             foreach (var entry in new (string ArtKey, string Label, bool Hero, bool Standing)[]
@@ -110,26 +112,33 @@ namespace GamecommMentor.DaengSaka.Editor
                 ("RoyalGuard", "Royal Guard", false, true),
             })
             {
+                if (artKeys.Length > 0 && !artKeys.Contains(entry.ArtKey)) continue;
                 string path = Art + entry.ArtKey + ".png";
                 Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().ToArray();
                 GmCutsceneSprite.Directions idle = ReadDirections(sprites, "Idle", entry.Hero, entry.Standing, path);
                 GmCutsceneSprite.Directions walk = entry.Standing ? default :
                     ReadDirections(sprites, "Walk", entry.Hero, false, path);
-                Transform actor = Child(parent, entry.Label);
-                var renderer = Component<SpriteRenderer>(actor);
-                var visual = Component<GmCutsceneSprite>(actor);
-                Undo.RecordObject(renderer, UndoName);
-                renderer.sharedMaterial = reference.sharedMaterial;
-                renderer.sortingLayerID = reference.sortingLayerID;
-                renderer.sortingOrder = reference.sortingOrder;
-                renderer.spriteSortPoint = SpriteSortPoint.Pivot;
-                Undo.RecordObject(visual, UndoName);
-                visual.Configure(renderer, idle, walk);
-                Undo.RecordObject(actor.gameObject, UndoName);
-                actor.gameObject.SetActive(false);
-                cast.Add(entry.ArtKey, visual);
+                cast.Add(entry.ArtKey, CreateActor(parent, entry.Label, reference, idle, walk));
             }
             return cast;
+        }
+
+        private static GmCutsceneSprite CreateActor(Transform parent, string label, SpriteRenderer reference,
+            GmCutsceneSprite.Directions idle, GmCutsceneSprite.Directions walk)
+        {
+            Transform actor = Child(parent, label);
+            var renderer = Component<SpriteRenderer>(actor);
+            var visual = Component<GmCutsceneSprite>(actor);
+            Undo.RecordObject(renderer, UndoName);
+            renderer.sharedMaterial = reference.sharedMaterial;
+            renderer.sortingLayerID = reference.sortingLayerID;
+            renderer.sortingOrder = reference.sortingOrder;
+            renderer.spriteSortPoint = SpriteSortPoint.Pivot;
+            Undo.RecordObject(visual, UndoName);
+            visual.Configure(renderer, idle, walk);
+            Undo.RecordObject(actor.gameObject, UndoName);
+            actor.gameObject.SetActive(false);
+            return visual;
         }
 
         private static GmCutsceneSprite.Directions ReadDirections(Sprite[] sprites, string motion,
