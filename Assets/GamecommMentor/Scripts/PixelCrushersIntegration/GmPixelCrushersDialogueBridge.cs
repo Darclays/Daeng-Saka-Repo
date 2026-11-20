@@ -19,6 +19,8 @@ namespace GamecommMentor.DaengSaka
         private bool starting;
         private int activityVersion;
         private GmVnDialogueUI loanPresentation;
+        private GmDialogueCameraShot cameraShot;
+        private Coroutine shotEntry, releaseRoutine;
 
         public DialogueDatabase AdditionalDatabase => additionalDatabase;
 
@@ -65,6 +67,8 @@ namespace GamecommMentor.DaengSaka
         private void OnDisable()
         {
             StopAllCoroutines();
+            shotEntry = releaseRoutine = null;
+            RestoreCamera();
             if (controller != null && subscribed)
             {
                 controller.conversationStarted -= OnConversationStarted;
@@ -89,7 +93,11 @@ namespace GamecommMentor.DaengSaka
 
         public bool TryStartCutscene(string title, GmInteractor requester) => TryStart(title, requester, null, true);
 
-        private bool TryStart(string title, GmInteractor requester, Transform conversant, bool useAuthoredActors)
+        internal bool TryStartFramedDialogue(string title, GmInteractor requester, Transform partner) =>
+            partner != null && TryStart(title, requester, null, true, partner);
+
+        private bool TryStart(string title, GmInteractor requester, Transform conversant, bool useAuthoredActors,
+            Transform framingPartner = null)
         {
             if (!isActiveAndEnabled || starting || requester == null || string.IsNullOrWhiteSpace(title)
                 || controller == null || !controller.isActiveAndEnabled || controller.isConversationActive
@@ -104,11 +112,12 @@ namespace GamecommMentor.DaengSaka
             starting = true;
             gate.Block(this);
             player.SuppressInteraction();
-            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant, useAuthoredActors));
+            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant, useAuthoredActors, framingPartner));
             return true;
         }
 
-        private IEnumerator StartOnNextFrame(string title, Transform actor, Transform conversant, bool useAuthoredActors)
+        private IEnumerator StartOnNextFrame(string title, Transform actor, Transform conversant, bool useAuthoredActors,
+            Transform framingPartner)
         {
             // The E key used to open dialogue must not also advance its first subtitle.
             yield return null;
@@ -121,6 +130,11 @@ namespace GamecommMentor.DaengSaka
                 try
                 {
                     var ui = GmVnDialogueUI.ForConversation(title, controller, ref loanPresentation);
+                    if (ui != null && framingPartner != null)
+                    {
+                        cameraShot = GmDialogueCameraShot.TryHold(actor, framingPartner, ui);
+                        ui.SetWorldFraming(cameraShot != null && cameraShot.HasWorldShot);
+                    }
                     if (ui != null) controller.StartConversation(title, actor, conversant, -1, ui);
                     else controller.StartConversation(title, actor, conversant);
                 }
@@ -136,14 +150,26 @@ namespace GamecommMentor.DaengSaka
                 try { controller.StopConversation(); }
                 catch (Exception exception) { Debug.LogException(exception, this); }
             }
-            if (failed && loanPresentation != null) loanPresentation.RestoreAfterFailedStart();
             starting = false;
-            if (failed && gate != null && (controller == null || !controller.isConversationActive)) gate.Unblock(this);
+            if (failed)
+            {
+                RestoreCamera();
+                if (loanPresentation != null) loanPresentation.RestoreAfterFailedStart();
+                if (gate != null && (controller == null || !controller.isConversationActive)) gate.Unblock(this);
+            }
+            else if (controller.isConversationActive && cameraShot != null && cameraShot.HasWorldShot)
+                shotEntry = StartCoroutine(cameraShot.Enter());
         }
 
         private void OnConversationStarted(Transform actor)
         {
             activityVersion++;
+            if (!starting) RestoreCamera();
+            if (releaseRoutine != null)
+            {
+                StopCoroutine(releaseRoutine);
+                releaseRoutine = null;
+            }
             if (gate != null) gate.Block(this);
             if (player != null) player.SuppressInteraction();
         }
@@ -151,15 +177,45 @@ namespace GamecommMentor.DaengSaka
         private void OnConversationEnded(Transform actor)
         {
             if (player != null) player.SuppressInteraction();
-            StartCoroutine(ReleaseAfterDialogue(activityVersion));
+            if (releaseRoutine == null) releaseRoutine = StartCoroutine(ReleaseAfterDialogue(activityVersion));
         }
 
         private IEnumerator ReleaseAfterDialogue(int version)
         {
             yield return null;
-            if (version != activityVersion || starting || (controller != null && controller.isConversationActive)) yield break;
+            if (!CanRelease(version))
+            {
+                releaseRoutine = null;
+                yield break;
+            }
+            StopShotEntry();
+            var endingShot = cameraShot;
+            if (endingShot != null)
+            {
+                yield return endingShot.Exit();
+                if (cameraShot == endingShot) cameraShot = null;
+            }
+            releaseRoutine = null;
+            if (!CanRelease(version)) yield break;
             if (gate != null) gate.Unblock(this);
             if (player != null) player.SuppressInteraction();
+        }
+
+        private bool CanRelease(int version) =>
+            version == activityVersion && !starting && (controller == null || !controller.isConversationActive);
+
+        private void StopShotEntry()
+        {
+            if (shotEntry == null) return;
+            StopCoroutine(shotEntry);
+            shotEntry = null;
+        }
+
+        private void RestoreCamera()
+        {
+            StopShotEntry();
+            cameraShot?.Restore();
+            cameraShot = null;
         }
     }
 }

@@ -14,8 +14,10 @@ namespace GamecommMentor.DaengSaka
     {
         private const float LineChangeGrace = .12f, PanelEntryTime = .13f;
         private static readonly Color Ochre = new Color32(226, 180, 105, 255);
+        private static readonly Color PortraitBackdrop = new Color32(12, 26, 21, 105);
         private readonly RectTransform stage;
         private readonly CanvasGroup stageOpacity;
+        private readonly Image backdrop, cameraFade;
         private readonly GmVnPortraitMotion left, right;
         private readonly GmVnPortraitCues portraitCues;
         private readonly GmVnLineFade lineFade;
@@ -24,13 +26,19 @@ namespace GamecommMentor.DaengSaka
         private readonly VNNextIndicatorController indicator;
         private float clearCaptionAfter = -1f;
         private float panelTime;
+        private bool worldFraming;
 
         internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance, Action onChangeSpeed)
         {
             portraitCues = Resources.Load<GmVnPortraitCues>(GmVnPortraitCues.ResourcePath);
+            // This layer stays behind the dialogue panel and can finish the cut after the panel closes.
+            cameraFade = Fill(Rect("Transisi kamera", canvas, 0f, 0f, 1f, 1f), Color.clear);
+            cameraFade.raycastTarget = false;
+            cameraFade.enabled = false;
             stage = Rect("Panggung", canvas, 0f, 0f, 1f, 1f);
             stageOpacity = stage.gameObject.AddComponent<CanvasGroup>();
-            Fill(stage, new Color32(12, 26, 21, 105)).raycastTarget = true;
+            backdrop = Fill(stage, PortraitBackdrop);
+            backdrop.raycastTarget = true;
             var frame = Rect("Bingkai VN", stage, .5f, .5f, .5f, .5f);
             frame.sizeDelta = new Vector2(1920f, 1080f);
             var plate = Rect("Panel dialog", frame, .5f, 0f, .5f, 0f);
@@ -95,10 +103,30 @@ namespace GamecommMentor.DaengSaka
             var identity = new VNActorIdentity(info?.id ?? 0, info?.nameInDatabase, info?.Name);
             speaker.text = active != null ? active.GetResolvedDisplayName(identity) :
                 string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.PixelActorName : identity.DisplayName;
-            SetPortrait(left, cast.Left, active, listener, conversation, subtitle);
-            SetPortrait(right, cast.Right, active, listener, conversation, subtitle);
+            if (!worldFraming)
+            {
+                SetPortrait(left, cast.Left, active, listener, conversation, subtitle);
+                SetPortrait(right, cast.Right, active, listener, conversation, subtitle);
+            }
             lineFade.Bind(line, reveal);
             stage.gameObject.SetActive(true);
+        }
+
+        internal void SetWorldFraming(bool value)
+        {
+            worldFraming = value;
+            backdrop.color = value ? Color.clear : PortraitBackdrop;
+            if (value)
+            {
+                left.Clear();
+                right.Clear();
+            }
+        }
+
+        internal void SetCameraFade(float alpha)
+        {
+            cameraFade.color = new Color(.04f, .07f, .05f, alpha);
+            cameraFade.enabled = alpha > 0f;
         }
 
         private void SetPortrait(GmVnPortraitMotion slot, VNActorVisualProfile profile, VNActorVisualProfile active,

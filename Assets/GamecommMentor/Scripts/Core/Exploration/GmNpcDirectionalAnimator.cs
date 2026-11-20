@@ -16,6 +16,9 @@ namespace GamecommMentor.DaengSaka
         private Vector2 facing = Vector2.down;
         private Animator animator;
         private SpriteRenderer sprite;
+        private bool dialogueFront;
+
+        internal void SetDialogueFront(bool value) => dialogueFront = value;
 
         public void Configure(Transform worldHeadingRoot, Camera cameraToUse)
         {
@@ -34,11 +37,15 @@ namespace GamecommMentor.DaengSaka
         private void Update()
         {
             if (animator == null || animator.runtimeAnimatorController == null) return;
-            Vector3 world = headingRoot != null ? headingRoot.TransformDirection(localFacing) : localFacing;
-            facing = GmCardinalFacing.FromWorld(world, viewCamera, facing);
-            animator.SetFloat(FacingX, facing.x);
-            animator.SetFloat(FacingY, facing.y);
-            sprite.flipX = Mathf.Abs(facing.x) > 0.5f && (facing.x > 0f) != sideArtworkFacesRight;
+            if (!dialogueFront)
+            {
+                Vector3 world = headingRoot != null ? headingRoot.TransformDirection(localFacing) : localFacing;
+                facing = GmCardinalFacing.FromWorld(world, viewCamera, facing);
+            }
+            Vector2 visibleFacing = dialogueFront ? Vector2.down : facing;
+            animator.SetFloat(FacingX, visibleFacing.x);
+            animator.SetFloat(FacingY, visibleFacing.y);
+            sprite.flipX = Mathf.Abs(visibleFacing.x) > 0.5f && (visibleFacing.x > 0f) != sideArtworkFacesRight;
         }
     }
 }

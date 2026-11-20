@@ -50,6 +50,7 @@ namespace GamecommMentor.DaengSaka
         private bool captured;
         private bool hasArrivalView;
         private bool waitForOrbitRelease;
+        private bool dialogueHoldsView;
         private CursorLockMode previousLock;
         private bool previousVisible;
 
@@ -98,6 +99,20 @@ namespace GamecommMentor.DaengSaka
 
         public void SetIgnoredRoots(Transform[] roots) => ignoredRoots = roots ?? new Transform[0];
 
+        internal bool TryHoldDialogueView()
+        {
+            if (dialogueHoldsView || !isActiveAndEnabled || !initialized) return false;
+            ReleaseCursor();
+            dialogueHoldsView = true;
+            return true;
+        }
+
+        internal void ReleaseDialogueView()
+        {
+            dialogueHoldsView = false;
+            waitForOrbitRelease = OrbitHeld();
+        }
+
         private void Awake()
         {
             viewCamera = GetComponent<Camera>();
@@ -107,6 +122,7 @@ namespace GamecommMentor.DaengSaka
 
         private void OnEnable()
         {
+            if (dialogueHoldsView) return;
             bool wasInitialized = initialized;
             initialized = false;
             if (!hasArrivalView) return;
@@ -138,6 +154,7 @@ namespace GamecommMentor.DaengSaka
 
         private void Update()
         {
+            if (dialogueHoldsView) return;
             if (!allowVerticalOrbit) orbitPitch = pitch;
             if (waitForOrbitRelease && !OrbitHeld()) waitForOrbitRelease = false;
             if (!CanRotate || CancelPressed())
@@ -194,6 +211,7 @@ namespace GamecommMentor.DaengSaka
 
         private void LateUpdate()
         {
+            if (dialogueHoldsView) return;
             // E can start dialogue after this camera's Update. Release the mouse in the same frame.
             if (!CanRotate) ReleaseCursor();
             if (target == null || Time.deltaTime <= 0f) return;
