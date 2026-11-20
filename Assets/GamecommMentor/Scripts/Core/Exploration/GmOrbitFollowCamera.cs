@@ -48,6 +48,8 @@ namespace GamecommMentor.DaengSaka
         private float requestedPitch;
         private bool initialized;
         private bool captured;
+        private bool hasArrivalView;
+        private bool waitForOrbitRelease;
         private CursorLockMode previousLock;
         private bool previousVisible;
 
@@ -79,6 +81,19 @@ namespace GamecommMentor.DaengSaka
             initialized = false;
         }
 
+        internal void SetArrivalView(float heading, float downwardAngle)
+        {
+            ReleaseCursor();
+            SetStartingHeading(heading);
+            pitch = Mathf.Clamp(downwardAngle, 10f, 60f);
+            orbitPitch = pitch;
+            requestedPitch = pitch;
+            hasArrivalView = true;
+            waitForOrbitRelease = OrbitHeld();
+            // The motor may read the new movement basis before the first camera tick.
+            transform.rotation = OrbitRotation;
+        }
+
         public void SetVerticalOrbit(bool enabled) => allowVerticalOrbit = enabled;
 
         public void SetIgnoredRoots(Transform[] roots) => ignoredRoots = roots ?? new Transform[0];
@@ -92,7 +107,16 @@ namespace GamecommMentor.DaengSaka
 
         private void OnEnable()
         {
+            bool wasInitialized = initialized;
             initialized = false;
+            if (!hasArrivalView) return;
+
+            // Battle and fishing may suspend this camera. Restore tilt and keep the player's heading.
+            orbitPitch = pitch;
+            requestedPitch = pitch;
+            requestedYaw = yaw;
+            waitForOrbitRelease = OrbitHeld();
+            if (wasInitialized) SnapToTarget();
         }
 
         private void Start()
@@ -115,6 +139,7 @@ namespace GamecommMentor.DaengSaka
         private void Update()
         {
             if (!allowVerticalOrbit) orbitPitch = pitch;
+            if (waitForOrbitRelease && !OrbitHeld()) waitForOrbitRelease = false;
             if (!CanRotate || CancelPressed())
             {
                 ReleaseCursor();
@@ -129,7 +154,7 @@ namespace GamecommMentor.DaengSaka
                 }
                 UpdateOrbit(ReadLookDelta());
             }
-            else if (OrbitPressed() && !PointerIsOverUi())
+            else if (!waitForOrbitRelease && OrbitPressed() && !PointerIsOverUi())
             {
                 requestedYaw = yaw;
                 requestedPitch = orbitPitch;

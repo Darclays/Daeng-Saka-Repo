@@ -10,17 +10,24 @@ namespace GamecommMentor.DaengSaka
     {
         public const string DefaultEntry = "Start";
         public const string CaveReturnEntry = "FromGoaLembayung";
+        private const float DefaultArrivalPitch = 18f;
 
         [Serializable]
         public struct Entry
         {
             public string id;
             public Transform point;
+            [Tooltip("Optional camera aim point on arrival. Only its horizontal direction is used.")]
+            public Transform cameraLookAt;
+            [Tooltip("Downward camera angle on arrival. Use 0 for the demo default.")]
+            [Range(0f, 60f)] public float cameraPitch;
 
             public Entry(string id, Transform point)
             {
                 this.id = id;
                 this.point = point;
+                cameraLookAt = null;
+                cameraPitch = 0f;
             }
         }
 
@@ -46,7 +53,17 @@ namespace GamecommMentor.DaengSaka
         {
             player = hero;
             orbitCamera = camera;
-            entries = arrivalPoints;
+            Entry[] configured = arrivalPoints == null ? Array.Empty<Entry>() : (Entry[])arrivalPoints.Clone();
+            // The world setup can supply fresh spawn references without replacing authored camera settings.
+            for (int i = 0; i < configured.Length; i++)
+            {
+                Entry old = FindEntry(configured[i].id);
+                if (configured[i].cameraLookAt == null)
+                    configured[i].cameraLookAt = old.cameraLookAt;
+                if (configured[i].cameraPitch <= 0f)
+                    configured[i].cameraPitch = old.cameraPitch;
+            }
+            entries = configured;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -57,12 +74,13 @@ namespace GamecommMentor.DaengSaka
             Transfer transfer = pendingTransfer;
             bool fromPortal = transfer != null && transfer.scenePath == gameObject.scene.path;
             string entryId = fromPortal ? transfer.entryId : DefaultEntry;
-            Transform point = FindEntry(entryId);
-            if (point == null && fromPortal)
+            Entry entry = FindEntry(entryId);
+            if (entry.point == null && fromPortal)
             {
                 Debug.LogError($"[Daeng Saka] Titik masuk '{entryId}' tidak ada di {gameObject.scene.name}.", this);
-                point = FindEntry(DefaultEntry);
+                entry = FindEntry(DefaultEntry);
             }
+            Transform point = entry.point;
             if (point == null || player == null || orbitCamera == null)
             {
                 Debug.LogError("[Daeng Saka] Lengkapi titik masuk, Saka dan kamera di GmWorldScene.", this);
@@ -71,7 +89,8 @@ namespace GamecommMentor.DaengSaka
 
             player.Teleport(point.position);
             player.transform.rotation = point.rotation * Quaternion.Euler(0f, 180f, 0f);
-            orbitCamera.SetStartingHeading(point.eulerAngles.y);
+            float downwardAngle = entry.cameraPitch > 0f ? entry.cameraPitch : DefaultArrivalPitch;
+            orbitCamera.SetArrivalView(ArrivalHeading(entry), downwardAngle);
             if (fromPortal)
             {
                 transfer.placed = true;
@@ -80,11 +99,21 @@ namespace GamecommMentor.DaengSaka
             }
         }
 
-        private Transform FindEntry(string id)
+        private Entry FindEntry(string id)
         {
             foreach (Entry entry in entries)
-                if (entry.id == id) return entry.point;
-            return null;
+                if (entry.id == id) return entry;
+            return default;
+        }
+
+        private static float ArrivalHeading(Entry entry)
+        {
+            if (entry.cameraLookAt == null) return entry.point.eulerAngles.y;
+
+            Vector3 direction = Vector3.ProjectOnPlane(entry.cameraLookAt.position - entry.point.position, Vector3.up);
+            return direction.sqrMagnitude > 0.0001f
+                ? Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg
+                : entry.point.eulerAngles.y;
         }
 
         internal bool TryTravel(string scenePath, string entryId, GmInteractor requester, GmWorldPortal portal)
