@@ -30,6 +30,7 @@ namespace GamecommMentor.DaengSaka
 
         private readonly List<GmMerchantOffer> offers = new List<GmMerchantOffer>();
         private GmMerchantView view;
+        private AudioSource feedbackAudio;
         private GmPixelCrushersMainQuestDialogue sequence;
         private GmInteractor player;
         private GmPartyRun run;
@@ -155,7 +156,10 @@ namespace GamecommMentor.DaengSaka
                 order.Offer.Item != order.Item || order.Offer.Price != order.Price)
                 notice = "Saldo, stok, atau harga berubah. Periksa lagi sebelum membeli.";
             else if (run.Wallet.TrySpend(order.Price, () => run.Inventory.TryAdd(order.Item)))
+            {
                 notice = $"{order.Item.Name} masuk ke Tas.";
+                GmGameplayAudio.Play(gameObject, ref feedbackAudio, GmGameplayAudio.Purchase);
+            }
             else
                 notice = "Pembelian belum berhasil. Periksa saldo dan stok Tas.";
             Render();

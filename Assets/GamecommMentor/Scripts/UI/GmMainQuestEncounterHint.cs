@@ -17,6 +17,10 @@ namespace GamecommMentor.DaengSaka
         private RectTransform objectivePanel;
         private Text objectiveLabel;
         private Text markerLabel;
+        private RectTransform edgeMarker;
+        private Text edgeArrow;
+        private Text edgeDistance;
+        private int shownDistance = -1;
         private Transform displayedTarget;
         private GmQuestJournal journal;
         private Text questTitle;
@@ -74,6 +78,7 @@ namespace GamecommMentor.DaengSaka
             outline.effectColor = new Color(0.02f, 0.025f, 0.03f, 0.94f);
             outline.effectDistance = new Vector2(1f, -1f);
             markerLabel.gameObject.SetActive(false);
+            CreateEdgeMarker(font);
 
             if (journal != null)
             {
@@ -95,6 +100,35 @@ namespace GamecommMentor.DaengSaka
                 keysRect.anchoredPosition = new Vector2(-24f, -24f);
                 keysRect.sizeDelta = new Vector2(330f, 32f);
             }
+        }
+
+        private void CreateEdgeMarker(Font font)
+        {
+            Image badge = new GameObject("Offscreen Quest Marker", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            badge.color = new Color(0.035f, 0.05f, 0.065f, 0.92f);
+            badge.raycastTarget = false;
+            edgeMarker = badge.rectTransform;
+            edgeMarker.SetParent(canvasRect, false);
+            edgeMarker.anchorMin = edgeMarker.anchorMax = edgeMarker.pivot = new Vector2(0.5f, 0.5f);
+            edgeMarker.sizeDelta = new Vector2(96f, 34f);
+
+            edgeArrow = CreateLabel("Direction", edgeMarker, font, TextAnchor.MiddleCenter);
+            edgeArrow.text = "▲";
+            edgeArrow.color = markerLabel.color;
+            RectTransform arrowRect = edgeArrow.rectTransform;
+            arrowRect.anchorMin = arrowRect.anchorMax = new Vector2(0f, 0.5f);
+            arrowRect.pivot = new Vector2(0.5f, 0.5f);
+            arrowRect.anchoredPosition = new Vector2(17f, 0f);
+            arrowRect.sizeDelta = new Vector2(24f, 26f);
+
+            edgeDistance = CreateLabel("Distance", edgeMarker, font, TextAnchor.MiddleCenter);
+            edgeDistance.fontSize = 16;
+            RectTransform distanceRect = edgeDistance.rectTransform;
+            distanceRect.anchorMin = Vector2.zero;
+            distanceRect.anchorMax = Vector2.one;
+            distanceRect.offsetMin = new Vector2(32f, 0f);
+            distanceRect.offsetMax = new Vector2(-6f, 0f);
+            edgeMarker.gameObject.SetActive(false);
         }
 
         private void LateUpdate()
@@ -120,7 +154,7 @@ namespace GamecommMentor.DaengSaka
             objectivePanel.gameObject.SetActive(visible);
             if (!visible || completed)
             {
-                markerLabel.gameObject.SetActive(false);
+                HideMarkers();
                 if (visible)
                 {
                     displayedTarget = null;
@@ -149,7 +183,7 @@ namespace GamecommMentor.DaengSaka
             objectivePanel.gameObject.SetActive(tracked != null || showCompletion);
             if (tracked == null)
             {
-                markerLabel.gameObject.SetActive(false);
+                HideMarkers();
                 if (showCompletion)
                 {
                     questTitle.text = "Quest Utama";
@@ -163,7 +197,7 @@ namespace GamecommMentor.DaengSaka
             objectiveLabel.text = string.IsNullOrEmpty(goal.Progress) ? goal.Text : goal.Text + "   " + goal.Progress;
             if (!journal.TryGetNavigation(goal, out GmQuestLandmark landmark))
             {
-                markerLabel.gameObject.SetActive(false);
+                HideMarkers();
                 return;
             }
 
@@ -173,18 +207,69 @@ namespace GamecommMentor.DaengSaka
 
         private void PlaceMarker(Transform target)
         {
-            Camera camera = viewCamera != null ? viewCamera : Camera.main;
-            if (camera == null)
+            Camera camera = viewCamera != null && viewCamera.isActiveAndEnabled ? viewCamera : Camera.main;
+            if (camera == null || !camera.isActiveAndEnabled)
             {
-                markerLabel.gameObject.SetActive(false);
+                HideMarkers();
                 return;
             }
-            Vector3 screen = camera.WorldToScreenPoint(target.position + Vector3.up * 1.65f);
-            bool onScreen = screen.z > 0f && camera.pixelRect.Contains((Vector2)screen);
+            Vector3 position = target.position;
+            Vector3 screen = camera.WorldToScreenPoint(position + Vector3.up * 1.65f);
+            Rect viewport = camera.pixelRect;
+            bool onScreen = screen.z > 0.01f && viewport.Contains((Vector2)screen);
             Vector2 local = Vector2.zero;
             bool positioned = onScreen && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out local);
             markerLabel.gameObject.SetActive(positioned);
-            if (positioned) markerLabel.rectTransform.anchoredPosition = local;
+            if (positioned)
+            {
+                markerLabel.rectTransform.anchoredPosition = local;
+                edgeMarker.gameObject.SetActive(false);
+                return;
+            }
+
+            // Leave room for the objective, shortcuts, and interaction prompt.
+            Rect canvas = canvasRect.rect;
+            Vector2 edge = new Vector2(canvas.width * 0.5f - 24f, canvas.height * 0.5f - 92f) -
+                edgeMarker.sizeDelta * 0.5f;
+            if (edge.x <= 0f || edge.y <= 0f)
+            {
+                edgeMarker.gameObject.SetActive(false);
+                return;
+            }
+
+            Vector2 direction;
+            if (screen.z <= 0.01f)
+            {
+                // Behind the camera, point toward the nearest side to turn.
+                float side = Vector3.Dot(position - camera.transform.position, camera.transform.right);
+                direction = side < -0.01f ? Vector2.left : Vector2.right;
+            }
+            else
+            {
+                direction = (Vector2)screen - new Vector2(viewport.xMin + viewport.width * 0.5f,
+                    viewport.yMin + viewport.height * 0.5f);
+                if (direction.sqrMagnitude < 0.01f) direction = Vector2.right;
+            }
+            float scale = Mathf.Max(Mathf.Abs(direction.x) / edge.x, Mathf.Abs(direction.y) / edge.y);
+            edgeMarker.anchoredPosition = direction / scale;
+            edgeArrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f,
+                -Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg);
+
+            Transform player = journal != null ? journal.Player : null;
+            Vector3 offset = position - (player != null ? player.position : controls.transform.position);
+            int distance = Mathf.Max(1, Mathf.RoundToInt(Vector3.ProjectOnPlane(offset, Vector3.up).magnitude));
+            if (distance != shownDistance)
+            {
+                shownDistance = distance;
+                edgeDistance.text = distance + " m";
+            }
+            edgeMarker.gameObject.SetActive(true);
+        }
+
+        private void HideMarkers()
+        {
+            markerLabel.gameObject.SetActive(false);
+            edgeMarker.gameObject.SetActive(false);
         }
 
         private static Text CreateLabel(string name, RectTransform parent, Font font, TextAnchor alignment)

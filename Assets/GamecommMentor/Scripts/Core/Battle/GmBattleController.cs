@@ -238,7 +238,8 @@ namespace GamecommMentor.DaengSaka
                     }
                     lastAction = FormatAction(actor, move, hits, round);
                     Refresh(actorIndex, round);
-                    if (cue != null) view.PlayImpactSound(cue.Sound);
+                    if (move.IsItem) view.PlayImpactSound("itemUse");
+                    else if (cue != null) view.PlayImpactSound(cue.Sound);
                     hitAt = Time.unscaledTimeAsDouble;
                 }
 

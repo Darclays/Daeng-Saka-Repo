@@ -42,6 +42,7 @@ namespace GamecommMentor.DaengSaka
         private readonly AudioClip basicSound;
         private readonly AudioClip shieldSound;
         private readonly AudioClip sharkSound;
+        private readonly AudioClip itemUseSound;
         private readonly PartyHud[] party;
         private readonly Image[] queueChips = new Image[4];
         private readonly Text[] queueLabels = new Text[4];
@@ -81,6 +82,7 @@ namespace GamecommMentor.DaengSaka
             basicSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/basicHit");
             shieldSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/shieldHit");
             sharkSound = Resources.Load<AudioClip>("DaengSaka/BattleImpact/sharkHit");
+            itemUseSound = Resources.Load<AudioClip>(GmGameplayAudio.ItemUse);
             RectTransform content = Rect("Battle 16x9", frame, 0f, 0f, 1f, 1f);
             AspectRatioFitter fitter = content.gameObject.AddComponent<AspectRatioFitter>();
             fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
@@ -277,6 +279,7 @@ namespace GamecommMentor.DaengSaka
                 "swing" => swingSound,
                 "shieldHit" => shieldSound,
                 "sharkHit" => sharkSound,
+                "itemUse" => itemUseSound,
                 _ => basicSound
             };
             if (clip != null && impactAudio.volume > 0f) impactAudio.PlayOneShot(clip);

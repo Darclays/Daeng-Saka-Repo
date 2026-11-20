@@ -11,6 +11,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private string displayName = "Musuh Uji";
         [SerializeField] private GmBossBattleProfile bossBattleProfile;
         [SerializeField] private bool usePoppoBattle;
+        [SerializeField] private bool startWhenReadyWhileTouching;
         private SphereCollider trigger;
         private CharacterController suppressedPlayer;
 
@@ -30,6 +31,8 @@ namespace GamecommMentor.DaengSaka
             usePoppoBattle = poppoBattle;
         }
 
+        public void SetStartWhenReadyWhileTouching(bool enabled) => startWhenReadyWhileTouching = enabled;
+
         private void Reset()
         {
             SphereCollider volume = GetComponent<SphereCollider>();
@@ -42,7 +45,14 @@ namespace GamecommMentor.DaengSaka
 
         private void Awake() => trigger = GetComponent<SphereCollider>();
 
-        private void OnTriggerEnter(Collider other)
+        private void OnTriggerEnter(Collider other) => TryStartEncounter(other);
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (startWhenReadyWhileTouching) TryStartEncounter(other);
+        }
+
+        private void TryStartEncounter(Collider other)
         {
             if (!isActiveAndEnabled || IsDefeated || flow == null) return;
             CharacterController body = other as CharacterController;

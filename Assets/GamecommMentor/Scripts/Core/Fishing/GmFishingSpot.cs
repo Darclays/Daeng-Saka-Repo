@@ -26,6 +26,7 @@ namespace GamecommMentor.DaengSaka
         private GmSakaMotor motor;
         private GmFishingRound round;
         private GmFishingView view;
+        private AudioSource feedbackAudio;
         private GmFishingPose pose;
         private GmFishingShot shot;
         private Stage stage;
@@ -183,10 +184,13 @@ namespace GamecommMentor.DaengSaka
             if (action) round.Press(Completed == CatchStep);
             GmFishingPhase before = round.Phase;
             round.Tick(delta, held);
-            if (before == GmFishingPhase.Reeling && round.Phase == GmFishingPhase.Caught)
+            if (before == GmFishingPhase.Waiting && round.Phase == GmFishingPhase.Bite)
+                GmGameplayAudio.Play(gameObject, ref feedbackAudio, GmGameplayAudio.FishingBite);
+            else if (before == GmFishingPhase.Reeling && round.Phase == GmFishingPhase.Caught)
             {
                 added = round.TryCollect(GmPartyRun.Current.Inventory);
                 questCompleted = added && journal.TryCompleteSideStep(GmQuestCatalog.Fishing.Id, CatchStep);
+                if (added) GmGameplayAudio.Play(gameObject, ref feedbackAudio, GmGameplayAudio.FishingCatch);
             }
             Draw();
         }
