@@ -60,7 +60,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         internal bool TryBorrow(GmInteractor requester) =>
-            CanBorrow && bridge.TryStartCutscene(LoanConversation, requester);
+            CanBorrow && bridge.TryStartFramedDialogue(LoanConversation, requester, transform);
 
         private void OnLinePrepared(Subtitle subtitle)
         {

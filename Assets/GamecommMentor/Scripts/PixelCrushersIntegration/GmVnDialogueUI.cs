@@ -39,6 +39,7 @@ namespace GamecommMentor.DaengSaka
             {
                 cached.cast = settings;
                 cached.conversationTitle = title;
+                cached.SetWorldFraming(false);
                 return cached;
             }
             var stockUI = controller.dialogueUI as AbstractDialogueUI;
@@ -79,8 +80,17 @@ namespace GamecommMentor.DaengSaka
             cached.stock = stockUI;
             cached.cast = settings;
             cached.conversationTitle = title;
+            cached.SetWorldFraming(false);
             return cached;
         }
+
+        internal void SetWorldFraming(bool value)
+        {
+            stage.SetWorldFraming(value);
+            if (current != null) stage.Show(cast, conversationTitle, current, reveal);
+        }
+
+        internal void SetCameraFade(float alpha) => stage.SetCameraFade(alpha);
 
         // The stock UI owns its own initialization, alerts, QTEs and response controls.
         public override void Start() { }
