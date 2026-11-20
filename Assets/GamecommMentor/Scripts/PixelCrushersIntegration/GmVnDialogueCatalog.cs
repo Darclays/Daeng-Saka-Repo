@@ -14,12 +14,17 @@ namespace GamecommMentor.DaengSaka
             [Tooltip("Judul lengkap Conversation di database Pixel Crushers.")]
             public string judul;
             public GmVnDialoguePilot profil;
+            [Tooltip("Untuk interaksi quest utama, ambil shot pemain dan NPC yang diajak bicara.")]
+            public bool kameraQuestUtama;
         }
 
         [SerializeField] private Entry[] percakapan = Array.Empty<Entry>();
 
-        internal static GmVnDialoguePilot Resolve(string title)
+        internal static GmVnDialoguePilot Resolve(string title) => Resolve(title, out _);
+
+        internal static GmVnDialoguePilot Resolve(string title, out bool frameWorldPair)
         {
+            frameWorldPair = false;
             var catalog = Resources.Load<GmVnDialogueCatalog>(ResourcePath);
             if (catalog == null)
             {
@@ -30,7 +35,11 @@ namespace GamecommMentor.DaengSaka
 
             if (catalog.percakapan == null || string.IsNullOrEmpty(title)) return null;
             foreach (var entry in catalog.percakapan)
-                if (string.Equals(entry.judul, title, StringComparison.Ordinal)) return entry.profil;
+            {
+                if (!string.Equals(entry.judul, title, StringComparison.Ordinal)) continue;
+                frameWorldPair = entry.kameraQuestUtama;
+                return entry.profil;
+            }
             return null;
         }
     }

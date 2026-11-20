@@ -77,7 +77,7 @@ namespace GamecommMentor.DaengSaka
                 if (counter == null) counter = gameObject.AddComponent<GmMerchantCounter>();
                 return counter.TryOpen(mainQuestDialogue, requester);
             }
-            if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester);
+            if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester, transform);
             string title = ResolveConversationTitle();
             if (string.IsNullOrWhiteSpace(title)) return false;
             if (dialogueBridge == null && DialogueManager.hasInstance)

@@ -68,10 +68,19 @@ namespace GamecommMentor.DaengSaka
             if (controller != null) controller.conversationLinePrepared -= OnLinePrepared;
         }
 
-        public bool TryStartCurrent(GmInteractor requester)
+        public bool TryStartCurrent(GmInteractor requester) => TryStartCurrent(requester, null);
+
+        internal bool TryStartCurrent(GmInteractor requester, Transform partner)
         {
             string title = CurrentTitle;
-            return bridge != null && !string.IsNullOrWhiteSpace(title) && bridge.TryStartCutscene(title, requester);
+            if (bridge == null || string.IsNullOrWhiteSpace(title)) return false;
+
+            if (partner != null)
+            {
+                GmVnDialogueCatalog.Resolve(title, out bool frameWorldPair);
+                if (frameWorldPair) return bridge.TryStartFramedDialogue(title, requester, partner);
+            }
+            return bridge.TryStartCutscene(title, requester);
         }
 
         private void OnVictoryReturned(GmSakaMotor player, GmEnemyEncounter enemy)
