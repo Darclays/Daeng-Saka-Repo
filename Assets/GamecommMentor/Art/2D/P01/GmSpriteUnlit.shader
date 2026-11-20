@@ -17,7 +17,7 @@ Shader "GamecommMentor/DaengSaka/Sprite Unlit"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             CBUFFER_START(UnityPerMaterial)
@@ -38,7 +38,8 @@ Shader "GamecommMentor/DaengSaka/Sprite Unlit"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                float3 positionOS = UnityFlipSprite(input.positionOS.xyz, unity_SpriteProps.xy);
+                output.positionCS = TransformObjectToHClip(positionOS);
                 output.uv = input.uv;
                 output.color = input.color * _Color;
                 return output;
