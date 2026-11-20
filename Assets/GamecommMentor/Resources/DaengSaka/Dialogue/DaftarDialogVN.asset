@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddaddc827bc65fb69242d50aac99ca96, type: 3}
+  m_Name: DaftarDialogVN
+  m_EditorClassIdentifier:
+  percakapan:
+  - judul: DaengSaka/Main Quest/Persiapan Sebelum Bertarung
+    profil: {fileID: 11400000, guid: 788f9fd61e2a5798ac7411e99046c4bb, type: 2}
+  - judul: DaengSaka/Side Quest/Pinjam Alat Pancing
+    profil: {fileID: 11400000, guid: bc4515a6976e530d85efb19074861db3, type: 2}

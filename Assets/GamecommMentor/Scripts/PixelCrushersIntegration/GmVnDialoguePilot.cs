@@ -5,19 +5,24 @@ using DialogueCharacterInfo = PixelCrushers.DialogueSystem.CharacterInfo;
 
 namespace GamecommMentor.DaengSaka
 {
-    [CreateAssetMenu(menuName = "GamecommMentor/Daeng Saka/Dialogue/Pilot VN")]
+    public enum GmVnRevealMode { PerKata, PerHuruf }
+
+    [CreateAssetMenu(menuName = "GamecommMentor/Daeng Saka/Dialogue/Profil Percakapan VN")]
     public sealed class GmVnDialoguePilot : ScriptableObject
     {
         internal const string ResourcePath = "DaengSaka/Dialogue/PilotPinjamAlatPancing";
 
-        [Tooltip("Aktifkan tampilan VN untuk percakapan Pinjam Alat Pancing.")]
+        [Tooltip("Aktifkan tampilan VN untuk percakapan yang memakai profil ini.")]
         [SerializeField] private bool gunakanTampilanVN = true;
         [SerializeField] private VNActorVisualProfile aktorKiri;
         [SerializeField] private VNActorVisualProfile aktorKanan;
+        [Tooltip("Atur cara munculnya ucapan dalam percakapan ini.")]
+        [SerializeField] private GmVnRevealMode animasiTeks = GmVnRevealMode.PerKata;
 
         internal bool Enabled => gunakanTampilanVN;
         internal VNActorVisualProfile Left => aktorKiri;
         internal VNActorVisualProfile Right => aktorKanan;
+        internal GmVnRevealMode RevealMode => animasiTeks;
 
         internal VNActorVisualProfile Speaker(DialogueCharacterInfo info)
         {

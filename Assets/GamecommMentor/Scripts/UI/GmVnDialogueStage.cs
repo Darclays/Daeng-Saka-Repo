@@ -1,5 +1,6 @@
 using System;
-using PixelCrushers.DialogueSystem;
+using Subtitle = PixelCrushers.DialogueSystem.Subtitle;
+using ProjectVN.Preferences;
 using ProjectVN.Presentation.Actors;
 using ProjectVN.UI.Dialogue;
 using UnityEngine;
@@ -11,17 +12,24 @@ namespace GamecommMentor.DaengSaka
 {
     internal sealed class GmVnDialogueStage
     {
-        private static readonly Color InactiveActor = new Color32(151, 160, 152, 245);
+        private const float LineChangeGrace = .12f, PanelEntryTime = .13f;
         private static readonly Color Ochre = new Color32(226, 180, 105, 255);
         private readonly RectTransform stage;
-        private readonly Image left, right;
-        private readonly Text speaker, line;
+        private readonly CanvasGroup stageOpacity;
+        private readonly GmVnPortraitMotion left, right;
+        private readonly GmVnPortraitCues portraitCues;
+        private readonly GmVnLineFade lineFade;
+        private readonly Text speaker, line, actionCaption, speedCaption;
         private readonly Button advance;
         private readonly VNNextIndicatorController indicator;
+        private float clearCaptionAfter = -1f;
+        private float panelTime;
 
-        internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance)
+        internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance, Action onChangeSpeed)
         {
+            portraitCues = Resources.Load<GmVnPortraitCues>(GmVnPortraitCues.ResourcePath);
             stage = Rect("Panggung", canvas, 0f, 0f, 1f, 1f);
+            stageOpacity = stage.gameObject.AddComponent<CanvasGroup>();
             Fill(stage, new Color32(12, 26, 21, 105)).raycastTarget = true;
             var frame = Rect("Bingkai VN", stage, .5f, .5f, .5f, .5f);
             frame.sizeDelta = new Vector2(1920f, 1080f);
@@ -34,22 +42,34 @@ namespace GamecommMentor.DaengSaka
             var actors = Rect("Aktor", plate, 0f, 1f, 1f, 1f);
             actors.offsetMin = Vector2.zero;
             actors.offsetMax = new Vector2(0f, 360f);
-            left = Portrait(actors, "Aktor kiri", .035f, .34f);
-            right = Portrait(actors, "Aktor kanan", .66f, .965f);
+            left = Portrait(actors, "Aktor kiri", .035f, .34f, -1f);
+            right = Portrait(actors, "Aktor kanan", .66f, .965f, 1f);
             Fill(Rect("Garis warna", plate, 0f, .965f, 1f, 1f), Ochre);
             speaker = AddText(font, plate, "Nama pembicara", "", 31, .035f, .645f, .965f, .93f, bold: true);
             speaker.color = Leaf;
             line = AddText(font, plate, "Ucapan", "", 40, .035f, .12f, .955f, .68f);
             line.resizeTextMinSize = 23;
+            lineFade = line.gameObject.AddComponent<GmVnLineFade>();
 
-            var key = Rect("Lanjut", plate, .71f, 0f, 1f, 0f);
+            var tempo = Rect("Tempo baca", plate, 0f, 0f, .27f, 0f);
+            tempo.offsetMin = new Vector2(0f, -42f);
+            tempo.offsetMax = Vector2.zero;
+            var tempoButton = Clickable(Fill(tempo, Leaf), onChangeSpeed);
+            // Keyboard commands are owned by the dialogue UI, including after a pointer click.
+            tempoButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            speedCaption = AddText(font, tempo, "Label tempo", "", 22, .07f, 0f, .96f, 1f,
+                TextAnchor.MiddleLeft, true);
+            speedCaption.color = Paper;
+
+            var key = Rect("Lanjut", plate, .68f, 0f, 1f, 0f);
             key.offsetMin = new Vector2(0f, -42f);
             key.offsetMax = Vector2.zero;
             var surface = Fill(key, Leaf);
             advance = Clickable(surface, onAdvance);
-            var caption = AddText(font, key, "Tombol lanjut", "Lanjut   [E / Spasi]", 22,
+            advance.navigation = new Navigation { mode = Navigation.Mode.None };
+            actionCaption = AddText(font, key, "Tombol lanjut", "", 22,
                 .055f, 0f, .86f, 1f, TextAnchor.MiddleRight, true);
-            caption.color = Paper;
+            actionCaption.color = Paper;
             var mark = Rect("Tanda lanjut", key, .925f, .5f, .925f, .5f);
             mark.sizeDelta = new Vector2(9f, 9f);
             mark.localRotation = Quaternion.Euler(0f, 0f, 45f);
@@ -59,45 +79,93 @@ namespace GamecommMentor.DaengSaka
             Hide();
         }
 
-        private static Image Portrait(RectTransform parent, string name, float left, float right)
+        private static GmVnPortraitMotion Portrait(RectTransform parent, string name, float left, float right, float direction)
         {
+            var outgoing = Fill(Rect("Transisi " + name, parent, left, 0f, right, 1f), Color.white);
             var image = Fill(Rect(name, parent, left, 0f, right, 1f), Color.white);
-            image.preserveAspect = true;
-            return image;
+            return new GmVnPortraitMotion(image, outgoing, direction);
         }
 
-        internal void Show(GmVnDialoguePilot cast, Subtitle subtitle)
+        internal void Show(GmVnDialoguePilot cast, string conversation, Subtitle subtitle, GmVnTextReveal reveal)
         {
+            clearCaptionAfter = -1f;
             var info = subtitle.speakerInfo;
             var active = cast.Speaker(info);
+            var listener = cast.Speaker(subtitle.listenerInfo);
             var identity = new VNActorIdentity(info?.id ?? 0, info?.nameInDatabase, info?.Name);
             speaker.text = active != null ? active.GetResolvedDisplayName(identity) :
                 string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.PixelActorName : identity.DisplayName;
-            line.text = subtitle.formattedText.text;
-            SetPortrait(left, cast.Left, active);
-            SetPortrait(right, cast.Right, active);
+            SetPortrait(left, cast.Left, active, listener, conversation, subtitle);
+            SetPortrait(right, cast.Right, active, listener, conversation, subtitle);
+            lineFade.Bind(line, reveal);
             stage.gameObject.SetActive(true);
         }
 
-        private static void SetPortrait(Image image, VNActorVisualProfile profile, VNActorVisualProfile active)
+        private void SetPortrait(GmVnPortraitMotion slot, VNActorVisualProfile profile, VNActorVisualProfile active,
+            VNActorVisualProfile listener, string conversation, Subtitle subtitle)
         {
-            Sprite sprite = null;
-            if (profile != null) sprite = profile.TryResolveDefaultStageSprite(out var result) ?
-                result.sprite : profile.DefaultPortraitSprite;
-            image.sprite = sprite;
-            image.enabled = sprite != null;
-            image.color = profile == active ? Color.white : InactiveActor;
+            Sprite sprite = profile != null ? profile.DefaultPortraitSprite : null;
+            if (profile != null)
+            {
+                // The original profiles put the same placeholder in both slots; keep their expression
+                // lookup. A distinct dialogue portrait can replace that placeholder independently.
+                if ((sprite == null || sprite == profile.DefaultStageSprite) && profile.TryResolveDefaultStageSprite(out var result))
+                    sprite = result.sprite;
+                if (sprite == null && profile == active) sprite = subtitle.speakerInfo?.portrait;
+                else if (sprite == null && profile == listener) sprite = subtitle.listenerInfo?.portrait;
+
+                if (portraitCues != null && subtitle.dialogueEntry != null)
+                    sprite = portraitCues.Resolve(conversation, subtitle.dialogueEntry.id, profile, sprite);
+            }
+            slot.Present(profile, sprite, profile == active);
         }
 
-        internal void SetContinue(bool visible)
+        internal void RefreshText() => line.SetVerticesDirty();
+
+        internal void EndSubtitle()
         {
-            advance.gameObject.SetActive(visible);
-            indicator.SetVisible(visible, true);
+            SetAction(false, false);
+            clearCaptionAfter = LineChangeGrace;
+        }
+
+        internal void Tick(float dt)
+        {
+            if (!stage.gameObject.activeSelf) return;
+            if (panelTime < PanelEntryTime)
+            {
+                panelTime = Mathf.Min(PanelEntryTime, panelTime + dt);
+                float t = panelTime / PanelEntryTime;
+                stageOpacity.alpha = t * t * (3f - 2f * t);
+            }
+            left.Tick(dt);
+            right.Tick(dt);
+            if (clearCaptionAfter < 0f) return;
+            clearCaptionAfter -= dt;
+            if (clearCaptionAfter <= 0f)
+            {
+                clearCaptionAfter = -1f;
+                speaker.text = line.text = string.Empty;
+            }
+        }
+
+        internal void SetSpeed(VNTextSpeedMode speed) => speedCaption.text = GmVnReadingSpeed.Caption(speed);
+
+        internal void SetAction(bool writing, bool canContinue)
+        {
+            advance.gameObject.SetActive(writing || canContinue);
+            actionCaption.text = writing ? "Tampilkan semua   [E / Spasi]" : "Lanjut   [E / Spasi]";
+            indicator.SetVisible(!writing && canContinue, true);
         }
 
         internal void Hide()
         {
-            SetContinue(false);
+            clearCaptionAfter = -1f;
+            panelTime = 0f;
+            stageOpacity.alpha = 0f;
+            speaker.text = line.text = string.Empty;
+            left.Clear();
+            right.Clear();
+            SetAction(false, false);
             stage.gameObject.SetActive(false);
         }
     }

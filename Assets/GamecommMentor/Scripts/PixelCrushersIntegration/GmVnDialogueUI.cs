@@ -1,5 +1,6 @@
 using System;
 using PixelCrushers.DialogueSystem;
+using ProjectVN.Preferences;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -15,10 +16,14 @@ namespace GamecommMentor.DaengSaka
         private DialogueSystemController owner;
         private AbstractDialogueUI stock;
         private GmVnDialoguePilot cast;
+        private string conversationTitle;
         private GmVnDialogueStage stage;
         private Subtitle current;
+        private readonly GmVnTextReveal reveal = new GmVnTextReveal();
+        private VNTextSpeedMode speed;
         private bool canContinue, showingResponses;
         private int shownFrame, acceptedFrame = -1;
+        private int completedFrame = -1, focusFrame = -1;
 
         public override AbstractUIRoot uiRootControls => stock.uiRootControls;
         public override AbstractDialogueUIControls dialogueControls => stock.dialogueControls;
@@ -28,10 +33,14 @@ namespace GamecommMentor.DaengSaka
         internal static GmVnDialogueUI ForConversation(string title, DialogueSystemController controller,
             ref GmVnDialogueUI cached)
         {
-            if (title != GmFishingQuestDialogue.LoanConversation) return null;
-            var settings = Resources.Load<GmVnDialoguePilot>(GmVnDialoguePilot.ResourcePath);
+            var settings = GmVnDialogueCatalog.Resolve(title);
             if (settings == null || !settings.Enabled) return null;
-            if (cached != null && controller.dialogueUI == cached) return cached;
+            if (cached != null && controller.dialogueUI == cached)
+            {
+                cached.cast = settings;
+                cached.conversationTitle = title;
+                return cached;
+            }
             var stockUI = controller.dialogueUI as AbstractDialogueUI;
             if (stockUI == null) return null;
 
@@ -52,7 +61,8 @@ namespace GamecommMentor.DaengSaka
                     var ui = host.AddComponent<GmVnDialogueUI>();
                     ui.owner = controller;
                     ui.stock = stockUI;
-                    ui.stage = new GmVnDialogueStage((RectTransform)host.transform, font, ui.OnContinueConversation);
+                    ui.stage = new GmVnDialogueStage((RectTransform)host.transform, font,
+                        ui.OnContinueConversation, ui.ChangeSpeed);
                     cached = ui;
                 }
                 catch (Exception exception)
@@ -62,12 +72,13 @@ namespace GamecommMentor.DaengSaka
                         host.SetActive(false);
                         Destroy(host);
                     }
-                    Debug.LogWarning("[Daeng Saka 1D.1B] Memakai tampilan dialog bawaan. " + exception.Message, controller);
+                    Debug.LogWarning("[Daeng Saka] Memakai tampilan dialog bawaan. " + exception.Message, controller);
                     return null;
                 }
             }
             cached.stock = stockUI;
             cached.cast = settings;
+            cached.conversationTitle = title;
             return cached;
         }
 
@@ -76,6 +87,8 @@ namespace GamecommMentor.DaengSaka
         public override void Open()
         {
             ClearLine();
+            speed = GmVnReadingSpeed.Load();
+            stage.SetSpeed(speed);
             isOpen = true;
         }
 
@@ -87,6 +100,11 @@ namespace GamecommMentor.DaengSaka
         }
 
         private void OnDisable() => EndIfActive();
+
+        private void OnApplicationFocus(bool focused)
+        {
+            if (focused) focusFrame = Time.frameCount;
+        }
 
         internal void EndIfActive()
         {
@@ -107,6 +125,7 @@ namespace GamecommMentor.DaengSaka
         {
             current = null;
             canContinue = false;
+            reveal.Begin(string.Empty, speed);
             stage?.Hide();
         }
 
@@ -115,14 +134,19 @@ namespace GamecommMentor.DaengSaka
             if (!isOpen || subtitle == null || string.IsNullOrWhiteSpace(subtitle.formattedText?.text)) return;
             current = subtitle;
             shownFrame = Time.frameCount;
+            completedFrame = -1;
             canContinue = false;
-            stage.Show(cast, subtitle);
-            stage.SetContinue(false);
+            reveal.Begin(subtitle.formattedText.text, speed, cast.RevealMode);
+            stage.Show(cast, conversationTitle, subtitle, reveal);
+            stage.SetAction(reveal.IsWriting, false);
         }
 
         public override void HideSubtitle(Subtitle subtitle)
         {
-            if (subtitle == current) ClearLine();
+            if (current == null || subtitle != current) return;
+            current = null;
+            canContinue = false;
+            stage.EndSubtitle();
         }
 
         public override void ShowContinueButton(Subtitle subtitle) => SetContinue(subtitle, true);
@@ -132,33 +156,71 @@ namespace GamecommMentor.DaengSaka
         {
             if (!isOpen || current == null || current != subtitle) return;
             canContinue = value;
-            stage.SetContinue(value);
+            stage.SetAction(reveal.IsWriting, value);
         }
 
         public override void Update()
         {
-            if (!isOpen || !canContinue || !Application.isFocused) return;
+            if (!isOpen || showingResponses || !Application.isFocused || Time.frameCount == focusFrame)
+                return;
+            stage.Tick(Time.unscaledDeltaTime);
+            if (current == null) return;
 #if ENABLE_INPUT_SYSTEM
             var keyboard = Keyboard.current;
-            if (keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame))
-                OnContinueConversation();
+            if (keyboard != null)
+            {
+                if (keyboard.tKey.wasPressedThisFrame) ChangeSpeed();
+                else if (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame) OnContinueConversation();
+            }
 #elif ENABLE_LEGACY_INPUT_MANAGER
-            if (UnityEngine.Input.GetKeyDown(KeyCode.E) || UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            if (UnityEngine.Input.GetKeyDown(KeyCode.T)) ChangeSpeed();
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.E) || UnityEngine.Input.GetKeyDown(KeyCode.Space))
                 OnContinueConversation();
 #endif
+            if (current == null || Time.frameCount == shownFrame || !reveal.Tick(Time.unscaledDeltaTime, speed)) return;
+            stage.RefreshText();
+            if (!reveal.IsWriting)
+            {
+                completedFrame = Time.frameCount;
+                stage.SetAction(false, canContinue);
+            }
         }
+
+        private bool AcceptsInput => isActiveAndEnabled && isOpen && Application.isFocused && current != null &&
+            !showingResponses && Time.frameCount != shownFrame && Time.frameCount != acceptedFrame &&
+            Time.frameCount != focusFrame && owner != null && owner.conversationView?.dialogueUI == this;
 
         public override void OnContinue() => OnContinueConversation();
         public override void OnContinueConversation()
         {
-            int frame = Time.frameCount;
-            if (!Application.isFocused || !isOpen || !canContinue || showingResponses ||
-                current == null || frame == shownFrame || frame == acceptedFrame) return;
-            var view = owner != null ? owner.conversationView : null;
-            if (view == null || view.dialogueUI != this) return;
-            acceptedFrame = frame;
+            if (!AcceptsInput) return;
+            if (reveal.IsWriting)
+            {
+                acceptedFrame = Time.frameCount;
+                CompleteLineText();
+                return;
+            }
+            if (!canContinue || Time.frameCount == completedFrame) return;
+            acceptedFrame = Time.frameCount;
             SetContinue(current, false);
-            view.OnConversationContinue(this);
+            owner.conversationView.OnConversationContinue(this);
+        }
+
+        private void ChangeSpeed()
+        {
+            if (!AcceptsInput) return;
+            acceptedFrame = Time.frameCount;
+            speed = GmVnReadingSpeed.Cycle(speed);
+            stage.SetSpeed(speed);
+            if (speed == VNTextSpeedMode.Instant && reveal.IsWriting) CompleteLineText();
+        }
+
+        private void CompleteLineText()
+        {
+            reveal.Complete();
+            completedFrame = Time.frameCount;
+            stage.RefreshText();
+            stage.SetAction(false, canContinue);
         }
 
         public override void ShowResponses(Subtitle subtitle, Response[] responses, float timeout)

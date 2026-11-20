@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67abacf4b3ab5e739e301ceeb05e7e36, type: 3}
+  m_Name: ArahanEkspresiVN
+  m_EditorClassIdentifier:
+  arahan:
+  - percakapan: DaengSaka/Side Quest/Pinjam Alat Pancing
+    idEntri: 4
+    aktor: nelayan
+    ekspresi: menoleh
+    varian: samping
+    netralSementara: {fileID: 21300000, guid: 9cc976aa377359428a3266f2a4ab4a82, type: 3}
+    poseSementara: {fileID: 21300000, guid: 0eebc626c5d35a49909133eafd7595d1, type: 3}
