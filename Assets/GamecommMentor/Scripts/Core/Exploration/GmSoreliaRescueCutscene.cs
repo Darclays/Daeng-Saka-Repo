@@ -45,7 +45,7 @@ namespace GamecommMentor.DaengSaka
                 actor.gameObject.SetActive(true);
             }
 
-            internal void Sample(Camera camera, TerrainCollider terrain, float elapsed)
+            internal void Sample(Camera camera, Collider terrain, float elapsed)
             {
                 float t = walkSeconds > 0f ? Mathf.Clamp01((elapsed - start) / walkSeconds) : 1f;
                 Vector3 first = from.position;
@@ -134,7 +134,7 @@ namespace GamecommMentor.DaengSaka
             internal string Caption(float time) => time >= cueAt ? cueText : "";
             internal AudioSource AudioAt(float time) => time >= cueAt ? cueAudio : null;
 
-            internal void Sample(Camera camera, TerrainCollider terrain, float elapsed)
+            internal void Sample(Camera camera, Collider terrain, float elapsed)
             {
                 float blend = Ease(Mathf.Clamp01(elapsed / seconds));
                 camera.fieldOfView = fieldOfView;
@@ -153,7 +153,7 @@ namespace GamecommMentor.DaengSaka
 
         [SerializeField] private Camera view;
         [SerializeField] private GmOrbitFollowCamera orbit;
-        [SerializeField] private TerrainCollider terrain;
+        [SerializeField] private Collider terrain;
         [SerializeField] private Canvas questHud;
         [SerializeField] private GameObject overlay;
         [SerializeField] private Image fade;
@@ -184,7 +184,7 @@ namespace GamecommMentor.DaengSaka
         private AudioSource playingCue;
         private bool cuePlayedInShot;
 
-        public void Configure(Camera camera, GmOrbitFollowCamera followCamera, TerrainCollider floor,
+        public void Configure(Camera camera, GmOrbitFollowCamera followCamera, Collider floor,
             Canvas hud, GameObject cutsceneOverlay, Image fadeImage, Text subtitle,
             GmCutsceneSprite[] actors, SpriteRenderer[] normalSprites, Shot[] sequence)
         {

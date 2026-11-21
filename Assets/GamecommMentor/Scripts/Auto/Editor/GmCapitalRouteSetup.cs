@@ -12,15 +12,31 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Menu = "GamecommMentor/Daeng Saka/Set Up Ibu Kota Entry and Portal";
         private const string UndoName = "Set Up Ibu Kota Entry and Portal";
         private const string Capital = "Assets/GamecommMentor/Scenes_GamecommMentor/IbuKota.unity";
-        private const string StartMarker = "PortalPoint_GoDesaSoralia";
-        private const string ExitMarker = "PortalPoint_StartRespawnPointIbuKota";
+        private const string StartMarker = "PortalPoint_StartRespawnPointIbuKota";
+        private const string ExitMarker = "PortalPoint_GoDesaSoralia";
+        internal const string ArrivalGateName = "3D_IbuKota_Kerajaan_Gapura (1)";
 
         // Use the same safe footprints the old portal and spawn used on these approaches.
         internal const float StartInset = .9f;
         internal const float ExitInset = 1.8f;
 
-        internal static GmWorldSceneLayout CreateLayout(Scene scene, CharacterController body) =>
-            new GmWorldSceneLayout(scene, StartMarker, ExitMarker, body, "GroundKota", "Ground Kerajaan");
+        internal static GmWorldSceneLayout CreateLayout(Scene scene, CharacterController body)
+        {
+            Transform guides = RequireRoot(scene, "PortalPoint");
+            Transform start = RequireChild(guides, StartMarker);
+            Transform exit = RequireChild(guides, ExitMarker);
+            Transform arrivalGate = Array.Find(scene.GetRootGameObjects(), root => root.name == "LevelDesain")
+                ?.transform.Find("LingkunganKerajaan")?.Find(ArrivalGateName);
+            // Before the markers were renamed, the one by the arrival arch had the exit name.
+            bool legacyNames = arrivalGate != null &&
+                (exit.position - arrivalGate.position).sqrMagnitude < (start.position - arrivalGate.position).sqrMagnitude;
+            return new GmWorldSceneLayout(scene, legacyNames ? ExitMarker : StartMarker,
+                legacyNames ? StartMarker : ExitMarker, body, "GroundKota", "Ground Kerajaan");
+        }
+
+        internal static Vector3 StartPosition(GmWorldSceneLayout layout) => layout.StartGuide.name == StartMarker
+            ? layout.StartGuide.position
+            : layout.StartGuide.position + layout.IntoLevel * StartInset;
 
         [MenuItem(Menu, true)]
         private static bool CanSetUp() => CanInstall(Capital);
@@ -68,7 +84,7 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 Vector3 inward = layout.IntoLevel;
                 Undo.RecordObject(start, UndoName);
-                layout.Place(start, layout.StartGuide.position + inward * StartInset, inward);
+                layout.Place(start, StartPosition(layout), inward);
                 Undo.RecordObject(portal, UndoName);
                 layout.Place(portal, layout.PortalGuide.position - inward * ExitInset, -inward, start.position);
                 Undo.RecordObject(player, UndoName);
