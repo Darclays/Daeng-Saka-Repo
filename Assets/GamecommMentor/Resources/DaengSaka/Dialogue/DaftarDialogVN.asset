@@ -46,3 +46,12 @@ MonoBehaviour:
   - judul: DaengSaka/Main Quest/Amarah Nenek Pakande
     profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
     kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Penjaga/Pak Yusuf
+    profil: {fileID: 11400000, guid: c25e9b8f26394f4e8a17ba3bdf4cae06, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Penjaga/Sorelia 1
+    profil: {fileID: 11400000, guid: c25e9b8f26394f4e8a17ba3bdf4cae06, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Penjaga/Sorelia 2
+    profil: {fileID: 11400000, guid: c25e9b8f26394f4e8a17ba3bdf4cae06, type: 2}
+    kameraQuestUtama: 0

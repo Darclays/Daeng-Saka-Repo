@@ -95,29 +95,33 @@ namespace GamecommMentor.DaengSaka.Editor
         }
 
         internal static bool AddConversation(DialogueDatabase database, Template template,
-            string title, string completionEntry, params (string actor, string text)[] lines)
+            string title, string completionEntry, params (string actor, string text)[] lines) =>
+            AddConversation(database, template, title, completionEntry, null, lines);
+
+        internal static bool AddConversation(DialogueDatabase database, Template template,
+            string title, string completionEntry, string partnerName, params (string actor, string text)[] lines)
         {
             if (database.GetConversation(title) != null) return false;
 
             Actor hero = GetOrCreateActor(database, template, Saka);
-            Actor firstSpeaker = GetOrCreateActor(database, template, lines[0].actor);
+            Actor partner = GetOrCreateActor(database, template, partnerName ?? lines[0].actor);
             int id = 910150;
             while (database.GetConversation(id) != null) id++;
             Conversation conversation = template.CreateConversation(id, title);
             conversation.ActorID = hero.id;
-            conversation.ConversantID = firstSpeaker.id;
+            conversation.ConversantID = partner.id;
             conversation.overrideSettings.useOverrides = true;
             conversation.overrideSettings.overrideSubtitleSettings = true;
             conversation.overrideSettings.showPCSubtitlesDuringLine = true;
             conversation.overrideSettings.continueButton = DisplaySettings.SubtitleSettings.ContinueButtonMode.Always;
 
-            DialogueEntry previous = GmDialogueExampleData.Node(template, id, 0, hero.id, firstSpeaker.id, "START", "", 250f, 0f);
+            DialogueEntry previous = GmDialogueExampleData.Node(template, id, 0, hero.id, partner.id, "START", "", 250f, 0f);
             previous.Sequence = "None()";
             conversation.dialogueEntries.Add(previous);
             for (int index = 0; index < lines.Length; index++)
             {
                 Actor speaker = GetOrCreateActor(database, template, lines[index].actor);
-                int listener = speaker.id == hero.id ? firstSpeaker.id : hero.id;
+                int listener = speaker.id == hero.id ? partner.id : hero.id;
                 int entryId = index + 1;
                 DialogueEntry entry = GmDialogueExampleData.Node(template, id, entryId, speaker.id, listener,
                     speaker.Name, lines[index].text, 250f, entryId * 140f);
@@ -131,7 +135,7 @@ namespace GamecommMentor.DaengSaka.Editor
             if (completionEntry != null)
             {
                 int completionId = lines.Length + 1;
-                DialogueEntry completion = GmDialogueExampleData.Node(template, id, completionId, firstSpeaker.id, hero.id,
+                DialogueEntry completion = GmDialogueExampleData.Node(template, id, completionId, partner.id, hero.id,
                     completionEntry, "", 250f, completionId * 140f);
                 completion.Sequence = "None()";
                 previous.outgoingLinks.Add(new Link(id, previous.id, id, completionId));
