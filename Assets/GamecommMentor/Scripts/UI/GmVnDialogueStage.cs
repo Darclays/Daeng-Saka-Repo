@@ -108,7 +108,6 @@ namespace GamecommMentor.DaengSaka
 
         internal void Show(GmVnDialoguePilot cast, string conversation, Subtitle subtitle, GmVnTextReveal reveal)
         {
-            clearCaptionAfter = -1f;
             var info = subtitle.speakerInfo;
             var active = cast.Speaker(info);
             var identity = new VNActorIdentity(info?.id ?? 0, info?.nameInDatabase, info?.Name);
@@ -124,6 +123,20 @@ namespace GamecommMentor.DaengSaka
                 SetPortrait(left, cast.Left, active, listener, conversation, subtitle);
                 SetPortrait(right, cast.Right, active, listener, conversation, subtitle);
             }
+            BindLine(reveal);
+        }
+
+        internal void Show(VNActorVisualProfile profile, string displayName, GmVnTextReveal reveal)
+        {
+            var identity = new VNActorIdentity(0, null, displayName);
+            speaker.text = profile != null ? profile.GetResolvedDisplayName(identity) : displayName;
+            SetPortrait(left, profile, profile, null, null, null);
+            BindLine(reveal);
+        }
+
+        private void BindLine(GmVnTextReveal reveal)
+        {
+            clearCaptionAfter = -1f;
             lineFade.Bind(line, reveal);
             stage.gameObject.SetActive(true);
         }
@@ -163,14 +176,14 @@ namespace GamecommMentor.DaengSaka
                 // lookup. A distinct dialogue portrait can replace that placeholder independently.
                 if ((sprite == null || sprite == profile.DefaultStageSprite) && profile.TryResolveDefaultStageSprite(out var result))
                     sprite = result.sprite;
-                if (sprite == null && profile == active) sprite = subtitle.speakerInfo?.portrait;
-                else if (sprite == null && profile == listener) sprite = subtitle.listenerInfo?.portrait;
+                if (sprite == null && profile == active) sprite = subtitle?.speakerInfo?.portrait;
+                else if (sprite == null && profile == listener) sprite = subtitle?.listenerInfo?.portrait;
 
-                if (portraitCues != null && subtitle.dialogueEntry != null)
+                if (portraitCues != null && subtitle?.dialogueEntry != null)
                     sprite = portraitCues.Resolve(conversation, subtitle.dialogueEntry.id, profile, sprite);
             }
             else if (allowUnmappedSpeaker)
-                sprite = subtitle.speakerInfo?.portrait;
+                sprite = subtitle?.speakerInfo?.portrait;
             slot.Present(profile, sprite, profile == active);
         }
 

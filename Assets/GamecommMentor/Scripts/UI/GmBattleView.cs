@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -36,6 +37,7 @@ namespace GamecommMentor.DaengSaka
 
         private readonly RectTransform screen;
         private readonly Font font;
+        private GmBattlePhaseDialogue bossDialogue;
         private readonly GmBattleStageView stage;
         private readonly AudioSource impactAudio;
         private readonly AudioClip swingSound;
@@ -282,7 +284,26 @@ namespace GamecommMentor.DaengSaka
                 "itemUse" => itemUseSound,
                 _ => basicSound
             };
-            if (clip != null && impactAudio.volume > 0f) impactAudio.PlayOneShot(clip);
+            PlayBattleSound(clip);
+        }
+
+        public float PlayBattleSound(AudioClip clip)
+        {
+            if (clip == null || impactAudio.volume <= 0f) return 0f;
+            impactAudio.PlayOneShot(clip);
+            return clip.length;
+        }
+
+        public IEnumerator PlayBossDialogue(GmPakandePhasePresentation.Line[] lines)
+        {
+            if (lines == null || lines.Length == 0 || font == null) yield break;
+
+            bossDialogue ??= new GmBattlePhaseDialogue(screen, font);
+            bool restoreRetreat = leaveButton.interactable;
+            leaveButton.interactable = false;
+            FocusAvailableControl(null);
+            yield return bossDialogue.Play(lines);
+            leaveButton.interactable = restoreRetreat;
         }
 
         public void Dispose()

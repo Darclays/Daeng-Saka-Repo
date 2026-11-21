@@ -34,6 +34,7 @@ namespace GamecommMentor.DaengSaka
         private GmEncounterBattleRoot encounter;
         private GmBattleSession session;
         private GmBattleView view;
+        private GmPakandePhasePresentation pakandePresentation;
         private GmBattleMenu menu;
         private GmBattleMove selection;
         private bool resolving;
@@ -68,6 +69,8 @@ namespace GamecommMentor.DaengSaka
                 GmBattleStats[] roster = source.Roster != null && source.Roster.HasEnemies
                     ? source.Roster.Enemies : source.UsePoppoBattle ? PoppoEnemies : enemies;
                 session = new GmBattleSession(party, roster, restMp, source.BossBattleProfile);
+                if (session.Boss != null)
+                    pakandePresentation = Resources.Load<GmPakandePhasePresentation>(GmPakandePhasePresentation.ResourcePath);
                 enhancedImpact = useEnhancedImpact;
                 view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
@@ -99,6 +102,7 @@ namespace GamecommMentor.DaengSaka
             view?.Dispose();
             view = null;
             session = null;
+            pakandePresentation = null;
             menu = GmBattleMenu.Command;
             selection = null;
             resolving = false;
@@ -297,16 +301,14 @@ namespace GamecommMentor.DaengSaka
             {
                 resolving = false;
                 session.PrepareEnemyTurn();
-                if (session.Boss != null && shownBossPhase != session.Boss.Phase)
+                int phase = session.Boss?.Phase ?? 0;
+                bool firstTurnOfPhase = phase > shownBossPhase;
+                if (firstTurnOfPhase)
                 {
-                    shownBossPhase = session.Boss.Phase;
-                    if (shownBossPhase > 1)
-                    {
-                        lastAction = $"Nenek Pakande memasuki Fase {shownBossPhase}";
-                        Refresh();
-                        yield return PlayBossTransition(shownBossPhase);
-                    }
+                    shownBossPhase = phase;
+                    yield return PlayBossPhase(phase);
                 }
+
                 Refresh();
                 yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, enemyActionDelay));
                 GmBattleUnit actor = session.Actor;
@@ -335,21 +337,49 @@ namespace GamecommMentor.DaengSaka
                     yield break;
                 }
                 yield return PlayMove(move, target, targets);
+
+                if (firstTurnOfPhase && phase == 1 && move.Effect == GmBattleEffect.Summon &&
+                    session != null && !leaving && pakandePresentation != null)
+                    yield return view.PlayBossDialogue(pakandePresentation.AfterSummon);
             }
             if (session == null || leaving) yield break;
             resolving = false;
             Refresh();
         }
 
-        private IEnumerator PlayBossTransition(int phase)
+        private IEnumerator PlayBossPhase(int phase)
+        {
+            resolving = true;
+            if (phase > 1)
+            {
+                lastAction = phase == 3 ? "Nenek Pakande mengaum"
+                    : $"Nenek Pakande memasuki Fase {phase}";
+                Refresh();
+                float hold = phase == 3 && pakandePresentation != null
+                    ? view.PlayBattleSound(pakandePresentation.Roar) : 0f;
+                yield return PlayBossTransition(phase, hold);
+            }
+
+            Refresh();
+            if (pakandePresentation != null && phase < 3)
+                yield return view.PlayBossDialogue(phase == 1 ? pakandePresentation.Opening : pakandePresentation.Airborne);
+        }
+
+        private IEnumerator PlayBossTransition(int phase, float minimumDuration)
         {
             int count = view.BossTransitionFrames(phase, session.Boss.WasAirborne);
-            var wait = new WaitForSecondsRealtime(Mathf.Clamp(animationFrameTime, 0.035f, 0.15f));
+            float step = Mathf.Clamp(animationFrameTime, 0.035f, 0.15f);
+            var wait = new WaitForSecondsRealtime(step);
             for (int frame = 0; frame < count; frame++)
             {
                 view.DrawBossTransition(session.Boss.Index, phase, session.Boss.WasAirborne, frame);
                 yield return wait;
             }
+
+            float remaining = minimumDuration - count * step;
+            if (remaining <= 0f) yield break;
+            Refresh();
+            yield return new WaitForSecondsRealtime(remaining);
         }
 
         private string FormatAction(GmBattleUnit actor, GmBattleMove move, GmBattleHit[] hits, int round)
