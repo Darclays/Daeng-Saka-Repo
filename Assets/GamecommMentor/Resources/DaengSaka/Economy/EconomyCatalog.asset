@@ -21,3 +21,12 @@ MonoBehaviour:
   - itemId: potion.mp
     price: 25
     icon: {fileID: 21300000, guid: 50142cf2f72157c1803510e3216a94bb, type: 3}
+  blacksmith:
+  - weaponId: weapon.saka.joran-lembayung
+    price: 45
+  - weaponId: weapon.pacca.perisai-garda
+    price: 45
+  - weaponId: weapon.daung.kitab-fajar
+    price: 45
+  firstEnchantPrice: 15
+  secondEnchantPrice: 25

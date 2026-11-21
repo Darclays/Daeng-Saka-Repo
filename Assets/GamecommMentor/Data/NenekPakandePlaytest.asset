@@ -20,4 +20,5 @@ MonoBehaviour:
   boltDamage: 20
   waveDamage: 12
   shadowDamage: 24
-  fireRainDamage: 30
+  fireRainDamage: 27
+  airborneBasicReduction: 70

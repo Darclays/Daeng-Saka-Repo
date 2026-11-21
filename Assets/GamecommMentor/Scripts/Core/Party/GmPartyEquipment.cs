@@ -8,7 +8,7 @@ namespace GamecommMentor.DaengSaka
     {
         internal readonly string InstanceId = Guid.NewGuid().ToString("N");
         internal GmWeaponDefinition Definition { get; }
-        internal int Rank { get; }
+        internal int Rank { get; private set; }
         internal int Bonus => Definition.BonusAtRank(Rank);
 
         internal GmOwnedWeapon(GmWeaponDefinition definition, int rank = 0)
@@ -16,6 +16,8 @@ namespace GamecommMentor.DaengSaka
             Definition = definition;
             Rank = Math.Max(0, rank);
         }
+
+        internal void IncreaseRank() => Rank++;
     }
 
     public sealed class GmPartyEquipment
@@ -30,7 +32,15 @@ namespace GamecommMentor.DaengSaka
             new Dictionary<GmPartyVitals, GmOwnedWeapon>();
 
         public IEnumerable<GmWeaponDefinition> Definitions => catalog.Values;
+        internal IReadOnlyList<GmOwnedWeapon> OwnedWeapons => owned;
         internal int Revision { get; private set; }
+
+        internal GmWeaponDefinition FindDefinition(string id) =>
+            !string.IsNullOrEmpty(id) && catalog.TryGetValue(id, out var definition) ? definition : null;
+
+        internal bool OwnsDefinition(string id) => owned.Exists(weapon => weapon.Definition.Id == id);
+        internal bool Owns(GmOwnedWeapon weapon) => weapon != null && owned.Contains(weapon);
+        internal bool IsEquipped(GmOwnedWeapon weapon) => weapon != null && equipped.ContainsValue(weapon);
 
         internal GmPartyEquipment(GmWeaponCatalog source)
         {
@@ -68,9 +78,17 @@ namespace GamecommMentor.DaengSaka
         // A purchased or rewarded model is unique across the party. Joining members receive their own starters.
         public bool TryGrant(string definitionId)
         {
-            if (string.IsNullOrEmpty(definitionId) || !catalog.TryGetValue(definitionId, out var definition) ||
-                definition.IsStarter || owned.Exists(weapon => weapon.Definition.Id == definitionId)) return false;
+            var definition = FindDefinition(definitionId);
+            if (definition == null || definition.IsStarter || OwnsDefinition(definitionId)) return false;
             owned.Add(new GmOwnedWeapon(definition));
+            Revision++;
+            return true;
+        }
+
+        internal bool TryUpgrade(GmOwnedWeapon weapon, int expectedRank, int maxRank)
+        {
+            if (!Owns(weapon) || weapon.Rank != expectedRank || weapon.Rank >= maxRank) return false;
+            weapon.IncreaseRank();
             Revision++;
             return true;
         }

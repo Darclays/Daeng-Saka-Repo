@@ -45,6 +45,8 @@ namespace GamecommMentor.DaengSaka
             sequence != null && sequence.OffersMerchantTo(transform) && run == GmPartyRun.Current;
 
         private bool CanTalk => sequence != null && !string.IsNullOrWhiteSpace(sequence.CurrentTitleFor(transform));
+        private bool CanOpenBlacksmith => sequence != null && sequence.OffersBlacksmithTo(transform);
+        private bool HasServices => CanTalk || CanOpenBlacksmith;
 
         internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester)
         {
@@ -57,9 +59,9 @@ namespace GamecommMentor.DaengSaka
             sequence = dialogue;
             player.ControlGate.Block(this);
             player.SuppressInteraction();
-            view ??= new GmMerchantView(Talk, OpenShop, Select, Request, BackOrClose);
+            view ??= new GmMerchantView(Talk, OpenShop, OpenBlacksmith, Select, Request, BackOrClose);
             notice = null;
-            if (CanTalk) OpenServices();
+            if (HasServices) OpenServices();
             else OpenShop();
             return true;
         }
@@ -67,7 +69,7 @@ namespace GamecommMentor.DaengSaka
         private void OpenServices()
         {
             page = Page.Services;
-            view.ShowServices();
+            view.ShowServices(CanTalk, CanOpenBlacksmith);
         }
 
         private void Talk()
@@ -77,6 +79,17 @@ namespace GamecommMentor.DaengSaka
             var requester = player;
             Close();
             current.TryStartCurrent(requester, transform);
+        }
+
+        private void OpenBlacksmith()
+        {
+            if (page != Page.Services || !CanUseCounter || !CanOpenBlacksmith) return;
+            var current = sequence;
+            var requester = player;
+            var counter = GetComponent<GmBlacksmithCounter>();
+            if (counter == null) counter = gameObject.AddComponent<GmBlacksmithCounter>();
+            Close();
+            counter.TryOpen(current, requester);
         }
 
         private void OpenShop()
@@ -96,7 +109,7 @@ namespace GamecommMentor.DaengSaka
             }
             selected = offers.Count > 0 ? offers[0] : null;
             page = Page.Shop;
-            view.ShowShop(offers, CanTalk);
+            view.ShowShop(offers, HasServices);
             Render();
             view.HideConfirmation();
         }
@@ -180,7 +193,7 @@ namespace GamecommMentor.DaengSaka
                 Render();
                 view.HideConfirmation();
             }
-            else if (page == Page.Shop && CanTalk) OpenServices();
+            else if (page == Page.Shop && HasServices) OpenServices();
             else Close();
         }
 

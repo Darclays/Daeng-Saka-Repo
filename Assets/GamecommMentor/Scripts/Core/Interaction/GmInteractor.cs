@@ -92,7 +92,9 @@ namespace GamecommMentor.DaengSaka
             Vector3 origin = transform.position + Vector3.up * 0.8f;
             Vector3 delta = target.FocusPosition - origin;
             Vector3 planar = Vector3.ProjectOnPlane(delta, Vector3.up);
-            if (planar.sqrMagnitude > range * range) return false;
+            var shopReach = target.GetComponent<GmShopInteractionReach>();
+            bool atShop = shopReach != null && shopReach.Contains(origin);
+            if (!atShop && planar.sqrMagnitude > range * range) return false;
             // Interaction follows the character's heading, not the camera or a quantized sprite.
             Vector3 facing = motor.WorldFacing;
             if (planar.sqrMagnitude > 0.0001f && Vector3.Dot(facing, planar.normalized) < minimumFacingDot) return false;
@@ -104,6 +106,7 @@ namespace GamecommMentor.DaengSaka
             {
                 Transform hit = hits[i].collider.transform;
                 if (hit.IsChildOf(transform) || hit.IsChildOf(target.transform)) continue;
+                if (atShop && shopReach.IsCounter(hit)) continue;
                 return false;
             }
             return true;

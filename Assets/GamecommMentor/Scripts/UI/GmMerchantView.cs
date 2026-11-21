@@ -17,7 +17,7 @@ namespace GamecommMentor.DaengSaka
             new List<(GmMerchantOffer, Button, Text)>();
         private readonly RectTransform root, services, shop, list, detail, confirm, confirmActions;
         private readonly CanvasGroup shopControls;
-        private readonly Button talk, back, buy;
+        private readonly Button talk, merchantShop, blacksmith, back, buy;
         private readonly Text balance, backLabel, title, recovery, stock, projected, status, buyLabel, empty;
         private readonly Text confirmTitle, confirmPrice, confirmBalance;
         private readonly Image itemIcon;
@@ -25,7 +25,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Action backOrClose;
         private Button selectedRow;
 
-        internal GmMerchantView(Action talkToNpc, Action openShop, Action<GmMerchantOffer> selectOffer,
+        internal GmMerchantView(Action talkToNpc, Action openShop, Action openBlacksmith, Action<GmMerchantOffer> selectOffer,
             Action request, Action backOrClose)
         {
             select = selectOffer;
@@ -46,7 +46,8 @@ namespace GamecommMentor.DaengSaka
             Fill(services, Paper);
             AddText(font, services, "Pemandu", "Pemandu Kerajaan", 32, .075f, .76f, .925f, .95f, bold: true);
             talk = AddButton(font, services, "Bicara dengan Penempa", .075f, .52f, .925f, .70f, talkToNpc, primary: true);
-            AddButton(font, services, "Belanja di Merchant", .075f, .31f, .925f, .48f, openShop);
+            blacksmith = AddButton(font, services, "Penempa Besi", .075f, .52f, .925f, .70f, openBlacksmith, primary: true);
+            merchantShop = AddButton(font, services, "Belanja di Merchant", .075f, .31f, .925f, .48f, openShop);
             AddButton(font, services, "Tutup [Esc]", .075f, .075f, .925f, .23f, backOrClose);
 
             shop = Rect("Etalase Merchant", root, .075f, .075f, .925f, .925f);
@@ -94,21 +95,25 @@ namespace GamecommMentor.DaengSaka
             root.gameObject.SetActive(false);
         }
 
-        internal void ShowServices()
+        internal void ShowServices(bool hasTalk, bool hasBlacksmith)
         {
             root.gameObject.SetActive(true);
             confirm.gameObject.SetActive(false);
             shop.gameObject.SetActive(false);
             services.gameObject.SetActive(true);
-            Focus(talk);
+            talk.gameObject.SetActive(hasTalk);
+            blacksmith.gameObject.SetActive(hasBlacksmith);
+            ((RectTransform)blacksmith.transform).anchorMin = new Vector2(.075f, hasTalk ? .235f : .52f);
+            ((RectTransform)blacksmith.transform).anchorMax = new Vector2(.925f, hasTalk ? .305f : .70f);
+            Focus(hasTalk ? talk : hasBlacksmith ? blacksmith : merchantShop);
         }
 
-        internal void ShowShop(IReadOnlyList<GmMerchantOffer> offers, bool hasQuestDialogue)
+        internal void ShowShop(IReadOnlyList<GmMerchantOffer> offers, bool hasServices)
         {
             root.gameObject.SetActive(true);
             services.gameObject.SetActive(false);
             shop.gameObject.SetActive(true);
-            backLabel.text = hasQuestDialogue ? "Kembali [Esc]" : "Tutup [Esc]";
+            backLabel.text = hasServices ? "Kembali [Esc]" : "Tutup [Esc]";
             ClearChildren(list);
             rows.Clear();
             foreach (GmMerchantOffer offer in offers)

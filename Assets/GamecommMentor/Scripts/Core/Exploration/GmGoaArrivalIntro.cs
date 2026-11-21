@@ -17,6 +17,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmSoreliaRescueCutscene director;
         [SerializeField] private Transform poppoVisual;
         [SerializeField] private Transform mouthPoppoVisual;
+        [SerializeField] private GmCavePatrol mouthPatrol;
         private Vector3 groundedPoppo;
         private Vector3 groundedMouthPoppo;
 
@@ -34,6 +35,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void SetMouthPoppo(Transform visual) => mouthPoppoVisual = visual;
+        public void SetMouthPatrol(GmCavePatrol patrol) => mouthPatrol = patrol;
 
         private void Awake()
         {
@@ -73,7 +75,7 @@ namespace GamecommMentor.DaengSaka
             bool arriving = step == GmMainQuestStep.MasukGuaLembayung;
             Vector3 hover = Vector3.up * (PreviewHeight + Mathf.Sin(Time.unscaledTime * 3.25f) * .14f);
 
-            if (mouthPoppoVisual != null)
+            if (mouthPoppoVisual != null && (mouthPatrol == null || !mouthPatrol.DrivesMouthVisual))
             {
                 bool present = quest.isActiveAndEnabled && (arriving || step == GmMainQuestStep.SelidikiGua);
                 if (present) mouthPoppoVisual.localPosition = groundedMouthPoppo + hover;

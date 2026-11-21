@@ -156,7 +156,8 @@ namespace GamecommMentor.DaengSaka
             bool resolving, int actingIndex, int displayRound, bool enhancedImpact)
         {
             bool choosingMember = !resolving && session.IsChoosingPartyMember;
-            bool finished = !resolving && !session.IsActive;
+            bool betweenWaves = session.Phase == GmBattlePhase.BetweenWaves;
+            bool finished = !resolving && (session.Phase == GmBattlePhase.Victory || session.Phase == GmBattlePhase.Defeat);
             bool partyTurn = !resolving && session.IsPartyTurn && !session.Actor.IsStunned;
             SetButton(impactModeButton, !finished, choosingMember || partyTurn);
             ButtonLabel(impactModeButton).text = enhancedImpact ? "Efek B" : "Efek A";
@@ -171,19 +172,21 @@ namespace GamecommMentor.DaengSaka
             string phaseLabel = actor != null && !actor.IsParty ? "GILIRAN MUSUH" : "GILIRAN PEMAIN";
             turnNumber.text = displayRound == 0 ? "PEMBUKA · GILIRAN MUSUH"
                 : finished ? $"RONDE {displayRound}" : $"RONDE {displayRound} · {phaseLabel}";
-            turnLabel.text = choosingMember ? "Pilih karakter" : actor?.Name ?? "Battle selesai";
+            turnLabel.text = betweenWaves ? "Musuh berikutnya" : choosingMember ? "Pilih karakter" : actor?.Name ?? "Battle selesai";
             actionLog.text = lastAction ?? "";
             RenderEnemyOrder(session, displayRound, actingIndex);
             if (session.Boss == null)
             {
-                bossStatus.text = "Urutan musuh";
+                bossStatus.text = session.WaveCount > 1 ? $"GELOMBANG {session.WaveNumber}/{session.WaveCount}" : "Urutan musuh";
                 bossStatus.color = Muted;
             }
             else
             {
                 GmBattleMove chargedMove = session.Boss.ChargedMove;
-                bossStatus.text = chargedMove != null ? $"FASE {session.Boss.Phase} · {chargedMove.Name.ToUpperInvariant()} BERIKUTNYA"
-                    : $"FASE {session.Boss.Phase} · URUTAN MUSUH";
+                if (chargedMove != null) bossStatus.text = $"FASE {session.Boss.Phase} · {chargedMove.Name.ToUpperInvariant()} BERIKUTNYA";
+                else if (session.Boss.BasicAttackReduction > 0)
+                    bossStatus.text = $"FASE 2 · TERBANG · ATTACK BIASA −{session.Boss.BasicAttackReduction}%";
+                else bossStatus.text = $"FASE {session.Boss.Phase} · URUTAN MUSUH";
                 bossStatus.color = chargedMove != null ? new Color(0.62f, 0.23f, 0.12f) : Ink;
             }
             Button firstParty = RenderParty(session, choosingMember, actingIndex, displayRound, targetMove);

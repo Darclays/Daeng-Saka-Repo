@@ -94,6 +94,9 @@ namespace GamecommMentor.DaengSaka
             return true;
         }
 
+        internal bool IsScriptedEncounter(GmEnemyEncounter encounter) => encounter == soreliaEncounter ||
+            encounter == caveEncounter || encounter == caveFinaleGuard || encounter == pakandeEncounter;
+
         internal void OnEncounterWon(GmEnemyEncounter encounter)
         {
             if (!isActiveAndEnabled) return;

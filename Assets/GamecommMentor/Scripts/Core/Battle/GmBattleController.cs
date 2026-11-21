@@ -68,7 +68,8 @@ namespace GamecommMentor.DaengSaka
                 GmEnemyEncounter source = encounter.Encounter;
                 GmBattleStats[] roster = source.Roster != null && source.Roster.HasEnemies
                     ? source.Roster.Enemies : source.UsePoppoBattle ? PoppoEnemies : enemies;
-                session = new GmBattleSession(party, roster, restMp, source.BossBattleProfile);
+                session = new GmBattleSession(party, roster, restMp, source.BossBattleProfile,
+                    reinforcements: encounter.Reinforcement?.Roster?.Enemies);
                 if (session.Boss != null)
                     pakandePresentation = Resources.Load<GmPakandePhasePresentation>(GmPakandePhasePresentation.ResourcePath);
                 enhancedImpact = useEnhancedImpact;
@@ -344,6 +345,15 @@ namespace GamecommMentor.DaengSaka
                     yield return view.PlayBossDialogue(pakandePresentation.AfterSummon);
             }
             if (session == null || leaving) yield break;
+            if (session.Phase == GmBattlePhase.BetweenWaves)
+            {
+                resolving = true;
+                lastAction = "Gelombang pertama selesai. Musuh berikutnya mendekat.";
+                Refresh();
+                yield return new WaitForSecondsRealtime(0.7f);
+                if (session == null || leaving || !session.TryStartNextWave()) yield break;
+                lastAction = $"{encounter.Reinforcement.DisplayName} memasuki battle";
+            }
             resolving = false;
             Refresh();
         }
@@ -354,6 +364,7 @@ namespace GamecommMentor.DaengSaka
             if (phase > 1)
             {
                 lastAction = phase == 3 ? "Nenek Pakande mengaum"
+                    : session.Boss.BasicAttackReduction > 0 ? "Pakande terbang. Gunakan skill yang memberi damage."
                     : $"Nenek Pakande memasuki Fase {phase}";
                 Refresh();
                 float hold = phase == 3 && pakandePresentation != null

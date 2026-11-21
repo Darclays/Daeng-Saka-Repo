@@ -33,16 +33,18 @@ namespace GamecommMentor.DaengSaka
         private bool OffersFishingLoan => fishingQuest != null && fishingQuest.CanBorrow &&
             string.IsNullOrWhiteSpace(QuestTitle);
         private bool OffersMerchant => mainQuestDialogue != null && mainQuestDialogue.OffersMerchantTo(transform);
+        private bool OffersBlacksmith => mainQuestDialogue != null && mainQuestDialogue.OffersBlacksmithTo(transform);
 
         public override string Prompt
         {
             get
             {
                 if (OffersFishingLoan) return "[E] Pinjam alat pancing — Nelayan";
-                if (!OffersMerchant) return base.Prompt;
-                return string.IsNullOrWhiteSpace(QuestTitle)
-                    ? "[E] Belanja — Merchant"
-                    : "[E] Bicara atau belanja — Pemandu Kerajaan";
+                if (OffersMerchant)
+                    return string.IsNullOrWhiteSpace(QuestTitle) && !OffersBlacksmith
+                        ? "[E] Belanja — Merchant"
+                        : "[E] Bicara atau belanja — Pemandu Kerajaan";
+                return OffersBlacksmith ? "[E] Belanja atau enchant — Penempa Besi" : base.Prompt;
             }
         }
 
@@ -71,7 +73,7 @@ namespace GamecommMentor.DaengSaka
         private void Awake() => fishingQuest = GetComponent<GmFishingQuestDialogue>();
 
         public override bool CanInteract(GmInteractor requester) => IsUnlocked && base.CanInteract(requester)
-            && (OffersFishingLoan || OffersMerchant || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
+            && (OffersFishingLoan || OffersMerchant || OffersBlacksmith || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
         {
@@ -94,6 +96,12 @@ namespace GamecommMentor.DaengSaka
             {
                 var counter = GetComponent<GmMerchantCounter>();
                 if (counter == null) counter = gameObject.AddComponent<GmMerchantCounter>();
+                return counter.TryOpen(mainQuestDialogue, requester);
+            }
+            if (OffersBlacksmith)
+            {
+                var counter = GetComponent<GmBlacksmithCounter>();
+                if (counter == null) counter = gameObject.AddComponent<GmBlacksmithCounter>();
                 return counter.TryOpen(mainQuestDialogue, requester);
             }
             if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester, transform);

@@ -58,7 +58,7 @@ namespace GamecommMentor.DaengSaka
         }
     }
 
-    internal enum GmBattlePhase { Party, Enemy, Victory, Defeat }
+    internal enum GmBattlePhase { Party, Enemy, Victory, Defeat, BetweenWaves }
 
     internal sealed class GmBattleUnit
     {
@@ -141,12 +141,13 @@ namespace GamecommMentor.DaengSaka
         public const int GuardReductionPercent = 50;
         private readonly GmBattleUnit[] units;
         private readonly int[] enemyOrder;
+        private readonly int reinforcementStart;
         private readonly int restRecovery;
         private readonly Random random = new Random();
         private readonly GmPartyInventory inventory;
 
         public GmBattleSession(GmBattleStats[] party, GmBattleStats[] enemies, int restMp,
-            GmBossBattleProfile bossProfile = null, GmPartyRun run = null)
+            GmBossBattleProfile bossProfile = null, GmPartyRun run = null, GmBattleStats[] reinforcements = null)
         {
             if (bossProfile != null) enemies = bossProfile.CreateRoster();
             if (party == null || party.Length == 0 || enemies == null || enemies.Length == 0)
@@ -156,18 +157,22 @@ namespace GamecommMentor.DaengSaka
             inventory = run.Inventory;
             GmPartyVitals[] members = run.BindRoster(party);
             PartyCount = party.Length;
-            units = new GmBattleUnit[party.Length + enemies.Length];
-            enemyOrder = new int[enemies.Length];
+            int reserveCount = bossProfile == null ? reinforcements?.Length ?? 0 : 0;
+            reinforcementStart = PartyCount + enemies.Length;
+            units = new GmBattleUnit[reinforcementStart + reserveCount];
+            enemyOrder = new int[enemies.Length + reserveCount];
             GmPartyEquipment equipment = run.Equipment;
             for (int i = 0; i < party.Length; i++)
             {
                 int bonus = equipment.Equipped(members[i])?.Bonus ?? 0;
                 units[i] = new GmBattleUnit(party[i], true, members[i], bonus);
             }
-            for (int i = 0; i < enemies.Length; i++)
+            for (int i = 0; i < enemyOrder.Length; i++)
             {
                 int index = PartyCount + i;
-                units[index] = new GmBattleUnit(enemies[i], false);
+                bool firstWave = i < enemies.Length;
+                GmBattleStats stats = firstWave ? enemies[i] : reinforcements[i - enemies.Length];
+                units[index] = new GmBattleUnit(stats, false) { IsPresent = firstWave };
                 enemyOrder[i] = index;
             }
             Array.Sort(enemyOrder, (left, right) =>
@@ -189,6 +194,8 @@ namespace GamecommMentor.DaengSaka
         public IReadOnlyList<GmBattleUnit> Units => units;
         public IReadOnlyList<int> EnemyOrder => enemyOrder;
         public int PartyCount { get; }
+        public int WaveNumber { get; private set; } = 1;
+        public int WaveCount => reinforcementStart < units.Length ? 2 : 1;
         public GmBossBattle Boss { get; }
         public bool IsOpeningEnemyPhase => RoundNumber == 0 && Phase == GmBattlePhase.Enemy;
         public GmBattlePhase Phase { get; private set; } = GmBattlePhase.Party;
@@ -199,6 +206,17 @@ namespace GamecommMentor.DaengSaka
         public bool IsChoosingPartyMember => Phase == GmBattlePhase.Party && ActorIndex < 0;
         public bool IsPartyTurn => Phase == GmBattlePhase.Party && ActorIndex >= 0;
         public int RechargeAmount => IsPartyTurn ? Math.Min(restRecovery, Actor.MaxMp - Actor.Mp) : 0;
+
+        internal bool TryStartNextWave()
+        {
+            if (Phase != GmBattlePhase.BetweenWaves) return false;
+            for (int index = PartyCount; index < units.Length; index++)
+                units[index].IsPresent = index >= reinforcementStart;
+            WaveNumber++;
+            RoundNumber++;
+            Phase = GmBattlePhase.Party;
+            return true;
+        }
 
         public int PartyActionsRemaining
         {
@@ -347,6 +365,8 @@ namespace GamecommMentor.DaengSaka
             power += power * Actor.BuffPercent(GmBattleBuff.Attack, RoundNumber) / 100;
             power -= power * Actor.BuffPercent(GmBattleBuff.Weaken, RoundNumber) / 100;
             power -= power * target.BuffPercent(GmBattleBuff.Defense, RoundNumber) / 100;
+            if (move == GmBattleMove.BasicAttack && target.IsBoss && Boss != null)
+                power -= power * Boss.BasicAttackReduction / 100;
             // Round the reduction down so a guarded 1-damage hit still deals 1.
             if (Phase == GmBattlePhase.Enemy && target.GuardRound == RoundNumber)
                 power -= power * GuardReductionPercent / 100;
@@ -441,7 +461,8 @@ namespace GamecommMentor.DaengSaka
 
             if (!partyAlive || !enemiesAlive)
             {
-                Phase = partyAlive ? GmBattlePhase.Victory : GmBattlePhase.Defeat;
+                Phase = !partyAlive ? GmBattlePhase.Defeat
+                    : WaveNumber < WaveCount ? GmBattlePhase.BetweenWaves : GmBattlePhase.Victory;
                 return;
             }
 

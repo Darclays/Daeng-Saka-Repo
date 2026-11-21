@@ -53,6 +53,11 @@ namespace GamecommMentor.DaengSaka
             IsSpeaker(GmMainQuestStep.KunjungiMerchant, partner) &&
             !string.IsNullOrWhiteSpace(TitleFor(GmMainQuestStep.KunjungiMerchant));
 
+        internal bool OffersBlacksmithTo(Transform partner) => HasActiveQuest &&
+            quest.HasCompleted(GmMainQuestStep.KunjungiPenempaBesi) &&
+            IsSpeaker(GmMainQuestStep.KunjungiPenempaBesi, partner) &&
+            !string.IsNullOrWhiteSpace(TitleFor(GmMainQuestStep.KunjungiPenempaBesi));
+
         public string CurrentTitle => HasActiveQuest ? TitleFor(quest.Step) : null;
 
         internal string CurrentTitleFor(Transform partner) =>

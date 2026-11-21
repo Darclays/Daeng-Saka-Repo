@@ -13,15 +13,26 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private bool usePoppoBattle;
         [SerializeField] private GmEncounterRoster roster;
         [SerializeField] private bool startWhenReadyWhileTouching;
+        [SerializeField] private bool rememberVictory;
+        [SerializeField] private bool findSceneFlow;
         private SphereCollider trigger;
         private CharacterController suppressedPlayer;
+        private GmCavePatrol patrol;
+        private string placedEncounterId;
+        private float canStartAt;
 
-        public string EncounterId => encounterId;
+        public string EncounterId => placedEncounterId ?? encounterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
         public bool IsDefeated { get; private set; }
         public GmBossBattleProfile BossBattleProfile => bossBattleProfile;
         public bool UsePoppoBattle => usePoppoBattle;
         internal GmEncounterRoster Roster => roster;
+        internal bool SupportsWaves => BossBattleProfile == null && roster != null &&
+            roster.HasEnemies && roster.Enemies.Length == 1 && patrol != null && patrol.isActiveAndEnabled;
+        internal bool IsPlacedOrPatrolling => findSceneFlow || patrol != null;
+
+        internal bool IsFollowing(GmSakaMotor hero) => SupportsWaves && patrol.IsFollowing(hero);
+        internal bool UsesFlow(GmEncounterFlow encounterFlow) => flow == encounterFlow;
 
         public void SetRoster(GmEncounterRoster value) => roster = value;
 
@@ -36,6 +47,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void SetStartWhenReadyWhileTouching(bool enabled) => startWhenReadyWhileTouching = enabled;
+        public void SetRememberVictory(bool enabled) => rememberVictory = enabled;
 
         private void Reset()
         {
@@ -47,7 +59,24 @@ namespace GamecommMentor.DaengSaka
             body.useGravity = false;
         }
 
-        private void Awake() => trigger = GetComponent<SphereCollider>();
+        private void Awake()
+        {
+            trigger = GetComponent<SphereCollider>();
+            patrol = GetComponent<GmCavePatrol>();
+            if (findSceneFlow)
+            {
+                if (flow == null)
+                    foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                        if (root.TryGetComponent(out flow)) break;
+
+                // A dragged prefab or its duplicate gets a separate key in the current run.
+                string address = transform.GetSiblingIndex().ToString();
+                for (Transform parent = transform.parent; parent != null; parent = parent.parent)
+                    address = $"{parent.GetSiblingIndex()}/{address}";
+                placedEncounterId = $"{gameObject.scene.path}:{encounterId}:{address}";
+            }
+            if (rememberVictory && GmPartyRun.Current.HasDefeatedEncounter(EncounterId)) MarkDefeated();
+        }
 
         private void OnTriggerEnter(Collider other) => TryStartEncounter(other);
 
@@ -58,11 +87,12 @@ namespace GamecommMentor.DaengSaka
 
         private void TryStartEncounter(Collider other)
         {
-            if (!isActiveAndEnabled || IsDefeated || flow == null) return;
+            if (!isActiveAndEnabled || IsDefeated || flow == null || Time.time < canStartAt) return;
             CharacterController body = other as CharacterController;
             if (body == null || body == suppressedPlayer) return;
             GmSakaMotor hero = body.GetComponent<GmSakaMotor>();
-            if (hero != null) flow.TryBegin(hero, this);
+            if (hero == null || (patrol != null && patrol.isActiveAndEnabled && !patrol.CanStartContact(hero))) return;
+            if (flow.TryBegin(hero, this) && patrol != null) patrol.RequireNewApproach(hero.transform.position);
         }
 
         private void FixedUpdate()
@@ -79,9 +109,17 @@ namespace GamecommMentor.DaengSaka
             suppressedPlayer = hero != null ? hero.GetComponent<CharacterController>() : null;
         }
 
+        internal void GiveSpaceOnReturn(GmSakaMotor hero)
+        {
+            SuppressUntilSeparated(hero);
+            canStartAt = Time.time + 1.5f;
+            if (patrol != null && hero != null) patrol.RequireNewApproach(hero.transform.position);
+        }
+
         internal void MarkDefeated()
         {
             IsDefeated = true;
+            if (rememberVictory) GmPartyRun.Current.RememberDefeatedEncounter(EncounterId);
             gameObject.SetActive(false);
         }
     }

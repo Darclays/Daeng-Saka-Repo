@@ -11,6 +11,8 @@ namespace GamecommMentor.DaengSaka
     public sealed class GmEncounterFlow : MonoBehaviour
     {
         private enum Phase { Exploring, Loading, Battle, Returning }
+        private const float JoinRadius = 4f;
+        private const float ReturnSpaceRadius = 6f;
 
         [SerializeField] private string battleScenePath;
         private readonly List<GameObject> suspendedRoots = new List<GameObject>();
@@ -27,6 +29,7 @@ namespace GamecommMentor.DaengSaka
         public string BattleScenePath => battleScenePath;
         public GmEnemyEncounter CurrentEncounter { get; private set; }
         public GmSakaMotor CurrentPlayer { get; private set; }
+        internal GmEnemyEncounter Reinforcement { get; private set; }
 
         public event Action<GmSakaMotor, GmEnemyEncounter> VictoryReturned;
 
@@ -66,6 +69,7 @@ namespace GamecommMentor.DaengSaka
             loadingPath = battleScenePath;
             CurrentPlayer = hero;
             CurrentEncounter = enemy;
+            Reinforcement = FindReinforcement(hero, enemy, quest);
             gate = playerGate;
             gate.Block(this);
             try
@@ -86,6 +90,44 @@ namespace GamecommMentor.DaengSaka
             }
             pendingLoad.completed += OnBattleLoaded;
             return true;
+        }
+
+        private GmEnemyEncounter FindReinforcement(GmSakaMotor hero, GmEnemyEncounter lead, GmMainQuestProgress quest)
+        {
+            if (!lead.IsFollowing(hero) || (quest != null && quest.IsScriptedEncounter(lead))) return null;
+            GmEnemyEncounter nearest = null;
+            float distanceLimit = JoinRadius * JoinRadius;
+            foreach (GmEnemyEncounter enemy in SceneEncounters(explorationScene))
+            {
+                if (enemy == lead || !enemy.isActiveAndEnabled || enemy.IsDefeated || !enemy.UsesFlow(this) ||
+                    (quest != null && quest.IsScriptedEncounter(enemy))) continue;
+                float distance = (enemy.transform.position - hero.transform.position).sqrMagnitude;
+                if (distance > distanceLimit || (distance == distanceLimit && nearest != null) ||
+                    !enemy.IsFollowing(hero)) continue;
+                nearest = enemy;
+                distanceLimit = distance;
+            }
+            return nearest;
+        }
+
+        private static IEnumerable<GmEnemyEncounter> SceneEncounters(Scene scene)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+                if (root != null)
+                    foreach (var enemy in root.GetComponentsInChildren<GmEnemyEncounter>(true))
+                        yield return enemy;
+        }
+
+        private void GiveSpaceAroundPlayer()
+        {
+            if (CurrentPlayer == null) return;
+            var quest = GetComponent<GmMainQuestProgress>();
+            Vector3 position = CurrentPlayer.transform.position;
+            foreach (var enemy in SceneEncounters(explorationScene))
+                if (enemy != null && !enemy.IsDefeated && enemy.IsPlacedOrPatrolling && enemy.UsesFlow(this) &&
+                    (quest == null || !quest.IsScriptedEncounter(enemy)) &&
+                    (enemy.transform.position - position).sqrMagnitude <= ReturnSpaceRadius * ReturnSpaceRadius)
+                    enemy.GiveSpaceOnReturn(CurrentPlayer);
         }
 
         private void OnBattleLoaded(AsyncOperation operation)
@@ -140,6 +182,7 @@ namespace GamecommMentor.DaengSaka
             {
                 SceneManager.SetActiveScene(explorationScene);
                 GameObject defeatedRoot = null;
+                GameObject defeatedReinforcementRoot = null;
                 if (CurrentEncounter != null)
                 {
                     if (outcome == GmEncounterOutcome.Victory)
@@ -149,8 +192,18 @@ namespace GamecommMentor.DaengSaka
                     }
                     else CurrentEncounter.SuppressUntilSeparated(CurrentPlayer);
                 }
+                if (Reinforcement != null)
+                {
+                    if (outcome == GmEncounterOutcome.Victory)
+                    {
+                        defeatedReinforcementRoot = Reinforcement.gameObject;
+                        Reinforcement.MarkDefeated();
+                    }
+                    else Reinforcement.GiveSpaceOnReturn(CurrentPlayer);
+                }
+                GiveSpaceAroundPlayer();
                 foreach (GameObject root in suspendedRoots)
-                    if (root != null && root != defeatedRoot) root.SetActive(true);
+                    if (root != null && root != defeatedRoot && root != defeatedReinforcementRoot) root.SetActive(true);
             }
             suspendedRoots.Clear();
 
@@ -213,6 +266,7 @@ namespace GamecommMentor.DaengSaka
             loadingPath = null;
             CurrentPlayer = null;
             CurrentEncounter = null;
+            Reinforcement = null;
             suspendedRoots.Clear();
             phase = Phase.Exploring;
 

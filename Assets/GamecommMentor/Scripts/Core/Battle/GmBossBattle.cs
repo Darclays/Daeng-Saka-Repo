@@ -59,6 +59,7 @@ namespace GamecommMentor.DaengSaka
         public bool WasAirborne { get; private set; }
         public GmBattleMove FireRain => fireRain;
         public GmBattleMove ChargedMove => IsCharging ? greaterShadow : null;
+        public int BasicAttackReduction => Phase == 2 ? profile.AirborneBasicReduction : 0;
 
         public bool SupportsMove(GmBattleMove move) => Phase switch
         {

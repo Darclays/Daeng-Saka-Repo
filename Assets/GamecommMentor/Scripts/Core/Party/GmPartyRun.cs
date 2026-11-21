@@ -61,8 +61,13 @@ namespace GamecommMentor.DaengSaka
         public GmPartyInventory Inventory { get; } = new GmPartyInventory();
         public GmPartyWallet Wallet { get; } = new GmPartyWallet();
         internal bool ReceivedSoreliaSupplies { get; private set; }
+        internal bool FreeEnchantAvailable { get; private set; } = true;
         private GmEconomyCatalog economy;
         private GmPartyEquipment equipment;
+        private readonly HashSet<string> defeatedOptionalEncounters = new HashSet<string>(StringComparer.Ordinal);
+
+        internal bool HasDefeatedEncounter(string id) => defeatedOptionalEncounters.Contains(id);
+        internal void RememberDefeatedEncounter(string id) => defeatedOptionalEncounters.Add(id);
 
         internal GmEconomyCatalog Economy
         {
@@ -100,6 +105,36 @@ namespace GamecommMentor.DaengSaka
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void BeginPlaySession() => Current = new GmPartyRun();
+
+        internal bool TryBuyWeapon(GmBlacksmithOffer offer, int expectedPrice)
+        {
+            if (offer == null || expectedPrice <= 0 || offer.Price != expectedPrice || Economy == null) return false;
+            foreach (var available in Economy.Blacksmith)
+            {
+                if (available != offer) continue;
+                return Wallet.TrySpend(expectedPrice, () => Equipment.TryGrant(offer.WeaponId));
+            }
+            return false;
+        }
+
+        internal int PriceForEnchant(GmOwnedWeapon weapon)
+        {
+            if (Economy == null || !Equipment.Owns(weapon) || weapon.Rank >= GmEconomyCatalog.MaxEnchantRank)
+                return -1;
+            return weapon.Rank == 0 && FreeEnchantAvailable ? 0 : Economy.EnchantPrice(weapon.Rank);
+        }
+
+        internal bool TryEnchant(GmOwnedWeapon weapon, int expectedRank, int expectedPrice)
+        {
+            if (expectedPrice < 0 || PriceForEnchant(weapon) != expectedPrice || weapon.Rank != expectedRank)
+                return false;
+
+            if (expectedPrice > 0)
+                return Wallet.TrySpend(expectedPrice, () => Equipment.TryUpgrade(weapon, expectedRank, GmEconomyCatalog.MaxEnchantRank));
+            if (!Equipment.TryUpgrade(weapon, expectedRank, GmEconomyCatalog.MaxEnchantRank)) return false;
+            FreeEnchantAvailable = false;
+            return true;
+        }
 
         internal bool TryReceiveSoreliaSupplies()
         {

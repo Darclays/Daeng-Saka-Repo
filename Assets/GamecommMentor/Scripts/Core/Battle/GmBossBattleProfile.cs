@@ -18,6 +18,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField, Min(1)] private int shadowDamage = 24;
         [SerializeField, Min(1)] private int fireRainDamage = 30;
         [SerializeField, Min(1)] private int greaterShadowDamage = DefaultGreaterShadowDamage;
+        [SerializeField, Range(0, 90)] private int airborneBasicReduction;
 
         internal int PhaseTwoAt => Math.Max(2, Math.Min(99, phaseTwoAt));
         internal int PhaseThreeAt => Math.Max(1, Math.Min(PhaseTwoAt - 1, phaseThreeAt));
@@ -26,6 +27,7 @@ namespace GamecommMentor.DaengSaka
         internal int ShadowDamage => Math.Max(1, shadowDamage);
         internal int FireRainDamage => Math.Max(1, fireRainDamage);
         internal int GreaterShadowDamage => greaterShadowDamage > 0 ? greaterShadowDamage : DefaultGreaterShadowDamage;
+        internal int AirborneBasicReduction => Math.Max(0, Math.Min(90, airborneBasicReduction));
 
         internal GmBattleStats[] CreateRoster() => new[]
         {
