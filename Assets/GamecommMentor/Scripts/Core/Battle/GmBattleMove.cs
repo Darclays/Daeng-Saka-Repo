@@ -15,6 +15,15 @@ namespace GamecommMentor.DaengSaka
         public static readonly GmBattleMove GBite = new GmBattleMove(
             "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 3,
             animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true);
+        public static readonly GmBattleMove HammerSweep = new GmBattleMove(
+            "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 12, cooldown: 3,
+            animation: "babiRusaHammerSweep", enemyOnly: true);
+        public static readonly GmBattleMove Uppercut = new GmBattleMove(
+            "Uppercut", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 0, cooldown: 4,
+            animation: "manguniUppercut", enemyOnly: true);
+        public static readonly GmBattleMove TailSweep = new GmBattleMove(
+            "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 13, cooldown: 3,
+            animation: "laWunaTailSweep", enemyOnly: true);
         public static readonly GmBattleMove CaneStrike = new GmBattleMove(
             "Cane Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 22, cooldown: 3,
             animation: "pakandeCane", impact: "shieldImpact", impactScale: 0.72f, enemyOnly: true);

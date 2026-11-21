@@ -215,6 +215,7 @@ namespace GamecommMentor.DaengSaka
             menu = GmBattleMenu.Command;
             selection = null;
             lastAction = $"{GmBattleView.ShortName(actor)} · {move.Name}";
+            if (!actor.IsParty && move.IsDamaging && move.TargetsAll) lastAction += " · Seluruh party";
             Refresh();
 
             GmBattleImpactCue cue = GmBattleImpactCue.For(move, actor.Character);
@@ -395,6 +396,11 @@ namespace GamecommMentor.DaengSaka
             {
                 GmBattleHit hit = hits[i];
                 GmBattleUnit target = session.Units[hit.Index];
+                if (hit.Amount == 0 && hit.Stunned)
+                {
+                    effects[i] = $"{GmBattleView.ShortName(target)} · Stun";
+                    continue;
+                }
                 string amount = move.Effect switch
                 {
                     GmBattleEffect.Heal => $"+{hit.Amount} HP",

@@ -213,6 +213,7 @@ namespace GamecommMentor.DaengSaka
 
             bool approach = move == GmBattleMove.ShieldSwing || move == GmBattleMove.DominionStrike ||
                 move == GmBattleMove.GBite || move == GmBattleMove.CaneStrike ||
+                move == GmBattleMove.Uppercut || move == GmBattleMove.TailSweep ||
                 (move == GmBattleMove.BasicAttack && (unit.Character == GmBattleCharacter.Pacca ||
                     GmBattleArt.EnemyKey(unit.EnemyKind) != null));
             if (approach && targets.Length == 1)
@@ -223,7 +224,7 @@ namespace GamecommMentor.DaengSaka
                     : (pose.Count - 1 - pose.Position) / Mathf.Max(1, pose.Count - 1 - pose.Contact);
                 travel = Mathf.Clamp01(travel);
                 float stop = Mathf.Min(100f, delta.magnitude * 0.45f);
-                if (pose.Cue != null) stop = Mathf.Min(62f, delta.magnitude * 0.36f);
+                if (pose.Cue != null) stop = Mathf.Min(pose.Cue.ApproachGap, delta.magnitude * 0.36f);
                 actor.Slot.anchoredPosition = (delta - delta.normalized * stop) * travel;
             }
 
@@ -232,8 +233,12 @@ namespace GamecommMentor.DaengSaka
             int effectFrame = pose.Index - pose.Contact + effectLead;
             if (hits == null)
             {
-                if (effectFrame >= 0)
-                    foreach (int index in targets) DrawEffect(views[index], move, effect, effectFrame);
+                foreach (int index in targets)
+                {
+                    UnitView target = views[index];
+                    if (!unit.IsParty && move.IsDamaging) target.Ring.color = Target;
+                    if (effectFrame >= 0) DrawEffect(target, move, effect, effectFrame);
+                }
                 return;
             }
 
@@ -260,13 +265,14 @@ namespace GamecommMentor.DaengSaka
                     Color tint = Color.Lerp(Color.white, new Color(1f, 0.57f, 0.45f), flash);
                     tint.a = alive || target.Death != null ? 1f : 0.45f;
                     target.Sprite.color = tint;
-                    if (pose.Cue != null && move == GmBattleMove.BasicAttack) DrawHitSpark(target, pose.HitAge);
+                    if (pose.Cue != null && (move == GmBattleMove.BasicAttack || effect == null))
+                        DrawHitSpark(target, pose.HitAge);
                 }
                 target.Ring.color = move.IsDamaging ? Target : Active;
                 if (!sharedImpact) DrawEffect(target, move, effect, effectFrame);
                 float numberProgress = pose.Cue != null ? Mathf.Clamp01(pose.HitAge / 0.30f)
                     : elapsed / (float)Mathf.Max(1, pose.Count - pose.Contact);
-                DrawAmount(target, move, hit.Amount, numberProgress, pose.Cue != null);
+                DrawAmount(target, move, hit, numberProgress, pose.Cue != null);
             }
         }
 
@@ -290,14 +296,17 @@ namespace GamecommMentor.DaengSaka
             target.HitSpark.rectTransform.SetAsLastSibling();
         }
 
-        private static void DrawAmount(UnitView view, GmBattleMove move, int amount, float progress, bool pop)
+        private static void DrawAmount(UnitView view, GmBattleMove move, GmBattleHit hit, float progress, bool pop)
         {
-            if (amount <= 0 || move.Effect == GmBattleEffect.Buff) return;
+            int amount = hit.Amount;
+            bool stunOnly = amount == 0 && hit.Stunned;
+            if ((amount <= 0 && !stunOnly) || move.Effect == GmBattleEffect.Buff) return;
             Text text = view.Amount;
+            if (!text.enabled || !pop)
+                text.text = stunOnly ? "STUN" : move.IsDamaging ? $"−{amount}"
+                    : move.Effect == GmBattleEffect.RestoreMp ? $"+{amount} MP" : $"+{amount} HP";
             text.enabled = true;
-            if (!pop || progress == 0f)
-                text.text = move.IsDamaging ? $"−{amount}" : move.Effect == GmBattleEffect.RestoreMp ? $"+{amount} MP" : $"+{amount} HP";
-            Color color = move.IsDamaging ? new Color(1f, 0.90f, 0.82f)
+            Color color = stunOnly ? new Color(1f, 0.79f, 0.49f) : move.IsDamaging ? new Color(1f, 0.90f, 0.82f)
                 : move.Effect == GmBattleEffect.RestoreMp ? new Color(0.66f, 0.86f, 1f) : new Color(0.65f, 0.99f, 0.76f);
             color.a = pop ? Mathf.Clamp01((1f - progress) * 2.5f) : Mathf.Clamp01(1.4f - progress);
             text.color = color;

@@ -60,6 +60,7 @@ namespace GamecommMentor.DaengSaka
         public static GmPartyRun Current { get; private set; } = new GmPartyRun();
         public GmPartyInventory Inventory { get; } = new GmPartyInventory();
         public GmPartyWallet Wallet { get; } = new GmPartyWallet();
+        internal bool ReceivedSoreliaSupplies { get; private set; }
         private GmEconomyCatalog economy;
         private GmPartyEquipment equipment;
 
@@ -99,6 +100,20 @@ namespace GamecommMentor.DaengSaka
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void BeginPlaySession() => Current = new GmPartyRun();
+
+        internal bool TryReceiveSoreliaSupplies()
+        {
+            const int quantity = 5;
+            var hp = GmItemDefinition.HpPotion;
+            var mp = GmItemDefinition.MpPotion;
+            if (ReceivedSoreliaSupplies || Inventory.Count(hp) > int.MaxValue - quantity ||
+                Inventory.Count(mp) > int.MaxValue - quantity) return false;
+
+            Inventory.TryAdd(hp, quantity);
+            Inventory.TryAdd(mp, quantity);
+            ReceivedSoreliaSupplies = true;
+            return true;
+        }
 
         internal GmPartyVitals[] BindRoster(GmBattleStats[] roster, bool awaitingSceneStats = false)
         {

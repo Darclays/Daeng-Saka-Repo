@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using PixelCrushers.DialogueSystem;
 
@@ -15,6 +16,31 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Nelayan = "Nelayan";
         private const string Pakande = "Nenek Pakande";
         private const string Petunjuk = "Petunjuk";
+        private const string SoreliaAfterPoppo = "Petunjuk Gua Lembayung";
+        internal const string SoreliaAfterPoppoTitle = Prefix + SoreliaAfterPoppo;
+
+        private static readonly (string actor, string text)[] SoreliaAfterPoppoLines =
+        {
+            (Nelayan, "Terima kasih, Nak, sudah menyelamatkan keluarga saya."),
+            (Daung, "Apakah Bapak dan keluarga aman? Kalian tidak terluka, kan?"),
+            ("Anak Nelayan", "Kami tidak apa-apa, Kak. Kalian datang sangat tepat waktu."),
+            (Saka, "Monster itu datang dari mana, ya? Aku kira desa ini aman dari monster."),
+            (Nelayan, "Mereka sepertinya datang dari Gua Lembayung, Nak. Belakangan ini aura gelap mulai terlihat dari mulut guanya."),
+            (Pacca, "Sepertinya pemikiranmu benar, Saka."),
+            (Saka, "Sudah kutebak. Baiklah, kita harus segera ke sana untuk menghentikan serangan monster ke desa ini."),
+            (Nelayan, "Kalian berencana mau ke gua itu? Lebih baik jangan, Nak. Di sana sangat berbahaya."),
+            (Daung, "Tenang, Pak. Kami utusan dari kerajaan untuk menghentikan masalah ini."),
+            ("Ibu Nelayan", "Baiklah, kalau begitu. Kalian boleh istirahat dulu sebelum pergi ke sana."),
+            (Nelayan, "Kalau mau, kalian bisa memancing di sungai dekat sini untuk istirahat sejenak."),
+            (Saka, "Baiklah, kita pikir-pikir dulu, Pak.")
+        };
+
+        private static readonly (string actor, string text)[] PreviousSoreliaAfterPoppoLines =
+        {
+            (Nelayan, "Terima kasih nak sudah menyelamatkan keluarga saya"),
+            (Nelayan, "Mereka sepertinya datang dari Gua Lembayung nak, belakangan ini aura gelap mulai terlihat dari mulut Guanya"),
+            (Saka, "Sudah ku tebak... baiklah kalau begitu, kita harus segera kesana untuk menghentikan serangan monster ke desa ini")
+        };
 
         internal static GmPixelCrushersMainQuestDialogue.StepDialogue[] EnsureConversations(DialogueDatabase database)
         {
@@ -38,10 +64,8 @@ namespace GamecommMentor.DaengSaka.Editor
             Add(database, template, dialogues, GmMainQuestStep.TemuiKeluargaNelayan, "Keluarga Nelayan di Sorelia",
                 (Nelayan, "Tolooooong!!!!!!!"),
                 (Saka, "Cepat, lari kerumah! akan kita tahan mereka disini"));
-            Add(database, template, dialogues, GmMainQuestStep.BicaraDenganNelayan, "Petunjuk Gua Lembayung",
-                (Nelayan, "Terima kasih nak sudah menyelamatkan keluarga saya"),
-                (Nelayan, "Mereka sepertinya datang dari Gua Lembayung nak, belakangan ini aura gelap mulai terlihat dari mulut Guanya"),
-                (Saka, "Sudah ku tebak... baiklah kalau begitu, kita harus segera kesana untuk menghentikan serangan monster ke desa ini"));
+            bool createSoreliaDialogue = database.GetConversation(SoreliaAfterPoppoTitle) == null;
+            Add(database, template, dialogues, GmMainQuestStep.BicaraDenganNelayan, SoreliaAfterPoppo, PreviousSoreliaAfterPoppoLines);
             Add(database, template, dialogues, GmMainQuestStep.MasukGuaLembayung, "Masuk Gua Lembayung",
                 (Pacca, "Wah.... Gelap"),
                 (Daung, "Iyalah.. namanya juga Gua.. disini tidak banyak sumber cahaya"),
@@ -70,6 +94,9 @@ namespace GamecommMentor.DaengSaka.Editor
                 (Petunjuk, "Kalahkan musuh gua yang ditandai di layar. Setelah menang, kembali ke sini untuk bertemu Nenek Pakande."));
             Add(database, template, dialogues, GmMainQuestStep.LawanPakande, "Petunjuk Battle Pakande",
                 (Petunjuk, "Dekati dan sentuh penanda Nenek Pakande untuk memulai battle."));
+            // Assign the existing cast's IDs before adding the two new speakers.
+            if (createSoreliaDialogue)
+                UpgradeSoreliaAfterPoppo(database, database.GetConversation(SoreliaAfterPoppoTitle));
             return dialogues.ToArray();
         }
 
@@ -94,6 +121,48 @@ namespace GamecommMentor.DaengSaka.Editor
                 (Nelayan, "Coba memancing dari tepi air, di tempat ikan berkumpul."));
         }
 
+        internal static bool UpgradeSoreliaAfterPoppo(DialogueDatabase database, Conversation conversation)
+        {
+            if (MatchesSoreliaAfterPoppo(database, conversation, SoreliaAfterPoppoLines)) return false;
+            if (!MatchesSoreliaAfterPoppo(database, conversation, PreviousSoreliaAfterPoppoLines))
+                throw new InvalidOperationException(
+                    $"Dialog '{conversation.Title}' sudah diedit. Cadangkan versi itu sebelum memasukkan revisi.");
+
+            var updated = CreateLinearEntries(database, Template.FromDefault(), conversation,
+                GmPixelCrushersMainQuestDialogue.CompletionEntryTitle, SoreliaAfterPoppoLines);
+            conversation.dialogueEntries.Clear();
+            conversation.dialogueEntries.AddRange(updated);
+            return true;
+        }
+
+        private static bool MatchesSoreliaAfterPoppo(DialogueDatabase database, Conversation conversation,
+            (string actor, string text)[] lines)
+        {
+            var entries = conversation.dialogueEntries;
+            int end = lines.Length + 1;
+            if (entries.Count != end + 1 || entries[0].Title != "START" ||
+                entries[end].Title != GmPixelCrushersMainQuestDialogue.CompletionEntryTitle ||
+                !string.IsNullOrEmpty(entries[0].DialogueText) || !string.IsNullOrEmpty(entries[end].DialogueText) ||
+                database.GetActor(conversation.ActorID)?.Name != Saka ||
+                database.GetActor(conversation.ConversantID)?.Name != Nelayan) return false;
+
+            for (int i = 0; i <= end; i++)
+            {
+                DialogueEntry entry = entries[i];
+                if (entry.id != i || entry.conversationID != conversation.id ||
+                    !string.IsNullOrEmpty(entry.conditionsString) || !string.IsNullOrEmpty(entry.userScript) ||
+                    entry.outgoingLinks.Count != (i == end ? 0 : 1)) return false;
+                if (i == end) break;
+
+                Link next = entry.outgoingLinks[0];
+                if (next.originConversationID != conversation.id || next.destinationConversationID != conversation.id ||
+                    next.originDialogueID != i || next.destinationDialogueID != i + 1) return false;
+                if (i > 0 && (entry.DialogueText != lines[i - 1].text ||
+                    database.GetActor(entry.ActorID)?.Name != lines[i - 1].actor)) return false;
+            }
+            return true;
+        }
+
         internal static bool AddConversation(DialogueDatabase database, Template template,
             string title, string completionEntry, params (string actor, string text)[] lines) =>
             AddConversation(database, template, title, completionEntry, null, lines);
@@ -114,35 +183,45 @@ namespace GamecommMentor.DaengSaka.Editor
             conversation.overrideSettings.overrideSubtitleSettings = true;
             conversation.overrideSettings.showPCSubtitlesDuringLine = true;
             conversation.overrideSettings.continueButton = DisplaySettings.SubtitleSettings.ContinueButtonMode.Always;
+            conversation.dialogueEntries.AddRange(CreateLinearEntries(database, template, conversation, completionEntry, lines));
+            database.conversations.Add(conversation);
+            return true;
+        }
 
-            DialogueEntry previous = GmDialogueExampleData.Node(template, id, 0, hero.id, partner.id, "START", "", 250f, 0f);
+        private static List<DialogueEntry> CreateLinearEntries(DialogueDatabase database, Template template,
+            Conversation conversation, string completionEntry, (string actor, string text)[] lines)
+        {
+            int id = conversation.id;
+            int hero = conversation.ActorID;
+            int partner = conversation.ConversantID;
+            var entries = new List<DialogueEntry>(lines.Length + 2);
+            DialogueEntry previous = GmDialogueExampleData.Node(template, id, 0, hero, partner, "START", "", 250f, 0f);
             previous.Sequence = "None()";
-            conversation.dialogueEntries.Add(previous);
+            entries.Add(previous);
             for (int index = 0; index < lines.Length; index++)
             {
                 Actor speaker = GetOrCreateActor(database, template, lines[index].actor);
-                int listener = speaker.id == hero.id ? partner.id : hero.id;
+                int listener = speaker.id == hero ? partner : hero;
                 int entryId = index + 1;
                 DialogueEntry entry = GmDialogueExampleData.Node(template, id, entryId, speaker.id, listener,
                     speaker.Name, lines[index].text, 250f, entryId * 140f);
                 // PC history is authored as linear dialogue, even when regular NPCs show response menus.
                 if (speaker.IsPlayer) entry.MenuText = "[auto] " + lines[index].text;
                 previous.outgoingLinks.Add(new Link(id, previous.id, id, entryId));
-                conversation.dialogueEntries.Add(entry);
+                entries.Add(entry);
                 previous = entry;
             }
 
             if (completionEntry != null)
             {
                 int completionId = lines.Length + 1;
-                DialogueEntry completion = GmDialogueExampleData.Node(template, id, completionId, partner.id, hero.id,
+                DialogueEntry completion = GmDialogueExampleData.Node(template, id, completionId, partner, hero,
                     completionEntry, "", 250f, completionId * 140f);
                 completion.Sequence = "None()";
                 previous.outgoingLinks.Add(new Link(id, previous.id, id, completionId));
-                conversation.dialogueEntries.Add(completion);
+                entries.Add(completion);
             }
-            database.conversations.Add(conversation);
-            return true;
+            return entries;
         }
 
         private static Actor GetOrCreateActor(DialogueDatabase database, Template template, string name)

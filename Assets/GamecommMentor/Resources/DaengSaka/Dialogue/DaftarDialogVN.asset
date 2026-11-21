@@ -26,7 +26,7 @@ MonoBehaviour:
     profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
     kameraQuestUtama: 1
   - judul: DaengSaka/Main Quest/Petunjuk Gua Lembayung
-    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    profil: {fileID: 11400000, guid: 56a8cd211d364befa7a339c3982a9319, type: 2}
     kameraQuestUtama: 1
   - judul: DaengSaka/Main Quest/Masuk Gua Lembayung
     profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
@@ -54,4 +54,16 @@ MonoBehaviour:
     kameraQuestUtama: 0
   - judul: DaengSaka/Dialog Penjaga/Sorelia 2
     profil: {fileID: 11400000, guid: c25e9b8f26394f4e8a17ba3bdf4cae06, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Warga Sorelia/Ibu Nelayan
+    profil: {fileID: 11400000, guid: c788f5c575045d8eaa36e12a8a052079, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Warga Sorelia/Ibu Nelayan Setelah Bekal
+    profil: {fileID: 11400000, guid: c788f5c575045d8eaa36e12a8a052079, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Warga Sorelia/Keluarga Warga
+    profil: {fileID: 11400000, guid: c788f5c575045d8eaa36e12a8a052079, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Warga Sorelia/Anak-Anak Desa
+    profil: {fileID: 11400000, guid: c788f5c575045d8eaa36e12a8a052079, type: 2}
     kameraQuestUtama: 0

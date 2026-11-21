@@ -86,7 +86,14 @@ namespace GamecommMentor.DaengSaka
         public bool IsParty { get; }
         public bool IsBoss { get; }
         public GmBattleEnemyKind EnemyKind { get; }
-        public GmBattleMove EnemySkill => EnemyKind == GmBattleEnemyKind.Poppo ? GmBattleMove.GBite : null;
+        public GmBattleMove EnemySkill => EnemyKind switch
+        {
+            GmBattleEnemyKind.Poppo => GmBattleMove.GBite,
+            GmBattleEnemyKind.BabiRusa => GmBattleMove.HammerSweep,
+            GmBattleEnemyKind.Manguni => GmBattleMove.Uppercut,
+            GmBattleEnemyKind.LaWuna => GmBattleMove.TailSweep,
+            _ => null
+        };
         public string Name => vitals.Name;
         public int MaxHp => vitals.MaxHp;
         public int MaxMp => vitals.MaxMp;
@@ -411,7 +418,9 @@ namespace GamecommMentor.DaengSaka
             }
             target = FindEnemyTarget();
             GmBattleMove skill = Actor.EnemySkill;
-            if (Actor.CompletedActions > 0 && skill != null && UnavailableReason(skill) == null) return skill;
+            // Babi Rusa shows its area threat on its first turn. The other skills come in after an action.
+            if (skill != null && (Actor.CompletedActions > 0 || skill == GmBattleMove.HammerSweep) &&
+                UnavailableReason(skill) == null) return skill;
             return GmBattleMove.BasicAttack;
         }
 

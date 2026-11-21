@@ -95,6 +95,30 @@
       "count": 5,
       "anchorX": 29,
       "anchorY": 36
+    },
+    {
+      "key": "babiRusaHammerSweep",
+      "width": 87,
+      "height": 61,
+      "count": 15,
+      "anchorX": 56,
+      "anchorY": 59
+    },
+    {
+      "key": "manguniUppercut",
+      "width": 124,
+      "height": 105,
+      "count": 14,
+      "anchorX": 53,
+      "anchorY": 103
+    },
+    {
+      "key": "laWunaTailSweep",
+      "width": 60,
+      "height": 39,
+      "count": 14,
+      "anchorX": 43,
+      "anchorY": 37
     }
   ]
 }

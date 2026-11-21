@@ -321,6 +321,116 @@ MonoBehaviour:
     spritePortrait: {fileID: 0}
     alternatePortraits: []
     spritePortraits: []
+  - id: 910060
+    fields:
+    - title: Name
+      value: Ibu Nelayan
+      type: 0
+      typeString: 
+    - title: Pictures
+      value: '[]'
+      type: 3
+      typeString: CustomFieldType_Files
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: IsPlayer
+      value: False
+      type: 2
+      typeString: CustomFieldType_Boolean
+    portrait: {fileID: 0}
+    spritePortrait: {fileID: 0}
+    alternatePortraits: []
+    spritePortraits: []
+  - id: 910061
+    fields:
+    - title: Name
+      value: Warga Ibu
+      type: 0
+      typeString: 
+    - title: Pictures
+      value: '[]'
+      type: 3
+      typeString: CustomFieldType_Files
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: IsPlayer
+      value: False
+      type: 2
+      typeString: CustomFieldType_Boolean
+    portrait: {fileID: 0}
+    spritePortrait: {fileID: 0}
+    alternatePortraits: []
+    spritePortraits: []
+  - id: 910062
+    fields:
+    - title: Name
+      value: Warga Bapak
+      type: 0
+      typeString: 
+    - title: Pictures
+      value: '[]'
+      type: 3
+      typeString: CustomFieldType_Files
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: IsPlayer
+      value: False
+      type: 2
+      typeString: CustomFieldType_Boolean
+    portrait: {fileID: 0}
+    spritePortrait: {fileID: 0}
+    alternatePortraits: []
+    spritePortraits: []
+  - id: 910063
+    fields:
+    - title: Name
+      value: Anak Nelayan
+      type: 0
+      typeString: 
+    - title: Pictures
+      value: '[]'
+      type: 3
+      typeString: CustomFieldType_Files
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: IsPlayer
+      value: False
+      type: 2
+      typeString: CustomFieldType_Boolean
+    portrait: {fileID: 0}
+    spritePortrait: {fileID: 0}
+    alternatePortraits: []
+    spritePortraits: []
+  - id: 910064
+    fields:
+    - title: Name
+      value: Anak Warga
+      type: 0
+      typeString: 
+    - title: Pictures
+      value: '[]'
+      type: 3
+      typeString: CustomFieldType_Files
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: IsPlayer
+      value: False
+      type: 2
+      typeString: CustomFieldType_Boolean
+    portrait: {fileID: 0}
+    spritePortrait: {fileID: 0}
+    alternatePortraits: []
+    spritePortraits: []
   items: []
   locations: []
   variables: []
@@ -3181,7 +3291,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: Terima kasih nak sudah menyelamatkan keluarga saya
+        value: Terima kasih, Nak, sudah menyelamatkan keluarga saya.
         type: 0
         typeString: 
       - title: Sequence
@@ -3216,7 +3326,7 @@ MonoBehaviour:
     - id: 2
       fields:
       - title: Title
-        value: Nelayan
+        value: Daung
         type: 0
         typeString: 
       - title: Description
@@ -3224,7 +3334,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Actor
-        value: 910002
+        value: 910053
         type: 5
         typeString: CustomFieldType_Actor
       - title: Conversant
@@ -3236,8 +3346,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: Mereka sepertinya datang dari Gua Lembayung nak, belakangan ini aura
-          gelap mulai terlihat dari mulut Guanya
+        value: Apakah Bapak dan keluarga aman? Kalian tidak terluka, kan?
         type: 0
         typeString: 
       - title: Sequence
@@ -3272,7 +3381,7 @@ MonoBehaviour:
     - id: 3
       fields:
       - title: Title
-        value: Saka
+        value: Anak Nelayan
         type: 0
         typeString: 
       - title: Description
@@ -3280,21 +3389,19 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Actor
-        value: 910001
+        value: 910063
         type: 5
         typeString: CustomFieldType_Actor
       - title: Conversant
-        value: 910002
+        value: 910001
         type: 5
         typeString: CustomFieldType_Actor
       - title: Menu Text
-        value: '[auto] Sudah ku tebak... baiklah kalau begitu, kita harus segera
-          kesana untuk menghentikan serangan monster ke desa ini'
+        value: 
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: Sudah ku tebak... baiklah kalau begitu, kita harus segera kesana untuk
-          menghentikan serangan monster ke desa ini
+        value: Kami tidak apa-apa, Kak. Kalian datang sangat tepat waktu.
         type: 0
         typeString: 
       - title: Sequence
@@ -3327,6 +3434,509 @@ MonoBehaviour:
         width: 180
         height: 90
     - id: 4
+      fields:
+      - title: Title
+        value: Saka
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: '[auto] Monster itu datang dari mana, ya? Aku kira desa ini aman dari
+          monster.'
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Monster itu datang dari mana, ya? Aku kira desa ini aman dari monster.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 4
+        destinationConversationID: 910154
+        destinationDialogueID: 5
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 560
+        width: 180
+        height: 90
+    - id: 5
+      fields:
+      - title: Title
+        value: Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Mereka sepertinya datang dari Gua Lembayung, Nak. Belakangan ini aura
+          gelap mulai terlihat dari mulut guanya.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 5
+        destinationConversationID: 910154
+        destinationDialogueID: 6
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 700
+        width: 180
+        height: 90
+    - id: 6
+      fields:
+      - title: Title
+        value: Pacca
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910052
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Sepertinya pemikiranmu benar, Saka.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 6
+        destinationConversationID: 910154
+        destinationDialogueID: 7
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 840
+        width: 180
+        height: 90
+    - id: 7
+      fields:
+      - title: Title
+        value: Saka
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: '[auto] Sudah kutebak. Baiklah, kita harus segera ke sana untuk menghentikan
+          serangan monster ke desa ini.'
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Sudah kutebak. Baiklah, kita harus segera ke sana untuk menghentikan
+          serangan monster ke desa ini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 7
+        destinationConversationID: 910154
+        destinationDialogueID: 8
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 980
+        width: 180
+        height: 90
+    - id: 8
+      fields:
+      - title: Title
+        value: Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Kalian berencana mau ke gua itu? Lebih baik jangan, Nak. Di sana sangat
+          berbahaya.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 8
+        destinationConversationID: 910154
+        destinationDialogueID: 9
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1120
+        width: 180
+        height: 90
+    - id: 9
+      fields:
+      - title: Title
+        value: Daung
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910053
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Tenang, Pak. Kami utusan dari kerajaan untuk menghentikan masalah
+          ini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 9
+        destinationConversationID: 910154
+        destinationDialogueID: 10
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1260
+        width: 180
+        height: 90
+    - id: 10
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Baiklah, kalau begitu. Kalian boleh istirahat dulu sebelum pergi ke
+          sana.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 10
+        destinationConversationID: 910154
+        destinationDialogueID: 11
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1400
+        width: 180
+        height: 90
+    - id: 11
+      fields:
+      - title: Title
+        value: Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Kalau mau, kalian bisa memancing di sungai dekat sini untuk istirahat
+          sejenak.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 11
+        destinationConversationID: 910154
+        destinationDialogueID: 12
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1540
+        width: 180
+        height: 90
+    - id: 12
+      fields:
+      - title: Title
+        value: Saka
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910002
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: '[auto] Baiklah, kita pikir-pikir dulu, Pak.'
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Baiklah, kita pikir-pikir dulu, Pak.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910154
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910154
+        originDialogueID: 12
+        destinationConversationID: 910154
+        destinationDialogueID: 13
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1680
+        width: 180
+        height: 90
+    - id: 13
       fields:
       - title: Title
         value: DaengSaka Main Quest Complete
@@ -3372,7 +3982,7 @@ MonoBehaviour:
       canvasRect:
         serializedVersion: 2
         x: 250
-        y: 560
+        y: 1820
         width: 180
         height: 90
     entryGroups: []
@@ -7947,6 +8557,1406 @@ MonoBehaviour:
         serializedVersion: 2
         x: 250
         y: 840
+        width: 180
+        height: 90
+    entryGroups: []
+    canvasScrollPosition: {x: 0, y: 0}
+    canvasZoom: 1
+  - id: 910168
+    fields:
+    - title: Title
+      value: DaengSaka/Dialog Warga Sorelia/Ibu Nelayan
+      type: 0
+      typeString: 
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: Actor
+      value: 910001
+      type: 5
+      typeString: CustomFieldType_Actor
+    - title: Conversant
+      value: 910060
+      type: 5
+      typeString: CustomFieldType_Actor
+    overrideSettings:
+      useOverrides: 1
+      overrideSubtitleSettings: 1
+      showNPCSubtitlesDuringLine: 1
+      showNPCSubtitlesWithResponses: 1
+      showPCSubtitlesDuringLine: 1
+      skipPCSubtitleAfterResponseMenu: 0
+      subtitleCharsPerSecond: 30
+      minSubtitleSeconds: 2
+      continueButton: 1
+      overrideSequenceSettings: 0
+      defaultSequence: 
+      defaultPlayerSequence: 
+      defaultResponseMenuSequence: 
+      overrideInputSettings: 0
+      alwaysForceResponseMenu: 1
+      includeInvalidEntries: 0
+      responseTimeout: 0
+      emTagForOldResponses: 0
+      emTagForInvalidResponses: 0
+      cancelSubtitle:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      cancelConversation:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      actorSubtitlePanelOverrides: []
+    nodeColor: 
+    dialogueEntries:
+    - id: 0
+      fields:
+      - title: Title
+        value: START
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: None()
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 1
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 0
+        destinationConversationID: 910168
+        destinationDialogueID: 1
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 0
+        width: 180
+        height: 90
+    - id: 1
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Kalian datang tepat waktu. Terima kasih banyak, ya, Nak.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 1
+        destinationConversationID: 910168
+        destinationDialogueID: 2
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 140
+        width: 180
+        height: 90
+    - id: 2
+      fields:
+      - title: Title
+        value: Daung
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910053
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Sama-sama, Bu. Syukurlah kami kebetulan lewat sini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 2
+        destinationConversationID: 910168
+        destinationDialogueID: 3
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 280
+        width: 180
+        height: 90
+    - id: 3
+      fields:
+      - title: Title
+        value: Saka
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: '[auto] Betul, tapi ini masalah besar kalau monster mulai datang ke
+          desa.'
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Betul, tapi ini masalah besar kalau monster mulai datang ke desa.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 3
+        destinationConversationID: 910168
+        destinationDialogueID: 4
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 420
+        width: 180
+        height: 90
+    - id: 4
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Belakangan ini monster memang mulai sering terlihat di sekitar luar
+          desa.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 4
+        destinationConversationID: 910168
+        destinationDialogueID: 5
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 560
+        width: 180
+        height: 90
+    - id: 5
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Semoga perjalanan kalian ke Gua Lembayung bisa menyelesaikan masalah
+          ini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 5
+        destinationConversationID: 910168
+        destinationDialogueID: 6
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 700
+        width: 180
+        height: 90
+    - id: 6
+      fields:
+      - title: Title
+        value: Pacca
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910052
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Tenang saja, Bu. Akan kami basmi siapa pun yang mengancam desa ini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 6
+        destinationConversationID: 910168
+        destinationDialogueID: 7
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 840
+        width: 180
+        height: 90
+    - id: 7
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Terima kasih, Nak. Ini ada lima Ramuan HP dan lima Ramuan MP dari
+          Ibu untuk bekal.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 7
+        destinationConversationID: 910168
+        destinationDialogueID: 8
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 980
+        width: 180
+        height: 90
+    - id: 8
+      fields:
+      - title: Title
+        value: Daung
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910053
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Wah, terima kasih banyak, Bu!
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 8
+        destinationConversationID: 910168
+        destinationDialogueID: 9
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1120
+        width: 180
+        height: 90
+    - id: 9
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Seharusnya Ibu yang berterima kasih.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910168
+        originDialogueID: 9
+        destinationConversationID: 910168
+        destinationDialogueID: 10
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1260
+        width: 180
+        height: 90
+    - id: 10
+      fields:
+      - title: Title
+        value: DaengSaka Sorelia Supplies Complete
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: None()
+        type: 0
+        typeString: 
+      conversationID: 910168
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks: []
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 1400
+        width: 180
+        height: 90
+    entryGroups: []
+    canvasScrollPosition: {x: 0, y: 0}
+    canvasZoom: 1
+  - id: 910169
+    fields:
+    - title: Title
+      value: DaengSaka/Dialog Warga Sorelia/Ibu Nelayan Setelah Bekal
+      type: 0
+      typeString: 
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: Actor
+      value: 910001
+      type: 5
+      typeString: CustomFieldType_Actor
+    - title: Conversant
+      value: 910060
+      type: 5
+      typeString: CustomFieldType_Actor
+    overrideSettings:
+      useOverrides: 1
+      overrideSubtitleSettings: 1
+      showNPCSubtitlesDuringLine: 1
+      showNPCSubtitlesWithResponses: 1
+      showPCSubtitlesDuringLine: 1
+      skipPCSubtitleAfterResponseMenu: 0
+      subtitleCharsPerSecond: 30
+      minSubtitleSeconds: 2
+      continueButton: 1
+      overrideSequenceSettings: 0
+      defaultSequence: 
+      defaultPlayerSequence: 
+      defaultResponseMenuSequence: 
+      overrideInputSettings: 0
+      alwaysForceResponseMenu: 1
+      includeInvalidEntries: 0
+      responseTimeout: 0
+      emTagForOldResponses: 0
+      emTagForInvalidResponses: 0
+      cancelSubtitle:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      cancelConversation:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      actorSubtitlePanelOverrides: []
+    nodeColor: 
+    dialogueEntries:
+    - id: 0
+      fields:
+      - title: Title
+        value: START
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: None()
+        type: 0
+        typeString: 
+      conversationID: 910169
+      isRoot: 1
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910169
+        originDialogueID: 0
+        destinationConversationID: 910169
+        destinationDialogueID: 1
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 0
+        width: 180
+        height: 90
+    - id: 1
+      fields:
+      - title: Title
+        value: Ibu Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910060
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Terima kasih sudah menolong keluarga Ibu, Nak. Hati-hati di jalan,
+          ya.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910169
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks: []
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 140
+        width: 180
+        height: 90
+    entryGroups: []
+    canvasScrollPosition: {x: 0, y: 0}
+    canvasZoom: 1
+  - id: 910170
+    fields:
+    - title: Title
+      value: DaengSaka/Dialog Warga Sorelia/Keluarga Warga
+      type: 0
+      typeString: 
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: Actor
+      value: 910001
+      type: 5
+      typeString: CustomFieldType_Actor
+    - title: Conversant
+      value: 910061
+      type: 5
+      typeString: CustomFieldType_Actor
+    overrideSettings:
+      useOverrides: 1
+      overrideSubtitleSettings: 1
+      showNPCSubtitlesDuringLine: 1
+      showNPCSubtitlesWithResponses: 1
+      showPCSubtitlesDuringLine: 1
+      skipPCSubtitleAfterResponseMenu: 0
+      subtitleCharsPerSecond: 30
+      minSubtitleSeconds: 2
+      continueButton: 1
+      overrideSequenceSettings: 0
+      defaultSequence: 
+      defaultPlayerSequence: 
+      defaultResponseMenuSequence: 
+      overrideInputSettings: 0
+      alwaysForceResponseMenu: 1
+      includeInvalidEntries: 0
+      responseTimeout: 0
+      emTagForOldResponses: 0
+      emTagForInvalidResponses: 0
+      cancelSubtitle:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      cancelConversation:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      actorSubtitlePanelOverrides: []
+    nodeColor: 
+    dialogueEntries:
+    - id: 0
+      fields:
+      - title: Title
+        value: START
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910061
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: None()
+        type: 0
+        typeString: 
+      conversationID: 910170
+      isRoot: 1
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910170
+        originDialogueID: 0
+        destinationConversationID: 910170
+        destinationDialogueID: 1
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 0
+        width: 180
+        height: 90
+    - id: 1
+      fields:
+      - title: Title
+        value: Warga Ibu
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910061
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Monsternya sudah dikalahkan, ya?
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910170
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910170
+        originDialogueID: 1
+        destinationConversationID: 910170
+        destinationDialogueID: 2
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 140
+        width: 180
+        height: 90
+    - id: 2
+      fields:
+      - title: Title
+        value: Warga Bapak
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910062
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Sepertinya sudah, Bu.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910170
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910170
+        originDialogueID: 2
+        destinationConversationID: 910170
+        destinationDialogueID: 3
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 280
+        width: 180
+        height: 90
+    - id: 3
+      fields:
+      - title: Title
+        value: Pacca
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910052
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Tenang saja, semuanya sudah dikalahkan.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910170
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910170
+        originDialogueID: 3
+        destinationConversationID: 910170
+        destinationDialogueID: 4
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 420
+        width: 180
+        height: 90
+    - id: 4
+      fields:
+      - title: Title
+        value: Warga Bapak
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910062
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Terima kasih, anak muda, sudah membasmi monster itu.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910170
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks: []
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 560
+        width: 180
+        height: 90
+    entryGroups: []
+    canvasScrollPosition: {x: 0, y: 0}
+    canvasZoom: 1
+  - id: 910171
+    fields:
+    - title: Title
+      value: DaengSaka/Dialog Warga Sorelia/Anak-Anak Desa
+      type: 0
+      typeString: 
+    - title: Description
+      value: 
+      type: 0
+      typeString: 
+    - title: Actor
+      value: 910001
+      type: 5
+      typeString: CustomFieldType_Actor
+    - title: Conversant
+      value: 910063
+      type: 5
+      typeString: CustomFieldType_Actor
+    overrideSettings:
+      useOverrides: 1
+      overrideSubtitleSettings: 1
+      showNPCSubtitlesDuringLine: 1
+      showNPCSubtitlesWithResponses: 1
+      showPCSubtitlesDuringLine: 1
+      skipPCSubtitleAfterResponseMenu: 0
+      subtitleCharsPerSecond: 30
+      minSubtitleSeconds: 2
+      continueButton: 1
+      overrideSequenceSettings: 0
+      defaultSequence: 
+      defaultPlayerSequence: 
+      defaultResponseMenuSequence: 
+      overrideInputSettings: 0
+      alwaysForceResponseMenu: 1
+      includeInvalidEntries: 0
+      responseTimeout: 0
+      emTagForOldResponses: 0
+      emTagForInvalidResponses: 0
+      cancelSubtitle:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      cancelConversation:
+        key: 27
+        buttonName: 
+        inputAction: {fileID: 0}
+      actorSubtitlePanelOverrides: []
+    nodeColor: 
+    dialogueEntries:
+    - id: 0
+      fields:
+      - title: Title
+        value: START
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910063
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: None()
+        type: 0
+        typeString: 
+      conversationID: 910171
+      isRoot: 1
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910171
+        originDialogueID: 0
+        destinationConversationID: 910171
+        destinationDialogueID: 1
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 0
+        width: 180
+        height: 90
+    - id: 1
+      fields:
+      - title: Title
+        value: Anak Nelayan
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910063
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Terima kasih, Kak, sudah menyelamatkan kami.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910171
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910171
+        originDialogueID: 1
+        destinationConversationID: 910171
+        destinationDialogueID: 2
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 140
+        width: 180
+        height: 90
+    - id: 2
+      fields:
+      - title: Title
+        value: Anak Warga
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910064
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: 
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Kakak semua keren! Terutama hiunya Kakak Biru!
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910171
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks:
+      - originConversationID: 910171
+        originDialogueID: 2
+        destinationConversationID: 910171
+        destinationDialogueID: 3
+        isConnector: 0
+        priority: 2
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 280
+        width: 180
+        height: 90
+    - id: 3
+      fields:
+      - title: Title
+        value: Saka
+        type: 0
+        typeString: 
+      - title: Description
+        value: 
+        type: 0
+        typeString: 
+      - title: Actor
+        value: 910001
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Conversant
+        value: 910063
+        type: 5
+        typeString: CustomFieldType_Actor
+      - title: Menu Text
+        value: '[auto] Hahaha, sama-sama. Kalian hati-hati, ya, kalau bermain di
+          sini.'
+        type: 0
+        typeString: 
+      - title: Dialogue Text
+        value: Hahaha, sama-sama. Kalian hati-hati, ya, kalau bermain di sini.
+        type: 0
+        typeString: 
+      - title: Sequence
+        value: 
+        type: 0
+        typeString: 
+      conversationID: 910171
+      isRoot: 0
+      isGroup: 0
+      nodeColor: 
+      delaySimStatus: 0
+      falseConditionAction: 
+      conditionPriority: 2
+      outgoingLinks: []
+      conditionsString: 
+      userScript: 
+      onExecute:
+        m_PersistentCalls:
+          m_Calls: []
+      canvasRect:
+        serializedVersion: 2
+        x: 250
+        y: 420
         width: 180
         height: 90
     entryGroups: []

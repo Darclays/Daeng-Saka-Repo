@@ -19,7 +19,14 @@ namespace GamecommMentor.DaengSaka
 
         [Header("Main Quest")]
         [SerializeField] private GmPixelCrushersMainQuestDialogue mainQuestDialogue;
+        [Header("Ambient Conversation")]
+        [SerializeField] private GmMainQuestProgress requiredQuest;
+        [SerializeField] private GmMainQuestStep requiredCompletedStep;
+        [SerializeField] private bool useAuthoredActors;
         private GmFishingQuestDialogue fishingQuest;
+
+        private bool IsUnlocked => requiredQuest == null ||
+            (requiredQuest.isActiveAndEnabled && requiredQuest.HasCompleted(requiredCompletedStep));
 
         private string QuestTitle => mainQuestDialogue != null ? mainQuestDialogue.CurrentTitleFor(transform) : null;
 
@@ -42,6 +49,16 @@ namespace GamecommMentor.DaengSaka
         public string ConversationTitle => conversationTitle;
         public void SetConversation(string title) => conversationTitle = title;
 
+        public void ConfigureAmbientDialogue(string title, GmPixelCrushersDialogueBridge bridge,
+            GmMainQuestProgress quest, GmMainQuestStep completedStep)
+        {
+            SetConversation(title);
+            dialogueBridge = bridge;
+            requiredQuest = quest;
+            requiredCompletedStep = completedStep;
+            useAuthoredActors = true;
+        }
+
         public void SetMainQuestDialogue(GmPixelCrushersMainQuestDialogue sequence) => mainQuestDialogue = sequence;
 
         public void SetDemoConversations(GmDemoProgress progress, string poppoTitle, string pakandeTitle)
@@ -53,7 +70,7 @@ namespace GamecommMentor.DaengSaka
 
         private void Awake() => fishingQuest = GetComponent<GmFishingQuestDialogue>();
 
-        public override bool CanInteract(GmInteractor requester) => base.CanInteract(requester)
+        public override bool CanInteract(GmInteractor requester) => IsUnlocked && base.CanInteract(requester)
             && (OffersFishingLoan || OffersMerchant || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
@@ -71,7 +88,7 @@ namespace GamecommMentor.DaengSaka
 
         public override bool TryInteract(GmInteractor requester)
         {
-            if (!base.CanInteract(requester)) return false;
+            if (!IsUnlocked || !base.CanInteract(requester)) return false;
             if (OffersFishingLoan) return fishingQuest.TryBorrow(requester);
             if (OffersMerchant)
             {
@@ -89,7 +106,9 @@ namespace GamecommMentor.DaengSaka
                 Debug.LogError("[Daeng Saka 1A.2B] Add Gm Pixel Crushers Dialogue Bridge to the Dialogue Manager.", this);
                 return false;
             }
-            return dialogueBridge.TryStartConversation(title, requester, transform);
+            return useAuthoredActors
+                ? dialogueBridge.TryStartCutscene(title, requester)
+                : dialogueBridge.TryStartConversation(title, requester, transform);
         }
     }
 }

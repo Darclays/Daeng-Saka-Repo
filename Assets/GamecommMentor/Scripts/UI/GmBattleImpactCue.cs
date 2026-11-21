@@ -10,9 +10,12 @@ namespace GamecommMentor.DaengSaka
         private static readonly GmBattleImpactCue Shark = new GmBattleImpactCue(9, 6, 2, "sharkHit", 17f, 3f, 0.04f);
         private static readonly GmBattleImpactCue Bite = new GmBattleImpactCue(7, 5, 2, "basicHit", 16f);
         private static readonly GmBattleImpactCue Cane = new GmBattleImpactCue(5, 3, 0, "basicHit", 16f);
+        private static readonly GmBattleImpactCue Hammer = new GmBattleImpactCue(7, 3, 0, "shieldHit", 18f, 3.5f, 0.045f);
+        private static readonly GmBattleImpactCue Uppercut = new GmBattleImpactCue(9, 5, 0, "basicHit", 12f, 1.8f, 0.03f, approachGap: 118f);
+        private static readonly GmBattleImpactCue Tail = new GmBattleImpactCue(7, 4, 0, "basicHit", 16f, 2.5f, 0.035f, approachGap: 92f);
 
         private GmBattleImpactCue(int contact, int windup, int effectLead, string sound, float recoil,
-            float shake = 0f, float hitStop = 0f)
+            float shake = 0f, float hitStop = 0f, float approachGap = 62f)
         {
             Contact = contact;
             Windup = windup;
@@ -21,6 +24,7 @@ namespace GamecommMentor.DaengSaka
             Recoil = recoil;
             Shake = shake;
             HitStop = hitStop;
+            ApproachGap = approachGap;
         }
 
         public int Contact { get; }
@@ -30,6 +34,7 @@ namespace GamecommMentor.DaengSaka
         public float Recoil { get; }
         public float Shake { get; }
         public float HitStop { get; }
+        public float ApproachGap { get; }
 
         public static GmBattleImpactCue For(GmBattleMove move, GmBattleCharacter character)
         {
@@ -37,6 +42,9 @@ namespace GamecommMentor.DaengSaka
             if (move == GmBattleMove.SharkBite) return Shark;
             if (move == GmBattleMove.GBite) return Bite;
             if (move == GmBattleMove.CaneStrike) return Cane;
+            if (move == GmBattleMove.HammerSweep) return Hammer;
+            if (move == GmBattleMove.Uppercut) return Uppercut;
+            if (move == GmBattleMove.TailSweep) return Tail;
             if (move != GmBattleMove.BasicAttack) return null;
             return character switch
             {
