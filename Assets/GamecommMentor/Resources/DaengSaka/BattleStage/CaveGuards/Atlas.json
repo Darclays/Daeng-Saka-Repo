@@ -1,0 +1,100 @@
+{
+  "clips": [
+    {
+      "key": "babiRusaIdle",
+      "width": 22,
+      "height": 43,
+      "count": 1,
+      "anchorX": 11,
+      "anchorY": 42
+    },
+    {
+      "key": "babiRusaAttack",
+      "width": 46,
+      "height": 49,
+      "count": 10,
+      "anchorX": 23,
+      "anchorY": 48
+    },
+    {
+      "key": "babiRusaHit",
+      "width": 53,
+      "height": 54,
+      "count": 5,
+      "anchorX": 26,
+      "anchorY": 53
+    },
+    {
+      "key": "babiRusaDeath",
+      "width": 50,
+      "height": 44,
+      "count": 6,
+      "anchorX": 25,
+      "anchorY": 43
+    },
+    {
+      "key": "manguniIdle",
+      "width": 49,
+      "height": 52,
+      "count": 1,
+      "anchorX": 24,
+      "anchorY": 51
+    },
+    {
+      "key": "manguniAttack",
+      "width": 73,
+      "height": 59,
+      "count": 10,
+      "anchorX": 36,
+      "anchorY": 58
+    },
+    {
+      "key": "manguniHit",
+      "width": 58,
+      "height": 69,
+      "count": 5,
+      "anchorX": 29,
+      "anchorY": 68
+    },
+    {
+      "key": "manguniDeath",
+      "width": 43,
+      "height": 52,
+      "count": 6,
+      "anchorX": 21,
+      "anchorY": 51
+    },
+    {
+      "key": "laWunaIdle",
+      "width": 30,
+      "height": 36,
+      "count": 1,
+      "anchorX": 15,
+      "anchorY": 35
+    },
+    {
+      "key": "laWunaAttack",
+      "width": 52,
+      "height": 40,
+      "count": 10,
+      "anchorX": 26,
+      "anchorY": 39
+    },
+    {
+      "key": "laWunaHit",
+      "width": 54,
+      "height": 38,
+      "count": 5,
+      "anchorX": 27,
+      "anchorY": 37
+    },
+    {
+      "key": "laWunaDeath",
+      "width": 58,
+      "height": 37,
+      "count": 5,
+      "anchorX": 29,
+      "anchorY": 36
+    }
+  ]
+}

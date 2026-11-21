@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmBattleEnemyKind { Generic, Poppo }
+    internal enum GmBattleEnemyKind { Generic, Poppo, BabiRusa, Manguni, LaWuna }
 
     [Serializable]
     internal struct GmBattleStats

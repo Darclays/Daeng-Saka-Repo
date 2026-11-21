@@ -11,6 +11,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private string displayName = "Musuh Uji";
         [SerializeField] private GmBossBattleProfile bossBattleProfile;
         [SerializeField] private bool usePoppoBattle;
+        [SerializeField] private GmEncounterRoster roster;
         [SerializeField] private bool startWhenReadyWhileTouching;
         private SphereCollider trigger;
         private CharacterController suppressedPlayer;
@@ -20,6 +21,9 @@ namespace GamecommMentor.DaengSaka
         public bool IsDefeated { get; private set; }
         public GmBossBattleProfile BossBattleProfile => bossBattleProfile;
         public bool UsePoppoBattle => usePoppoBattle;
+        internal GmEncounterRoster Roster => roster;
+
+        public void SetRoster(GmEncounterRoster value) => roster = value;
 
         public void Configure(GmEncounterFlow encounterFlow, string id, string enemyName,
             GmBossBattleProfile bossProfile = null, bool poppoBattle = false)

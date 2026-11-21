@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ddaddc827bc65fb69242d50aac99ca96, type: 3}
   m_Name: DaftarDialogVN
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   percakapan:
   - judul: DaengSaka/Main Quest/Persiapan Sebelum Bertarung
     profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
@@ -39,3 +39,10 @@ MonoBehaviour:
     kameraQuestUtama: 0
   - judul: DaengSaka/Side Quest/Pinjam Alat Pancing
     profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Rombongan di Goa
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Main Quest/Amarah Nenek Pakande
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0

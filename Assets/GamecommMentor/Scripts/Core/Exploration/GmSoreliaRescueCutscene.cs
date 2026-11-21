@@ -100,9 +100,10 @@ namespace GamecommMentor.DaengSaka
             [SerializeField] private string cueText;
             [SerializeField, Min(0f)] private float cueAt;
             [SerializeField] private AudioSource cueAudio;
+            [SerializeField, Min(0f)] private float shake;
 
             public Shot(Transform from, Transform to, float seconds, float fieldOfView, ActorCue[] actors,
-                string cueText = "", float cueAt = 0f, AudioSource cueAudio = null)
+                string cueText = "", float cueAt = 0f, AudioSource cueAudio = null, float shake = 0f)
             {
                 this.from = from;
                 this.to = to;
@@ -112,6 +113,7 @@ namespace GamecommMentor.DaengSaka
                 this.cueText = cueText;
                 this.cueAt = cueAt;
                 this.cueAudio = cueAudio;
+                this.shake = shake;
             }
 
             internal float Seconds => seconds;
@@ -137,6 +139,13 @@ namespace GamecommMentor.DaengSaka
                 camera.fieldOfView = fieldOfView;
                 camera.transform.SetPositionAndRotation(Vector3.Lerp(from.position, to.position, blend),
                     Quaternion.Slerp(from.rotation, to.rotation, blend));
+                float sinceCue = elapsed - cueAt;
+                if (shake > 0f && sinceCue >= 0f && sinceCue < .32f)
+                {
+                    float envelope = 1f - sinceCue / .32f;
+                    camera.transform.position += camera.transform.right *
+                        (Mathf.Sin(sinceCue * 62f) * shake * envelope);
+                }
                 foreach (ActorCue cue in actors) cue.Sample(camera, terrain, elapsed);
             }
         }
@@ -157,6 +166,12 @@ namespace GamecommMentor.DaengSaka
         private GmInteractor interactor;
         private bool started;
         private bool playing;
+        private bool holdFinalShot;
+
+        internal bool IsPlaying => playing;
+        internal bool IsHoldingFinalShot { get; private set; }
+        internal bool Completed { get; private set; }
+        internal bool WasSkipped { get; private set; }
         private bool[] rendererStates;
         private bool hudWasEnabled;
         private Pose explorationPose;
@@ -187,7 +202,7 @@ namespace GamecommMentor.DaengSaka
             get
             {
                 if (view == null || orbit == null || terrain == null || questHud == null ||
-                    overlay == null || fade == null || caption == null || cast.Length == 0 || shots.Length < 4)
+                    overlay == null || fade == null || caption == null || cast.Length == 0 || shots.Length == 0)
                     return false;
                 foreach (Shot shot in shots)
                     if (shot == null || !shot.IsReady) return false;
@@ -213,7 +228,7 @@ namespace GamecommMentor.DaengSaka
             terraceShotsInstalled = true;
         }
 
-        internal bool TryPlay(GmSakaMotor player)
+        internal bool TryPlay(GmSakaMotor player, bool holdFinalShot = false)
         {
             if (started || !isActiveAndEnabled || player == null || !IsConfigured || orbit.Target != player.transform)
                 return false;
@@ -222,6 +237,7 @@ namespace GamecommMentor.DaengSaka
 
             started = true;
             playing = true;
+            this.holdFinalShot = holdFinalShot;
             gate = controls;
             gate.Block(this);
             interactor = player.GetComponent<GmInteractor>();
@@ -247,9 +263,21 @@ namespace GamecommMentor.DaengSaka
         private void Update()
         {
             if (!playing) return;
-            if (view == null || orbit == null || gate == null || !gate.isActiveAndEnabled || SkipPressed())
+            if (view == null || orbit == null || gate == null || !gate.isActiveAndEnabled)
             {
                 Finish();
+                return;
+            }
+            if (SkipPressed())
+            {
+                WasSkipped = true;
+                Finish(completed: true);
+                return;
+            }
+            if (IsHoldingFinalShot)
+            {
+                shotTime += Time.unscaledDeltaTime;
+                shots[shotIndex].Sample(view, terrain, shotTime);
                 return;
             }
 
@@ -258,7 +286,15 @@ namespace GamecommMentor.DaengSaka
             {
                 if (shotIndex == shots.Length - 1)
                 {
-                    Finish();
+                    if (holdFinalShot)
+                    {
+                        Shot final = shots[shotIndex];
+                        shotTime = final.Seconds;
+                        final.Sample(view, terrain, shotTime);
+                        overlay.SetActive(false);
+                        IsHoldingFinalShot = true;
+                    }
+                    else Finish(completed: true);
                     return;
                 }
                 float remainder = shotTime - shots[shotIndex].Seconds;
@@ -278,7 +314,8 @@ namespace GamecommMentor.DaengSaka
                 cuePlayedInShot = true;
             }
             if (shotIndex == 0) SetFade(1f - shotTime / FadeSeconds);
-            else if (shotIndex == shots.Length - 1) SetFade(1f - (shot.Seconds - shotTime) / FadeSeconds);
+            else if (shotIndex == shots.Length - 1 && !holdFinalShot)
+                SetFade(1f - (shot.Seconds - shotTime) / FadeSeconds);
         }
 
         private void EnterShot(int index)
@@ -305,12 +342,25 @@ namespace GamecommMentor.DaengSaka
             if (fade != null) fade.color = new Color(0f, 0f, 0f, Mathf.Clamp01(value));
         }
 
+        internal bool HoldsViewFor(GmInteractor requester) =>
+            IsHoldingFinalShot && requester != null && requester == interactor;
+
+        internal void FinishHeldShot()
+        {
+            if (IsHoldingFinalShot) Finish(completed: true);
+        }
+
+        internal void CancelPlayback() => Finish();
+
         private void OnDisable() => Finish();
 
-        private void Finish()
+        private void Finish(bool completed = false)
         {
             if (!playing) return;
             playing = false;
+            if (!completed && holdFinalShot) started = false;
+            IsHoldingFinalShot = false;
+            Completed = completed;
             HideCast();
             if (playingCue != null) playingCue.Stop();
             playingCue = null;

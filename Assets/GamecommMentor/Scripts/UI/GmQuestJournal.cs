@@ -109,6 +109,8 @@ namespace GamecommMentor.DaengSaka
             lastRevision = -1;
         }
 
+        public void SetLandmark(GmQuestLandmark landmark) => SetAreaLandmarks(mapBoundsXZ, landmark);
+
         public void SetAreaLandmarks(Rect bounds, params GmQuestLandmark[] updatedLandmarks)
         {
             var merged = new List<GmQuestLandmark>(landmarks);

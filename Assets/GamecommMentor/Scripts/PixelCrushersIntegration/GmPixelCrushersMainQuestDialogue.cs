@@ -40,6 +40,8 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private StepDialogue[] dialogues = Array.Empty<StepDialogue>();
         [SerializeField] private StepSpeaker[] speakers = Array.Empty<StepSpeaker>();
         [SerializeField] private GmEnemyEncounter revealAfterEncounter;
+        [SerializeField] private string caveRouteTitle;
+        [SerializeField] private string pakandeRevealTitle;
         private GmMainQuestProgress quest;
         private GmEncounterFlow flow;
         private DialogueSystemController controller;
@@ -67,6 +69,8 @@ namespace GamecommMentor.DaengSaka
 
         private string TitleFor(GmMainQuestStep step)
         {
+            if (step == GmMainQuestStep.SelidikiGua && !string.IsNullOrWhiteSpace(caveRouteTitle)) return caveRouteTitle;
+            if (step == GmMainQuestStep.TemuiPakande && !string.IsNullOrWhiteSpace(pakandeRevealTitle)) return pakandeRevealTitle;
             foreach (StepDialogue dialogue in dialogues)
                 if (dialogue.step == step) return dialogue.conversationTitle;
             return null;
@@ -78,6 +82,12 @@ namespace GamecommMentor.DaengSaka
             bridge = dialogueBridge;
             dialogues = stepDialogues ?? Array.Empty<StepDialogue>();
             revealAfterEncounter = revealAfter;
+        }
+
+        public void SetCaveFinaleDialogues(string route, string reveal)
+        {
+            caveRouteTitle = route;
+            pakandeRevealTitle = reveal;
         }
 
         private void OnEnable()

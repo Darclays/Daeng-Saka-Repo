@@ -41,6 +41,10 @@ namespace GamecommMentor.DaengSaka
             if (bossData != null)
                 LoadClips(bossData, ResourceFolder + "Boss/");
 
+            TextAsset guardData = Resources.Load<TextAsset>(ResourceFolder + "CaveGuards/Atlas");
+            if (guardData != null)
+                LoadClips(guardData, ResourceFolder + "CaveGuards/");
+
             Shader shader = Resources.Load<Shader>(ResourceFolder + "GmBattleBlur");
             if (shader != null && shader.isSupported)
             {
@@ -74,6 +78,21 @@ namespace GamecommMentor.DaengSaka
             GmBattleCharacter.Daung => "daungIdle",
             _ => null
         };
+
+        public static string EnemyKey(GmBattleEnemyKind kind) => kind switch
+        {
+            GmBattleEnemyKind.Poppo => "poppo",
+            GmBattleEnemyKind.BabiRusa => "babiRusa",
+            GmBattleEnemyKind.Manguni => "manguni",
+            GmBattleEnemyKind.LaWuna => "laWuna",
+            _ => null
+        };
+
+        public Clip EnemyMotion(GmBattleEnemyKind kind, string action)
+        {
+            string key = EnemyKey(kind);
+            return key != null ? Find(key + action) : null;
+        }
 
         public Clip Animation(GmBattleMove move, GmBattleCharacter character)
         {

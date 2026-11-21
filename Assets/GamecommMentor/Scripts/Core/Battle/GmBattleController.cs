@@ -65,7 +65,9 @@ namespace GamecommMentor.DaengSaka
                 if (battleCanvas == null || !battleCanvas.isActiveAndEnabled)
                     throw new InvalidOperationException("Battle Core needs an active battle canvas.");
                 GmEnemyEncounter source = encounter.Encounter;
-                session = new GmBattleSession(party, source.UsePoppoBattle ? PoppoEnemies : enemies, restMp, source.BossBattleProfile);
+                GmBattleStats[] roster = source.Roster != null && source.Roster.HasEnemies
+                    ? source.Roster.Enemies : source.UsePoppoBattle ? PoppoEnemies : enemies;
+                session = new GmBattleSession(party, roster, restMp, source.BossBattleProfile);
                 enhancedImpact = useEnhancedImpact;
                 view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),

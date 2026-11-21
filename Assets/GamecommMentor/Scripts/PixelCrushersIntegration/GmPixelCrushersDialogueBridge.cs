@@ -23,6 +23,8 @@ namespace GamecommMentor.DaengSaka
         private Coroutine shotEntry, releaseRoutine;
 
         public DialogueDatabase AdditionalDatabase => additionalDatabase;
+        internal bool StagedDialogueBusy =>
+            starting || releaseRoutine != null || (controller != null && controller.isConversationActive);
 
         public void SetPlayer(GmInteractor interactor)
         {
@@ -96,12 +98,21 @@ namespace GamecommMentor.DaengSaka
         internal bool TryStartFramedDialogue(string title, GmInteractor requester, Transform partner) =>
             partner != null && TryStart(title, requester, null, true, partner);
 
+        internal bool TryStartStagedDialogue(string title, GmInteractor requester, GmSoreliaRescueCutscene stage) =>
+            stage != null && stage.HoldsViewFor(requester) && TryStart(title, requester, null, true, stage: stage);
+
+        internal void StopStagedDialogue(string title)
+        {
+            if (controller != null && controller.isActiveAndEnabled && controller.isConversationActive &&
+                controller.lastConversationStarted == title) controller.StopConversation();
+        }
+
         private bool TryStart(string title, GmInteractor requester, Transform conversant, bool useAuthoredActors,
-            Transform framingPartner = null)
+            Transform framingPartner = null, GmSoreliaRescueCutscene stage = null)
         {
             if (!isActiveAndEnabled || starting || requester == null || string.IsNullOrWhiteSpace(title)
                 || controller == null || !controller.isActiveAndEnabled || controller.isConversationActive
-                || !requester.ControlGate.CanExplore) return false;
+                || (stage == null && !requester.ControlGate.CanExplore)) return false;
             EnsureAdditionalDatabase();
             if (controller.masterDatabase == null || controller.masterDatabase.GetConversation(title) == null)
             {
@@ -112,15 +123,21 @@ namespace GamecommMentor.DaengSaka
             starting = true;
             gate.Block(this);
             player.SuppressInteraction();
-            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant, useAuthoredActors, framingPartner));
+            StartCoroutine(StartOnNextFrame(title, requester.transform, conversant, useAuthoredActors, framingPartner, stage));
             return true;
         }
 
         private IEnumerator StartOnNextFrame(string title, Transform actor, Transform conversant, bool useAuthoredActors,
-            Transform framingPartner)
+            Transform framingPartner, GmSoreliaRescueCutscene stage)
         {
             // The E key used to open dialogue must not also advance its first subtitle.
             yield return null;
+            if (!ReferenceEquals(stage, null) && (stage == null || !stage.HoldsViewFor(player)))
+            {
+                starting = false;
+                if (gate != null) gate.Unblock(this);
+                yield break;
+            }
             int before = activityVersion;
             bool failed = false;
             if (actor == null || (!useAuthoredActors && conversant == null) || controller == null)

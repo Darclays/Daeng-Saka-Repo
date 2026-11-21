@@ -160,10 +160,10 @@ namespace GamecommMentor.DaengSaka
 
                 string idleKey = GmBattleArt.IdleKey(unit.Character) ?? "enemyIdle";
                 if (isBoss) idleKey = $"pakandeIdle{session.Boss.Phase}";
-                if (isPoppo) idleKey = "poppoIdle";
-                view.Idle = art.Find(idleKey) ?? art.Find("enemyIdle");
-                view.Hit = isBoss ? art.Find($"pakandeHit{session.Boss.Phase}") : isPoppo ? art.Find("poppoHit") : null;
-                view.Death = isPoppo ? art.Find("poppoDeath") : null;
+                view.Idle = isBoss ? art.Find(idleKey) : art.EnemyMotion(unit.EnemyKind, "Idle") ?? art.Find(idleKey);
+                view.Idle ??= art.Find("enemyIdle");
+                view.Hit = isBoss ? art.Find($"pakandeHit{session.Boss.Phase}") : art.EnemyMotion(unit.EnemyKind, "Hit");
+                view.Death = art.EnemyMotion(unit.EnemyKind, "Death");
                 view.Scale = isBoss ? SpriteScale * 0.94f : unit.IsParty ? SpriteScale : SpriteScale * (isPoppo ? 0.70f : 0.80f);
                 view.Amount.enabled = false;
                 if (!unit.IsAlive && view.Death != null)
@@ -182,13 +182,16 @@ namespace GamecommMentor.DaengSaka
 
         public int FrameCount(GmBattleMove move, GmBattleUnit actor, GmBattleImpactCue cue)
         {
-            bool poppoBasic = move == GmBattleMove.BasicAttack && actor.EnemyKind == GmBattleEnemyKind.Poppo;
-            GmBattleArt.Clip animation = poppoBasic ? art.Find("poppoAttack") : art.Animation(move, actor.Character);
+            GmBattleArt.Clip animation = ActionArt(move, actor);
             int count = Mathf.Max(8, animation?.count ?? 0);
             if (cue == null) return count;
             int effectFrames = art.Impact(move)?.count ?? 0;
             return Mathf.Max(count, cue.Contact + effectFrames - cue.EffectLead);
         }
+
+        private GmBattleArt.Clip ActionArt(GmBattleMove move, GmBattleUnit unit) =>
+            move == GmBattleMove.BasicAttack && !unit.IsParty
+                ? art.EnemyMotion(unit.EnemyKind, "Attack") : art.Animation(move, unit.Character);
 
         public int BossTransitionFrames(int phase, bool wasAirborne) => art.BossTransition(phase, wasAirborne)?.count ?? 0;
 
@@ -204,13 +207,14 @@ namespace GamecommMentor.DaengSaka
             UnitView actor = views[actorIndex];
             GmBattleUnit unit = session.Units[actorIndex];
             bool poppoBasic = move == GmBattleMove.BasicAttack && unit.EnemyKind == GmBattleEnemyKind.Poppo;
-            GmBattleArt.Clip animation = poppoBasic ? art.Find("poppoAttack") : art.Animation(move, unit.Character);
+            GmBattleArt.Clip animation = ActionArt(move, unit);
             GmBattleArt.Draw(actor.Sprite, animation ?? actor.Idle, pose.Index, actor.Scale);
             if (move.IsDamaging) FrameImpact(pose);
 
             bool approach = move == GmBattleMove.ShieldSwing || move == GmBattleMove.DominionStrike ||
-                move == GmBattleMove.GBite || move == GmBattleMove.CaneStrike || poppoBasic ||
-                (move == GmBattleMove.BasicAttack && unit.Character == GmBattleCharacter.Pacca);
+                move == GmBattleMove.GBite || move == GmBattleMove.CaneStrike ||
+                (move == GmBattleMove.BasicAttack && (unit.Character == GmBattleCharacter.Pacca ||
+                    GmBattleArt.EnemyKey(unit.EnemyKind) != null));
             if (approach && targets.Length == 1)
             {
                 UnitView target = views[targets[0]];

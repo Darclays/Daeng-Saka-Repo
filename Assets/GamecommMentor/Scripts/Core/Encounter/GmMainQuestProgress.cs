@@ -25,6 +25,7 @@ namespace GamecommMentor.DaengSaka
     {
         [SerializeField] private GmEnemyEncounter soreliaEncounter;
         [SerializeField] private GmEnemyEncounter caveEncounter;
+        [SerializeField] private GmEnemyEncounter caveFinaleGuard;
         [SerializeField] private GmEnemyEncounter pakandeEncounter;
         [SerializeField] private bool shareAcrossWorldScenes;
         private static QuestRun worldRun = new QuestRun();
@@ -33,10 +34,13 @@ namespace GamecommMentor.DaengSaka
         private QuestRun Run => shareAcrossWorldScenes ? worldRun : localRun;
         public GmMainQuestStep Step => Run.Step;
         public GmEnemyEncounter PakandeEncounter => pakandeEncounter;
+        private GmEnemyEncounter CaveEncounter => caveFinaleGuard != null ? caveFinaleGuard : caveEncounter;
+
+        public void SetCaveFinaleGuard(GmEnemyEncounter guard) => caveFinaleGuard = guard;
         public GmEnemyEncounter ActiveEncounter => Step switch
         {
             GmMainQuestStep.SelamatkanKeluargaNelayan => soreliaEncounter,
-            GmMainQuestStep.SelidikiGua => caveEncounter,
+            GmMainQuestStep.SelidikiGua => CaveEncounter,
             GmMainQuestStep.LawanPakande => pakandeEncounter,
             _ => null
         };
@@ -56,7 +60,7 @@ namespace GamecommMentor.DaengSaka
         private void Awake()
         {
             RestoreDefeat(soreliaEncounter, GmMainQuestStep.SelamatkanKeluargaNelayan);
-            RestoreDefeat(caveEncounter, GmMainQuestStep.SelidikiGua);
+            RestoreDefeat(CaveEncounter, GmMainQuestStep.SelidikiGua);
             RestoreDefeat(pakandeEncounter, GmMainQuestStep.LawanPakande);
             RefreshCaveEncounters();
         }
@@ -84,7 +88,8 @@ namespace GamecommMentor.DaengSaka
         {
             if (!isActiveAndEnabled) return true;
             if (encounter == soreliaEncounter) return Step == GmMainQuestStep.SelamatkanKeluargaNelayan;
-            if (encounter == caveEncounter) return Step == GmMainQuestStep.SelidikiGua;
+            if (encounter == CaveEncounter) return Step == GmMainQuestStep.SelidikiGua;
+            if (encounter == caveEncounter) return false;
             if (encounter == pakandeEncounter) return Step == GmMainQuestStep.LawanPakande;
             return true;
         }
@@ -115,9 +120,11 @@ namespace GamecommMentor.DaengSaka
         private void RefreshCaveEncounters()
         {
             if (!shareAcrossWorldScenes) return;
+            bool investigating = Step == GmMainQuestStep.SelidikiGua;
             SetEncounterPresence(caveEncounter, Step == GmMainQuestStep.MasukGuaLembayung ||
-                Step == GmMainQuestStep.SelidikiGua);
-            SetEncounterPresence(pakandeEncounter,
+                (caveFinaleGuard == null && investigating));
+            SetEncounterPresence(caveFinaleGuard, investigating);
+            SetEncounterPresence(pakandeEncounter, (caveFinaleGuard != null && investigating) ||
                 Step == GmMainQuestStep.TemuiPakande || Step == GmMainQuestStep.LawanPakande);
         }
 

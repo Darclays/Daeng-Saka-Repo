@@ -94,7 +94,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 (Nelayan, "Coba memancing dari tepi air, di tempat ikan berkumpul."));
         }
 
-        private static bool AddConversation(DialogueDatabase database, Template template,
+        internal static bool AddConversation(DialogueDatabase database, Template template,
             string title, string completionEntry, params (string actor, string text)[] lines)
         {
             if (database.GetConversation(title) != null) return false;
