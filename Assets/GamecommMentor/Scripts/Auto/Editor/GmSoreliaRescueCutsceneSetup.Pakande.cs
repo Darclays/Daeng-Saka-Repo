@@ -39,7 +39,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 EditorSceneManager.MarkSceneDirty(finale.gameObject.scene);
                 Undo.CollapseUndoOperations(group);
                 Selection.activeGameObject = finale.gameObject;
-                Debug.Log("[Daeng Saka 1E.17B] Cutscene dan rute battle Nenek Pakande siap. Simpan GoaLembanyung.", finale);
+                Debug.Log("[Daeng Saka 1E.17B R1] Collider batu, kamera, dan posisi rombongan siap. Simpan GoaLembanyung.", finale);
             }
             catch (Exception exception)
             {
@@ -60,16 +60,51 @@ namespace GamecommMentor.DaengSaka.Editor
                 throw new InvalidOperationException("Jalankan setup rute Goa sebelum memasang cutscene Nenek Pakande.");
 
             Transform places = RequireRoot(scene, "NPCPlaces");
-            Transform babiMarker = RequireChild(places, "EE_BabiRusa");
-            Transform laMarker = RequireChild(places, "EE_Lawuna");
+            Transform babiMarker = NearestPakandeMarker(places, "EE_BabiRusa", boss.position);
+            Transform laMarker = NearestPakandeMarker(places, "EE_Lawuna", boss.position);
             Vector3 outward = Flat((babiMarker.position + laMarker.position) * .5f - boss.position).normalized;
             if (outward.sqrMagnitude < .01f)
                 throw new InvalidOperationException("Posisi Nenek Pakande, Babi Rusa, dan La Wuna perlu titik terpisah.");
             Vector3 side = Vector3.Cross(Vector3.up, outward);
 
-            var terrain = Require<TerrainCollider>(RequireChild(RequireRoot(scene, "LevelDesign"), "Terrain"));
+            Transform level = RequireRoot(scene, "LevelDesign");
+            var terrain = Require<TerrainCollider>(RequireChild(level, "Terrain"));
+            var cameraObject = RequireChild(world, "Saka - Orbit Camera");
+            var camera = Require<Camera>(cameraObject);
+            var orbit = Require<GmOrbitFollowCamera>(cameraObject);
+            var collision = GmGoaRockCollisionSetup.Install(RequireChild(level, "Goa"), orbit);
+            var playerBody = Require<CharacterController>(hero);
+            float playerClearance = playerBody.radius + playerBody.skinWidth + .07f;
+
             Vector3 Road(float distance, float lane) => Ground(terrain, boss.position + outward * distance + side * lane);
+            Vector3 chamber = Road(2.2f, 0f);
             var stageRoot = Child(world, "Cutscene - Nenek Pakande");
+            Transform oldTrigger = places.Find("Encounter_RombonganPakande");
+            // Earlier installs could take the first identically named marker from another corridor.
+            // Rebuild the linked positions together when that saved approach faces the wrong arm.
+            bool wrongApproach = oldTrigger != null &&
+                Vector3.Dot(Flat(oldTrigger.position - boss.position).normalized, outward) < .86f;
+            bool realign = wrongApproach || stageRoot.GetComponentsInChildren<Transform>(true).Any(marker =>
+                (marker.name == "Kamera Awal" || marker.name == "Kamera Akhir") && !collision.HasCameraSpace(marker.position));
+
+            Transform ActorMark(Transform parent, string label, Vector3 preferred, float radius,
+                float height, float hover = 0f, Quaternion? rotation = null)
+            {
+                Transform existing = parent.Find(label);
+                if (!realign && existing != null && collision.CanPlaceActor(existing.position, chamber, radius, height))
+                    return existing;
+
+                for (int step = 0; step <= 8; step++)
+                {
+                    Vector3 point = Vector3.Lerp(preferred, chamber, step * .075f);
+                    if (!terrain.Raycast(new Ray(point + Vector3.up * 5f, Vector3.down), out var floor, 12f)) continue;
+                    Vector3 feet = floor.point + Vector3.up * (.025f + hover);
+                    if (collision.CanPlaceActor(feet, chamber, radius, height))
+                        return MovePakandeMarker(parent, label, feet, rotation);
+                }
+                throw new InvalidOperationException($"'{label}' tidak muat di ruang Pakande. Cek ruang di sekitar batu.");
+            }
+
             Transform castRoot = Child(stageRoot, "Aktor Cutscene");
             var heroSprite = hero.GetComponentInChildren<SpriteRenderer>(true);
             if (heroSprite == null) throw new InvalidOperationException("Visual Saka belum tersedia.");
@@ -87,9 +122,6 @@ namespace GamecommMentor.DaengSaka.Editor
                 actors.Add(key, CreateActor(castRoot, label, heroSprite, idle, default));
             }
 
-            var cameraObject = RequireChild(world, "Saka - Orbit Camera");
-            var camera = Require<Camera>(cameraObject);
-            var orbit = Require<GmOrbitFollowCamera>(cameraObject);
             var hud = Require<Canvas>(RequireChild(world, "Quest Encounter Hint"));
             var bridge = Require<GmPixelCrushersDialogueBridge>(RequireChild(world, "Dialogue Manager"));
             var sequence = Require<GmPixelCrushersMainQuestDialogue>(flowRoot);
@@ -97,7 +129,8 @@ namespace GamecommMentor.DaengSaka.Editor
             if (roster == null || !roster.HasEnemies)
                 throw new InvalidOperationException("Aset RombonganGoa belum tersedia. Impor folder Data dari patch.");
 
-            Transform guardPoint = Mark(places, "Encounter_RombonganPakande", Road(8.20f, .03f), Quaternion.LookRotation(-outward, Vector3.up));
+            Transform guardPoint = ActorMark(places, "Encounter_RombonganPakande", Road(8.20f, .03f),
+                playerClearance, playerBody.height + .08f, rotation: Quaternion.LookRotation(-outward, Vector3.up));
             Transform guardObject = Child(world, GuardsName);
             Undo.RecordObject(guardObject, PakandeUndo);
             guardObject.SetPositionAndRotation(guardPoint.position, guardPoint.rotation);
@@ -117,11 +150,11 @@ namespace GamecommMentor.DaengSaka.Editor
 
             var monsterPositions = new Dictionary<string, Transform>
             {
-                ["BabiRusa"] = Mark(stageRoot, "Posisi Babi Rusa",
-                    Ground(terrain, Vector3.Lerp(boss.position, babiMarker.position, .55f))),
-                ["Manguni"] = Mark(stageRoot, "Posisi Manguni", Road(-.75f, -1.76f) + Vector3.up * .48f),
-                ["LaWuna"] = Mark(stageRoot, "Posisi La Wuna",
-                    Ground(terrain, Vector3.Lerp(boss.position, laMarker.position, .55f))),
+                ["BabiRusa"] = ActorMark(stageRoot, "Posisi Babi Rusa",
+                    Vector3.Lerp(boss.position, babiMarker.position, .55f), 1.02f, 2.54f),
+                ["Manguni"] = ActorMark(stageRoot, "Posisi Manguni", Road(-.75f, -1.76f), 1.35f, 2.58f, .48f),
+                ["LaWuna"] = ActorMark(stageRoot, "Posisi La Wuna",
+                    Vector3.Lerp(boss.position, laMarker.position, .55f), 1.02f, 2.58f),
             };
             foreach (var monster in monsterPositions)
                 SetUpGuardPreview(guardObject, actors[monster.Key], monster.Value, camera);
@@ -158,11 +191,15 @@ namespace GamecommMentor.DaengSaka.Editor
                 foreach (var member in team)
                 {
                     Transform track = Child(panel, actors[member.Key].gameObject.name);
-                    Transform first = Mark(track, "Awal", Road(advanced ? member.End : member.Start, member.Lane));
-                    Transform last = move ? Mark(track, "Akhir", Road(member.End, member.Lane)) : first;
+                    Transform first = ActorMark(track, "Awal", Road(advanced ? member.End : member.Start, member.Lane),
+                        .55f, 1.92f);
+                    Transform last = move
+                        ? ActorMark(track, "Akhir", Road(member.End, member.Lane), .55f, 1.92f) : first;
                     cues.Add(new ActorCue(actors[member.Key], first, last, boss, member.Lag, move ? 2.10f : 0f, true));
                 }
-                Transform saka = Mark(panel, "Arah ke Saka", Road(advanced || move ? team[0].End : team[0].Start, 0f));
+                Transform sakaTrack = panel.Find("Saka");
+                Transform saka = MovePakandeMarker(panel, "Arah ke Saka",
+                    sakaTrack.Find(move ? "Akhir" : "Awal").position, null);
                 cues.Add(new ActorCue(actors["Pakande"], boss, boss, saka, 0f, 0f, true));
                 if (withMonsters)
                     foreach (var monster in monsterPositions)
@@ -170,24 +207,37 @@ namespace GamecommMentor.DaengSaka.Editor
                 return cues.ToArray();
             }
 
-            Transform Frame(Transform panel, string label, float d, float lane, float height, float focusD, float focusY) =>
-                CameraMark(panel, label, Road(d, lane) + Vector3.up * height, Road(focusD, 0f) + Vector3.up * focusY);
-            Transform establishing = Frame(discovered, "Kamera Awal", 7.55f, 5.70f, 4.12f, 5.96f, 1.01f);
-            Transform establishingEnd = Frame(discovered, "Kamera Akhir", 7.42f, 5.62f, 4.08f, 5.81f, 1.00f);
-            Transform rushFrom = Frame(protect, "Kamera Awal", 7.42f, 5.62f, 4.08f, 5.81f, 1.00f);
-            Transform rushTo = Frame(protect, "Kamera Akhir", 5.62f, 5.42f, 3.25f, 4.47f, .88f);
+            Transform Frame(Transform panel, string label, float d, float lane, float height, float focusD, float focusY)
+            {
+                Vector3 look = Road(focusD, 0f) + Vector3.up * focusY;
+                Transform existing = panel.Find(label);
+                if (!realign && existing != null && collision.IsCameraClear(existing.position, look, boss.position))
+                    return existing;
+
+                Vector3 eye = collision.FindCameraEye(Road(d, lane) + Vector3.up * height, look, boss.position, panel.name);
+                return MovePakandeMarker(panel, label, eye, Quaternion.LookRotation(look - eye, Vector3.up));
+            }
+            Transform establishing = Frame(discovered, "Kamera Awal", 7.55f, 5.45f, 4.34f, 5.96f, 1.01f);
+            Transform establishingEnd = Frame(discovered, "Kamera Akhir", 7.42f, 5.37f, 4.30f, 5.81f, 1.00f);
+            Transform rushFrom = Frame(protect, "Kamera Awal", 7.42f, 5.37f, 4.30f, 5.81f, 1.00f);
+            Transform rushTo = Frame(protect, "Kamera Akhir", 5.62f, 5.17f, 3.47f, 4.47f, .88f);
+            collision.RequireClearCameraMove(establishing.position, establishingEnd.position, discovered.name);
+            collision.RequireClearCameraMove(rushFrom.position, rushTo.position, protect.name);
             var beforeBattle = MakeDirector(approach, new[]
             {
                 new Shot(establishing, establishingEnd, 2.55f, 58f, Stage(discovered, false, false, true),
                     "Saka   ·   Lihat itu, ada monster besar!", .26f),
-                new Shot(rushFrom, rushTo, 2.75f, 56f, Stage(protect, true, false, true),
+                new Shot(rushFrom, rushTo, 2.75f, 58f, Stage(protect, true, false, true),
                     "Daung   ·   Ada nenek di sana. Nek, menjauh!", .26f),
             });
 
             Transform highFrom = Frame(reunion, "Kamera Awal", 5.40f, 5.52f, 4.68f, 3.95f, .37f);
             Transform highTo = Frame(reunion, "Kamera Akhir", 5.16f, 5.44f, 4.48f, 3.94f, .40f);
-            Transform talk = Frame(address, "Kamera Akhir", 4.20f, 5.20f, 2.46f, 3.90f, .75f);
-            Transform glare = Frame(anger, "Kamera Akhir", 4.20f, 5.20f, 2.12f, 3.90f, .75f);
+            Transform talk = Frame(address, "Kamera Akhir", 4.20f, 5.00f, 2.46f, 3.90f, .75f);
+            Transform glare = Frame(anger, "Kamera Akhir", 4.20f, 5.00f, 2.34f, 3.90f, .75f);
+            collision.RequireClearCameraMove(highFrom.position, highTo.position, reunion.name);
+            collision.RequireClearCameraMove(highTo.position, talk.position, address.name);
+            collision.RequireClearCameraMove(talk.position, glare.position, anger.name);
             var roar = Component<AudioSource>(Mark(anger, "Auman", boss.position + Vector3.up * 1.10f));
             Undo.RecordObject(roar, PakandeUndo);
             roar.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(GoaRoar);
@@ -220,6 +270,25 @@ namespace GamecommMentor.DaengSaka.Editor
             Undo.RecordObject(finale, PakandeUndo);
             finale.Configure(Require<GmSakaMotor>(hero), guards, beforeBattle, afterBattle, bridge);
             return finale;
+        }
+
+        private static Transform NearestPakandeMarker(Transform places, string name, Vector3 centre)
+        {
+            Transform marker = places.GetComponentsInChildren<Transform>(true)
+                .Where(point => point.parent == places &&
+                    (point.name == name || point.name.StartsWith(name + " (", StringComparison.Ordinal)))
+                .OrderBy(point => Flat(point.position - centre).sqrMagnitude)
+                .FirstOrDefault();
+            return marker != null ? marker :
+                throw new InvalidOperationException($"Marker '{name}' belum ada di NPCPlaces.");
+        }
+
+        private static Transform MovePakandeMarker(Transform parent, string label, Vector3 point, Quaternion? rotation)
+        {
+            Transform marker = Mark(parent, label, point, rotation);
+            Undo.RecordObject(marker, PakandeUndo);
+            marker.SetPositionAndRotation(point, rotation ?? marker.rotation);
+            return marker;
         }
 
         private static void SetUpGuardPreview(Transform guards, GmCutsceneSprite actor, Transform point, Camera camera)
