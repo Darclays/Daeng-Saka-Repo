@@ -12,6 +12,7 @@ namespace GamecommMentor.DaengSaka
     public sealed class GmSoreliaRescueCutscene : MonoBehaviour
     {
         private const float FadeSeconds = .23f;
+        private const float MaxFrameDelta = .10f;
 
         [Serializable]
         public sealed class ActorCue
@@ -167,6 +168,8 @@ namespace GamecommMentor.DaengSaka
         private bool started;
         private bool playing;
         private bool holdFinalShot;
+        private bool limitFrameDelta;
+        private int playStartedFrame;
 
         internal bool IsPlaying => playing;
         internal bool IsHoldingFinalShot { get; private set; }
@@ -201,11 +204,13 @@ namespace GamecommMentor.DaengSaka
         {
             get
             {
-                if (view == null || orbit == null || terrain == null || questHud == null ||
-                    overlay == null || fade == null || caption == null || cast.Length == 0 || shots.Length == 0)
+                if (view == null || orbit == null || questHud == null || overlay == null || fade == null ||
+                    caption == null || cast == null || shots == null || shots.Length == 0 ||
+                    (cast.Length > 0 && terrain == null))
                     return false;
                 foreach (Shot shot in shots)
-                    if (shot == null || !shot.IsReady) return false;
+                    if (shot == null || !shot.IsReady || (cast.Length == 0 && shot.Actors.Length > 0))
+                        return false;
                 return true;
             }
         }
@@ -228,7 +233,7 @@ namespace GamecommMentor.DaengSaka
             terraceShotsInstalled = true;
         }
 
-        internal bool TryPlay(GmSakaMotor player, bool holdFinalShot = false)
+        internal bool TryPlay(GmSakaMotor player, bool holdFinalShot = false, bool limitFrameDelta = false)
         {
             if (started || !isActiveAndEnabled || player == null || !IsConfigured || orbit.Target != player.transform)
                 return false;
@@ -238,6 +243,8 @@ namespace GamecommMentor.DaengSaka
             started = true;
             playing = true;
             this.holdFinalShot = holdFinalShot;
+            this.limitFrameDelta = limitFrameDelta;
+            playStartedFrame = Time.frameCount;
             gate = controls;
             gate.Block(this);
             interactor = player.GetComponent<GmInteractor>();
@@ -274,14 +281,17 @@ namespace GamecommMentor.DaengSaka
                 Finish(completed: true);
                 return;
             }
+            // A scene can open on a frame whose elapsed time includes loading the scene.
+            if (limitFrameDelta && Time.frameCount == playStartedFrame) return;
+            float elapsed = limitFrameDelta ? Mathf.Min(Time.unscaledDeltaTime, MaxFrameDelta) : Time.unscaledDeltaTime;
             if (IsHoldingFinalShot)
             {
-                shotTime += Time.unscaledDeltaTime;
+                shotTime += elapsed;
                 shots[shotIndex].Sample(view, terrain, shotTime);
                 return;
             }
 
-            shotTime += Time.unscaledDeltaTime;
+            shotTime += elapsed;
             while (shotTime >= shots[shotIndex].Seconds)
             {
                 if (shotIndex == shots.Length - 1)
