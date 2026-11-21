@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
@@ -98,9 +99,10 @@ namespace GamecommMentor.DaengSaka
             [SerializeField] private ActorCue[] actors;
             [SerializeField] private string cueText;
             [SerializeField, Min(0f)] private float cueAt;
+            [SerializeField] private AudioSource cueAudio;
 
             public Shot(Transform from, Transform to, float seconds, float fieldOfView, ActorCue[] actors,
-                string cueText = "", float cueAt = 0f)
+                string cueText = "", float cueAt = 0f, AudioSource cueAudio = null)
             {
                 this.from = from;
                 this.to = to;
@@ -109,6 +111,7 @@ namespace GamecommMentor.DaengSaka
                 this.actors = actors;
                 this.cueText = cueText;
                 this.cueAt = cueAt;
+                this.cueAudio = cueAudio;
             }
 
             internal float Seconds => seconds;
@@ -117,7 +120,7 @@ namespace GamecommMentor.DaengSaka
             {
                 get
                 {
-                    if (from == null || to == null || seconds < .5f || actors == null || actors.Length == 0)
+                    if (from == null || to == null || seconds < .5f || actors == null)
                         return false;
                     foreach (ActorCue cue in actors)
                         if (cue == null || !cue.IsReady) return false;
@@ -126,6 +129,7 @@ namespace GamecommMentor.DaengSaka
             }
 
             internal string Caption(float time) => time >= cueAt ? cueText : "";
+            internal AudioSource AudioAt(float time) => time >= cueAt ? cueAudio : null;
 
             internal void Sample(Camera camera, TerrainCollider terrain, float elapsed)
             {
@@ -159,6 +163,8 @@ namespace GamecommMentor.DaengSaka
         private float explorationFov;
         private float shotTime;
         private int shotIndex;
+        private AudioSource playingCue;
+        private bool cuePlayedInShot;
 
         public void Configure(Camera camera, GmOrbitFollowCamera followCamera, TerrainCollider floor,
             Canvas hud, GameObject cutsceneOverlay, Image fadeImage, Text subtitle,
@@ -190,6 +196,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public bool TerraceShotsInstalled => terraceShotsInstalled;
+        public IReadOnlyList<Shot> Shots => shots;
 
         public void HideDuringCutscene(SpriteRenderer sprite)
         {
@@ -262,6 +269,14 @@ namespace GamecommMentor.DaengSaka
             Shot shot = shots[shotIndex];
             shot.Sample(view, terrain, shotTime);
             caption.text = shot.Caption(shotTime);
+            AudioSource cue = shot.AudioAt(shotTime);
+            if (!cuePlayedInShot && cue != null)
+            {
+                if (playingCue != null) playingCue.Stop();
+                playingCue = cue;
+                playingCue.Play();
+                cuePlayedInShot = true;
+            }
             if (shotIndex == 0) SetFade(1f - shotTime / FadeSeconds);
             else if (shotIndex == shots.Length - 1) SetFade(1f - (shot.Seconds - shotTime) / FadeSeconds);
         }
@@ -271,6 +286,7 @@ namespace GamecommMentor.DaengSaka
             HideCast();
             shotIndex = index;
             shotTime = 0f;
+            cuePlayedInShot = false;
             Shot shot = shots[index];
             foreach (ActorCue actor in shot.Actors) actor.Enter();
             shot.Sample(view, terrain, 0f);
@@ -296,6 +312,8 @@ namespace GamecommMentor.DaengSaka
             if (!playing) return;
             playing = false;
             HideCast();
+            if (playingCue != null) playingCue.Stop();
+            playingCue = null;
             if (overlay != null) overlay.SetActive(false);
             for (int i = 0; i < explorationSprites.Length; i++)
                 if (explorationSprites[i] != null) explorationSprites[i].enabled = rendererStates[i];

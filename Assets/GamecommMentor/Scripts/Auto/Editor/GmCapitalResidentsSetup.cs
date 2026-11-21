@@ -34,8 +34,7 @@ namespace GamecommMentor.DaengSaka.Editor
             Transform merchant = RequireChild(world, "Merchant");
             var renderer = Require<SpriteRenderer>(RequireChild(merchant, "Visual"));
             var body = Require<CharacterController>(RequireChild(world, "Saka"));
-            var layout = new GmWorldSceneLayout(scene, "PortalPoint_StartRespawnPointIbuKota",
-                "PortalPoint_GoDesaSoralia", body, "GroundKota", "Ground Kerajaan");
+            var layout = GmCapitalRouteSetup.CreateLayout(scene, body);
             var reserved = new[]
             {
                 RequireChild(world, "Spawn - Start").position,

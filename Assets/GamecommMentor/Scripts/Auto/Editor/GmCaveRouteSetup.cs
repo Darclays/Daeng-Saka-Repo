@@ -32,7 +32,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 EditorSceneManager.MarkSceneDirty(scene);
                 Undo.CollapseUndoOperations(group);
                 Selection.activeGameObject = boss.gameObject;
-                Debug.Log("[Daeng Saka 1E.9B] Rute dan arena Pakande siap. Simpan scene GoaLembanyung.", boss);
+                Debug.Log("[Daeng Saka 1E.16B R1] Posisi Poppo dan Nenek Pakande mengikuti NPCPlaces. Simpan scene GoaLembanyung.", boss);
             }
             catch (Exception exception)
             {
@@ -42,7 +42,7 @@ namespace GamecommMentor.DaengSaka.Editor
             }
         }
 
-        private static Transform InstallInScene(Scene scene)
+        internal static Transform InstallInScene(Scene scene)
         {
             Transform world = RequireRoot(scene, "Daeng Saka - World Gameplay");
             Transform flow = RequireRoot(scene, "Daeng Saka - Encounter Flow");
@@ -57,11 +57,18 @@ namespace GamecommMentor.DaengSaka.Editor
             if (!Require<SphereCollider>(boss).isTrigger)
                 throw new InvalidOperationException("Sphere Collider Nenek Pakande harus memakai Is Trigger.");
 
-            Transform marker = RequireChild(RequireRoot(scene, "NPCPlaces"), "EB_NenekPkdn");
+            Transform places = RequireRoot(scene, "NPCPlaces");
+            Transform poppoMarker = RequireChild(places, "EC_Poppo");
+            Transform marker = RequireChild(places, "EB_NenekPkdn");
             Transform spawn = RequireChild(world, "Spawn - Start");
             Transform portal = RequireChild(world, "Portal");
             var body = Require<CharacterController>(RequireChild(world, "Saka"));
             var layout = new GmWorldSceneLayout(scene, EntryMarker, EntryMarker, body);
+            Vector3 towardEntry = Vector3.ProjectOnPlane(spawn.position - poppoMarker.position, Vector3.up).normalized;
+            if (towardEntry.sqrMagnitude < .01f) towardEntry = -layout.IntoLevel;
+            Undo.RecordObject(guard, UndoName);
+            layout.Place(guard, poppoMarker.position, towardEntry, spawn.position, portal.position, guide.position);
+
             Vector3 facing = Vector3.ProjectOnPlane(guard.position - marker.position, Vector3.up).normalized;
             if (facing.sqrMagnitude < 0.01f) facing = -layout.IntoLevel;
 

@@ -26,8 +26,6 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Battle = SceneFolder + "Battle_Encounter_Test.unity";
         private const string WorldRoot = "Daeng Saka - World Gameplay";
         private const string FlowRoot = "Daeng Saka - Encounter Flow";
-        private const string CapitalStart = "PortalPoint_StartRespawnPointIbuKota";
-        private const string CapitalExit = "PortalPoint_GoDesaSoralia";
         private const string VillageStart = "PortalPoint_StartRespawnDesaSoralia";
         private const string VillageExit = "PortalPoint_GoGoaLembayung";
         private const string CaveEntrance = "PortalPoint_StartRespawnGoaLembayung";
@@ -74,7 +72,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 var assets = new WorldAssets();
                 CharacterController body = Require<CharacterController>(assets.player);
                 Physics.SyncTransforms();
-                var capitalLayout = new GmWorldSceneLayout(capital, CapitalStart, CapitalExit, body);
+                var capitalLayout = GmCapitalRouteSetup.CreateLayout(capital, body);
                 var villageLayout = new GmWorldSceneLayout(village, VillageStart, VillageExit, body);
                 var caveLayout = new GmWorldSceneLayout(cave, CaveEntrance, CaveEntrance, body);
                 GmPixelCrushersMainQuestDialogue.StepDialogue[] dialogues = PrepareDialogueDatabase();
@@ -257,12 +255,15 @@ namespace GamecommMentor.DaengSaka.Editor
 
             Transform start = GetObject(world.transform, "Spawn - Start", out bool newStart).transform;
             Vector3 inward = layout.IntoLevel;
-            if (newStart) layout.Place(start, layout.StartGuide.position + inward * 1.8f, inward);
+            if (newStart)
+                layout.Place(start, layout.StartGuide.position + inward * (isCapital ? GmCapitalRouteSetup.StartInset : 1.8f), inward);
 
             Transform portalPoint = GetObject(world.transform, "Portal", out bool newPortal).transform;
             if (newPortal)
-                layout.Place(portalPoint, layout.PortalGuide.position + (isCave ? Vector3.zero : inward * -0.9f),
-                    isCave ? inward : -inward, start.position);
+            {
+                float inset = isCave ? 0f : isCapital ? GmCapitalRouteSetup.ExitInset : .9f;
+                layout.Place(portalPoint, layout.PortalGuide.position - inward * inset, isCave ? inward : -inward, start.position);
+            }
             GmWorldPortal portal = GetOrAdd<GmWorldPortal>(portalPoint.gameObject);
             BoxCollider trigger = Require<BoxCollider>(portalPoint.gameObject);
             trigger.isTrigger = true;

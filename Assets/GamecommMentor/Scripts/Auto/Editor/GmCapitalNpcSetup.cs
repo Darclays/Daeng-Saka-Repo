@@ -63,8 +63,7 @@ namespace GamecommMentor.DaengSaka.Editor
             var sequence = Require<GmPixelCrushersMainQuestDialogue>(flow);
             Require<GmMainQuestProgress>(flow);
             Require<GmEncounterFlow>(flow);
-            var layout = new GmWorldSceneLayout(scene, "PortalPoint_StartRespawnPointIbuKota",
-                "PortalPoint_GoDesaSoralia", player, "GroundKota", "Ground Kerajaan");
+            var layout = GmCapitalRouteSetup.CreateLayout(scene, player);
 
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NpcPrefab);
             if (prefab == null) throw new InvalidOperationException("Prefab NPC belum ada: " + NpcPrefab);

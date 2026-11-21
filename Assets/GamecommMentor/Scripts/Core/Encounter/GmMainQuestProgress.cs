@@ -115,7 +115,8 @@ namespace GamecommMentor.DaengSaka
         private void RefreshCaveEncounters()
         {
             if (!shareAcrossWorldScenes) return;
-            SetEncounterPresence(caveEncounter, Step == GmMainQuestStep.SelidikiGua);
+            SetEncounterPresence(caveEncounter, Step == GmMainQuestStep.MasukGuaLembayung ||
+                Step == GmMainQuestStep.SelidikiGua);
             SetEncounterPresence(pakandeEncounter,
                 Step == GmMainQuestStep.TemuiPakande || Step == GmMainQuestStep.LawanPakande);
         }
