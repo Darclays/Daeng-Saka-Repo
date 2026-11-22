@@ -64,6 +64,8 @@ namespace GamecommMentor.DaengSaka
         public GmBattleMove ChargedMove => IsCharging ? greaterShadow : null;
         public int BasicAttackReduction => Phase == 2 ? profile.AirborneBasicReduction : 0;
         public GmBattleMove AirborneMove => units[Index].CooldownRemaining(magicCharge) == 0 ? magicCharge : bolt;
+        public int HealthFloor => profile.HasHealthSegments ? (int)((long)units[Index].MaxHp * (3 - Phase) / 3) : 0;
+        public bool IsWaitingForPhaseChange => HealthFloor > 0 && units[Index].Hp <= HealthFloor;
 
         public int ChargeStunTarget
         {
@@ -89,8 +91,10 @@ namespace GamecommMentor.DaengSaka
             if (Phase == 3) return;
             GmBattleUnit boss = units[Index];
             long health = (long)boss.Hp * 100;
-            int phase = health <= (long)boss.MaxHp * profile.PhaseThreeAt ? 3
-                : health <= (long)boss.MaxHp * profile.PhaseTwoAt ? 2 : 1;
+            int phase = profile.HasHealthSegments
+                ? Phase + (IsWaitingForPhaseChange ? 1 : 0)
+                : health <= (long)boss.MaxHp * profile.PhaseThreeAt ? 3
+                    : health <= (long)boss.MaxHp * profile.PhaseTwoAt ? 2 : 1;
             if (phase <= Phase) return;
             WasAirborne = Phase == 2;
             Phase = phase;

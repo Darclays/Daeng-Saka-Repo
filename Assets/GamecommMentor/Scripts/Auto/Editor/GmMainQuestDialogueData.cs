@@ -138,7 +138,11 @@ namespace GamecommMentor.DaengSaka.Editor
                     continue;
                 }
                 if (MatchesGeneratedQuest(database, conversation, story.partner, story.lines)) continue;
-                if (!MatchesGeneratedQuest(database, conversation, story.previous[0].actor, story.previous, checkPresentation: true))
+                bool fromFullOpening = story.step == GmMainQuestStep.PersiapanSebelumBertarung &&
+                    MatchesGeneratedQuest(database, conversation, GmCapitalDialogueData.FormerPua,
+                        GmCapitalDialogueData.FormerOpening, checkPresentation: true);
+                if (!fromFullOpening &&
+                    !MatchesGeneratedQuest(database, conversation, story.previous[0].actor, story.previous, checkPresentation: true))
                 {
                     kept.Add(title);
                     continue;

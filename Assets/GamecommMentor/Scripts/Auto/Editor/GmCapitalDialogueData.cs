@@ -1,3 +1,5 @@
+using System;
+
 namespace GamecommMentor.DaengSaka.Editor
 {
     internal static class GmCapitalDialogueData
@@ -6,7 +8,8 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Saka = "Saka";
         private const string Pacca = "Pacca";
         private const string Daung = "Daung";
-        private const string Pua = "Pua’";
+        internal const string FormerPua = "Pua’";
+        internal const string Aco = "Daeng Aco";
         private const string Merchant = "Merchant";
         private const string Smith = "Penempa Besi";
         private const string Mother = "Warga Ibu";
@@ -19,6 +22,64 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Yusuf = "Pak Yusuf";
 
         internal const string YusufTitle = "DaengSaka/Dialog Penjaga/Pak Yusuf";
+
+        internal static readonly (string actor, string text)[] FormerOpening =
+        {
+            (FormerPua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
+            (Saka, "Betul mangge. kata Acci artifact selanjutnya ada disana"),
+            (FormerPua, "Berhati-hati lah nak. Gua tersebut sangat berbahaya"),
+            (Pacca, "Tenang Pua’, Pacca tidak akan membiarkan Saka terluka"),
+            (Daung, "Ngomong-ngomong, kita perlu menyetok ulang barang bawaan kita"),
+            (Saka, "Iya nih.. jamu dan makanan kita sudah hampir habis"),
+            (FormerPua, "Duh.. kalian ini gimana sih? masa kalian tidak memasok stok yang cukup sih?"),
+            (FormerPua, "Nih sedikit uang sangu, pastikan stok barang kalian cukup hingga ke gua lembayung"),
+            (Pacca, "Wah terima kasih banyak Pua’"),
+            (Daung, "Yuk, kita mampir ke toko-toko dulu")
+        };
+
+        internal static readonly (string title, string partner, (string actor, string text)[] lines)[] Delivery =
+        {
+            (GmCapitalDeliveryDialogue.OfferTitle, Smith, new[]
+            {
+                (Smith, "Eh, Nak. Sebelum berangkat, boleh om titip sesuatu?"),
+                (Daung, "Boleh, Om. Mau titip apa?"),
+                (Smith, "Pedang Pak Yusuf sudah selesai. Bawa dulu ke Daeng Aco, ya. Dia yang pesan gagangnya dibungkus kain."),
+                (Pacca, "Wah, akhirnya ada juga yang mau menitipkan pedang ke Pacca."),
+                (Daung, "Menitipkan, Pacca. Pegang sarungnya yang benar."),
+                (Smith, "Kalau Pak Yusuf sudah terima pedangnya, kembali ke sini. Om sudah siapkan upah kalian."),
+                (Saka, "Siap, Om. Kita temui Daeng Aco dulu, yuk.")
+            }),
+            (GmCapitalDeliveryDialogue.InspectionTitle, Aco, new[]
+            {
+                (Aco, "Lho, kalian sudah kembali? Ada perbekalan yang kurang?"),
+                (Saka, "Kami bawa pedang Pak Yusuf, Mangge. Kata penempa, gagangnya perlu diperiksa dulu."),
+                (Aco, "Nah, pas. Waktu hujan kemarin pedangnya hampir lepas dari tangan. Begini enak digenggam."),
+                (Pacca, "Kalau aku sih masih lebih percaya perisai."),
+                (Aco, "Ya, bawa perisaimu baik-baik. Pak Yusuf sedang berjaga di kaki tangga istana. Bilang saja sudah kuperiksa.")
+            }),
+            (GmCapitalDeliveryDialogue.DeliveryTitle, Yusuf, new[]
+            {
+                (Daung, "Pak Yusuf, ini pedang Bapak. Daeng Aco sudah memeriksa gagangnya."),
+                (Yusuf, "Wah, terima kasih, Tuan Putri. Sudah dua hari saya pinjam pedang penjaga sebelah."),
+                (Pacca, "Berarti sekarang beliau bisa berhenti menagih, ya, Pak?"),
+                (Yusuf, "Hahaha, betul. Ini tanda terimanya. Tolong bilang ke penempa, gagangnya sudah pas."),
+                (Saka, "Siap, Pak. Kami sampaikan.")
+            }),
+            (GmCapitalDeliveryDialogue.PaymentTitle, Smith, new[]
+            {
+                (Saka, "Om, ini tanda terima dari Pak Yusuf. Katanya gagang pedangnya sudah pas."),
+                (Smith, "Baguslah. Kemarin dia sampai tiga kali mampir buat menanyakan pedangnya."),
+                (Smith, $"Ini upahnya, {GmQuestCatalog.CityDeliveryReward} koin. Kalau mau ganti senjata atau minta ditempa, tinggal bilang."),
+                (Pacca, "Hmm, perisai baru boleh juga."),
+                (Daung, "Lihat dulu harganya, Pacca. Kita masih perlu bekal."),
+                (Saka, "Terima kasih, Om!")
+            }),
+            (GmCapitalDeliveryDialogue.AcoGreeting, Aco, new[]
+            {
+                (Aco, "Sudah cek perbekalan kalian, Nak? Kalau sudah siap, hati-hati di jalan ke Sorelia, ya."),
+                (Saka, "Iya, Mangge. Kami akan berhati-hati.")
+            })
+        };
 
         // The pairs use the two placed NPCs. For Random NPC 2, the child near the mother starts the talk.
         internal static readonly (string title, string partner, string[] hosts, (string actor, string text)[] lines)[] Residents =
@@ -69,25 +130,14 @@ namespace GamecommMentor.DaengSaka.Editor
         internal static readonly (GmMainQuestStep step, string suffix, string partner,
             (string actor, string text)[] previous, (string actor, string text)[] lines)[] Story =
         {
-            (GmMainQuestStep.PersiapanSebelumBertarung, "Persiapan Sebelum Bertarung", Pua, new[]
+            (GmMainQuestStep.PersiapanSebelumBertarung, "Persiapan Sebelum Bertarung", Aco, new[]
             {
-                (Pua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
+                (FormerPua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
                 (Saka, "Betul mangge. kata Acci artifact selanjutnya ada disana"),
-                (Pua, "Nih sedikit uang sangu, pastikan stok barang kalian cukup hingga ke gua lembayung"),
+                (FormerPua, "Nih sedikit uang sangu, pastikan stok barang kalian cukup hingga ke gua lembayung"),
                 (Saka, "Yuk, kita mampir ke toko-toko dulu")
-            }, new[]
-            {
-                (Pua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
-                (Saka, "Betul mangge. kata Acci artifact selanjutnya ada disana"),
-                (Pua, "Berhati-hati lah nak. Gua tersebut sangat berbahaya"),
-                (Pacca, "Tenang Pua’, Pacca tidak akan membiarkan Saka terluka"),
-                (Daung, "Ngomong-ngomong, kita perlu menyetok ulang barang bawaan kita"),
-                (Saka, "Iya nih.. jamu dan makanan kita sudah hampir habis"),
-                (Pua, "Duh.. kalian ini gimana sih? masa kalian tidak memasok stok yang cukup sih?"),
-                (Pua, "Nih sedikit uang sangu, pastikan stok barang kalian cukup hingga ke gua lembayung"),
-                (Pacca, "Wah terima kasih banyak Pua’"),
-                (Daung, "Yuk, kita mampir ke toko-toko dulu")
-            }),
+            }, Array.ConvertAll(FormerOpening, line =>
+                (line.actor == FormerPua ? Aco : line.actor, line.text.Replace(FormerPua, Aco)))),
             (GmMainQuestStep.KunjungiMerchant, "Kunjungi Merchant", Merchant, new[]
             {
                 (Merchant, "Selamat siang anak anak, ada yang bisa saya bantu?"),

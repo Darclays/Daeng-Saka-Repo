@@ -235,7 +235,8 @@ namespace GamecommMentor.DaengSaka
             else
             {
                 GmBattleMove chargedMove = session.Boss.ChargedMove;
-                if (chargedMove != null) bossStatus.text = $"FASE {session.Boss.Phase} · {chargedMove.Name.ToUpperInvariant()} BERIKUTNYA";
+                if (session.Boss.IsWaitingForPhaseChange) bossStatus.text = "PAKANDE BERSIAP BERGANTI FASE";
+                else if (chargedMove != null) bossStatus.text = $"FASE {session.Boss.Phase} · {chargedMove.Name.ToUpperInvariant()} BERIKUTNYA";
                 else if (session.Boss.BasicAttackReduction > 0)
                     bossStatus.text = $"FASE 2 · TERBANG · ATTACK BIASA −{session.Boss.BasicAttackReduction}%";
                 else bossStatus.text = $"FASE {session.Boss.Phase} · URUTAN MUSUH";
@@ -244,7 +245,7 @@ namespace GamecommMentor.DaengSaka
             RenderParty(session, choosingMember, actingIndex, displayRound, targetMove);
 
             bool showCommands = partyTurn && !submenu;
-            SetButton(attackButton, showCommands, true);
+            SetButton(attackButton, showCommands, showCommands && session.UnavailableReason(GmBattleMove.BasicAttack) == null);
             SetButton(skillButton, showCommands, showCommands && session.Actor.Skills.Count > 0);
             SetButton(itemButton, showCommands, true);
             SetButton(restButton, showCommands, true);
@@ -394,7 +395,7 @@ namespace GamecommMentor.DaengSaka
                     if (session.Units[i].IsAlive) { index = i; break; }
             if (index < 0) return;
             GmBattleUnit unit = session.Units[index];
-            string status = DescribeStatuses(unit, statusRound);
+            string status = DescribeStatuses(session, index, statusRound);
             OpenControls(ControlPanel.Info);
             controlDialog.Show(unit.Name, $"HP  {unit.Hp}/{unit.MaxHp}    MP  {unit.Mp}/{unit.MaxMp}\n" +
                 (status.Length > 0 ? status : "Tanpa efek status aktif."), "Kembali");
@@ -531,7 +532,7 @@ namespace GamecommMentor.DaengSaka
             if (!force && index == inspectedUnit) return;
             inspectedUnit = index;
             statusDetail.text = index >= 0 && session.Units[index].IsAlive
-                ? DescribeStatuses(session.Units[index], statusRound) : "";
+                ? DescribeStatuses(session, index, statusRound) : "";
         }
 
         public int FrameCount(GmBattleMove move, GmBattleUnit actor, GmBattleImpactCue cue) =>
@@ -765,10 +766,12 @@ namespace GamecommMentor.DaengSaka
         public static Color StatusColor(GmBattleUnit unit) => unit.Poison.Count > 0 ? new Color(0.38f, 0.18f, 0.49f)
             : unit.IsStunned ? new Color(0.50f, 0.28f, 0.08f) : Muted;
 
-        private static string DescribeStatuses(GmBattleUnit unit, int round)
+        private static string DescribeStatuses(GmBattleSession session, int index, int round)
         {
+            GmBattleUnit unit = session.Units[index];
             var details = new List<string>();
-            long poisonDamage = unit.PendingPoisonDamage(round);
+            int healthFloor = session.Boss?.Index == index ? session.Boss.HealthFloor : 0;
+            long poisonDamage = Math.Min(unit.PendingPoisonDamage(round), Math.Max(0, unit.Hp - healthFloor));
             if (poisonDamage > 0)
             {
                 string tick = $"Tick racun berikutnya −{poisonDamage} HP";

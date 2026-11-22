@@ -17,7 +17,7 @@ namespace GamecommMentor.DaengSaka
         private readonly List<(Entry entry, Button button, Text badge)> rows = new List<(Entry, Button, Text)>();
         private readonly RectTransform root, list, detail, confirm, confirmActions;
         private readonly CanvasGroup controls;
-        private readonly Button buyTab, enchantTab, close, commit;
+        private readonly Button buyTab, enchantTab, deliveryButton, close, commit;
         private readonly Text balance, freeOffer, title, wielder, power, attacks, projected, status, commitLabel, empty;
         private readonly Text confirmTitle, confirmPrice, confirmBalance;
         private readonly Image icon;
@@ -25,7 +25,8 @@ namespace GamecommMentor.DaengSaka
         private readonly Action back;
         private Button selectedRow, confirmCancel;
 
-        internal GmBlacksmithView(Action<bool> changeTab, Action<Entry> select, Action request, Action back)
+        internal GmBlacksmithView(Action<bool> changeTab, Action<Entry> select, Action request, Action back,
+            Action delivery)
         {
             this.select = select;
             this.back = back;
@@ -53,8 +54,9 @@ namespace GamecommMentor.DaengSaka
 
             buyTab = AddButton(font, panel, "Senjata", .035f, .727f, .19f, .815f, () => changeTab(false));
             enchantTab = AddButton(font, panel, "Enchant", .20f, .727f, .355f, .815f, () => changeTab(true));
+            deliveryButton = AddButton(font, panel, "Titipan Penempa", .365f, .727f, .56f, .815f, delivery);
             freeOffer = AddText(font, panel, "Jatah enchant", "Enchant pertama gratis untuk satu senjata",
-                17, .454f, .727f, .965f, .815f, TextAnchor.MiddleRight);
+                17, .575f, .727f, .965f, .815f, TextAnchor.MiddleRight);
             freeOffer.color = Leaf;
             list = CreateScrollContent(Rect("Senjata", panel, .035f, .053f, .43f, .695f), out _);
             var card = Rect("Rincian", panel, .454f, .053f, .965f, .695f);
@@ -90,6 +92,8 @@ namespace GamecommMentor.DaengSaka
             HideConfirmation();
             root.gameObject.SetActive(true);
         }
+
+        internal void ShowDelivery(bool available) => deliveryButton.gameObject.SetActive(available);
 
         internal void ShowEntries(IReadOnlyList<Entry> entries, bool enchanting)
         {

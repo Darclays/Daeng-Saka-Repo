@@ -30,7 +30,7 @@ namespace GamecommMentor.DaengSaka
         {
             SetLimits(stats, party);
             hp = MaxHp;
-            mp = Clamp(stats.startingMp, MaxMp);
+            mp = party ? MaxMp : Clamp(stats.startingMp, MaxMp);
             useAuthoredInitialHp = useAuthoredInitialMp = awaitingSceneStats;
         }
 
@@ -39,7 +39,7 @@ namespace GamecommMentor.DaengSaka
             SetLimits(stats, true);
             // Only untouched starter values may take the first scene's authored overrides.
             Hp = useAuthoredInitialHp ? MaxHp : hp;
-            Mp = useAuthoredInitialMp ? stats.startingMp : mp;
+            Mp = useAuthoredInitialMp ? MaxMp : mp;
         }
 
         private static int Clamp(int value, int max) => Math.Max(0, Math.Min(value, max));

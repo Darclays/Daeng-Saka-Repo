@@ -15,7 +15,7 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string PuaMenu = "GamecommMentor/Daeng Saka/Set Up Pua Near Arrival";
         private const string PuaUndo = "Set Up Pua Near Arrival";
         private const string Capital = "Assets/GamecommMentor/Scenes_GamecommMentor/IbuKota.unity";
-        private const string PuaObject = "Pemandu Kerajaan (Uji)";
+        internal const string PlaceholderGuide = "Pemandu Kerajaan (Uji)";
         private const string PuaArrivalAim = "Arah Kamera - Kedatangan Pua";
         private const float PuaForward = 3f;
         private const float PuaRight = 1.15f;
@@ -31,11 +31,12 @@ namespace GamecommMentor.DaengSaka.Editor
             !EditorApplication.isCompiling && SceneManager.GetActiveScene().path == Capital;
 
         [MenuItem(PuaMenu, true)]
-        private static bool CanSetUpPuaNearArrival() => CanInstall();
+        private static bool CanSetUpPuaNearArrival() => CanInstall() &&
+            !SceneManager.GetActiveScene().GetRootGameObjects().Any(root => root.GetComponent<GmCapitalDeliveryDialogue>() != null);
 
         [MenuItem(Menu)]
         private static void SetUp() => RunSetup(UndoName, InstallInScene,
-            "[Daeng Saka 1E.21B] Pua’, Merchant, dan Penempa Besi siap. Simpan scene IbuKota.");
+            "[Daeng Saka] NPC quest utama siap. Simpan scene IbuKota.");
 
         [MenuItem(PuaMenu)]
         private static void SetUpPuaNearArrival() => RunSetup(PuaUndo, PlaceExistingPua,
@@ -67,7 +68,7 @@ namespace GamecommMentor.DaengSaka.Editor
         private static Transform PlaceExistingPua(Scene scene)
         {
             Transform world = RequireRoot(scene, "Daeng Saka - World Gameplay");
-            Transform pua = RequireChild(world, PuaObject);
+            Transform pua = RequireChild(world, PlaceholderGuide);
             Transform spawn = RequireChild(world, "Spawn - Start");
             var player = Require<CharacterController>(RequireChild(world, "Saka"));
             PlacePua(GmCapitalRouteSetup.CreateLayout(scene, player), world, pua, spawn, PuaUndo);
@@ -81,7 +82,10 @@ namespace GamecommMentor.DaengSaka.Editor
             Transform places = RequireRoot(scene, "NPC_Places");
             Transform merchantPoint = RequireChild(places, "NPCPlace_Merchant");
             Transform smithPoint = RequireChild(places, "NPCPlace_PenempaBesi");
-            Transform pua = RequireChild(world, PuaObject);
+            bool acoInstalled = flow.GetComponent<GmCapitalDeliveryDialogue>() != null;
+            Transform guide = acoInstalled
+                ? RequireChild(RequireChild(world, "Warga Ibu Kota"), GmCapitalDialogueData.Aco)
+                : RequireChild(world, PlaceholderGuide);
             Transform spawn = RequireChild(world, "Spawn - Start");
             Transform portal = RequireChild(world, "Portal");
             var camera = Require<Camera>(RequireChild(world, "Saka - Orbit Camera"));
@@ -94,31 +98,34 @@ namespace GamecommMentor.DaengSaka.Editor
 
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NpcPrefab);
             if (prefab == null) throw new InvalidOperationException("Prefab NPC belum ada: " + NpcPrefab);
-            var puaArt = GmDialogueNpcSprites.Prepare(PuaSource, "IbuKota_Pua");
             var merchantArt = GmDialogueNpcSprites.Prepare(GmDialogueNpcSprites.MerchantSource, "Pedagang");
             var smithArt = GmDialogueNpcSprites.Prepare(SmithSource, "IbuKota_Penempa");
             Transform merchant = GetOrCreateNpc(world, "Merchant", prefab);
             Transform smith = GetOrCreateNpc(world, "Penempa Besi", prefab);
 
             Vector3 faceEntry = -layout.IntoLevel;
-            PlaceNpc(layout, merchant, merchantPoint.position, faceEntry, UndoName, spawn.position, pua.position, portal.position);
+            PlaceNpc(layout, merchant, merchantPoint.position, faceEntry, UndoName, spawn.position, guide.position, portal.position);
             PlaceNpc(layout, smith, smithPoint.position, faceEntry, UndoName, spawn.position, merchant.position, portal.position);
-            PlacePua(layout, world, pua, spawn, UndoName);
-            SetNpc(pua, "Pua’", puaArt, camera, sequence);
+            if (!acoInstalled)
+            {
+                var puaArt = GmDialogueNpcSprites.Prepare(PuaSource, "IbuKota_Pua");
+                PlacePua(layout, world, guide, spawn, UndoName);
+                SetNpc(guide, "Pua’", puaArt, camera, sequence);
+            }
             SetNpc(merchant, "Merchant", merchantArt, camera, sequence);
             SetNpc(smith, "Penempa Besi", smithArt, camera, sequence);
 
             Undo.RecordObject(sequence, UndoName);
-            sequence.SetSpeakers(
-                new GmPixelCrushersMainQuestDialogue.StepSpeaker(GmMainQuestStep.PersiapanSebelumBertarung, pua),
-                new GmPixelCrushersMainQuestDialogue.StepSpeaker(GmMainQuestStep.KunjungiMerchant, merchant),
-                new GmPixelCrushersMainQuestDialogue.StepSpeaker(GmMainQuestStep.KunjungiPenempaBesi, smith));
+            sequence.SetSpeaker(GmMainQuestStep.PersiapanSebelumBertarung, guide);
+            sequence.SetSpeaker(GmMainQuestStep.KunjungiMerchant, merchant);
+            sequence.SetSpeaker(GmMainQuestStep.KunjungiPenempaBesi, smith);
             Undo.RecordObject(journal, UndoName);
-            journal.SetAreaLandmarks(BoundsForRoute(spawn, pua, merchant, smith, portal),
-                new GmQuestLandmark(GmQuestCatalog.Guide, "Pua’", "Persiapan sebelum berangkat.", pua),
+            journal.SetAreaLandmarks(BoundsForRoute(spawn, guide, merchant, smith, portal),
+                new GmQuestLandmark(GmQuestCatalog.Guide, acoInstalled ? GmCapitalDialogueData.Aco : "Pua’",
+                    "Persiapan sebelum berangkat.", guide),
                 new GmQuestLandmark(GmQuestCatalog.Merchant, "Merchant", "Perbekalan dan ramuan.", merchant),
                 new GmQuestLandmark(GmQuestCatalog.Blacksmith, "Penempa Besi", "Perlengkapan untuk perjalanan.", smith));
-            return pua;
+            return guide;
         }
 
         private static Transform GetOrCreateNpc(Transform parent, string name, GameObject prefab)

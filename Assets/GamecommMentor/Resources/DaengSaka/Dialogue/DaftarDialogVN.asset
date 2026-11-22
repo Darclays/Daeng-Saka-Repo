@@ -85,3 +85,18 @@ MonoBehaviour:
   - judul: DaengSaka/Dialog Ibu Kota/Tukang Jamu
     profil: {fileID: 11400000, guid: 273557a68c715b13b837eb70b855601e, type: 2}
     kameraQuestUtama: 0
+  - judul: DaengSaka/Side Quest/Titipan Penempa Besi/Titipan
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Side Quest/Titipan Penempa Besi/Periksa Pedang
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Side Quest/Titipan Penempa Besi/Pedang Pak Yusuf
+    profil: {fileID: 11400000, guid: c25e9b8f26394f4e8a17ba3bdf4cae06, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Side Quest/Titipan Penempa Besi/Upah
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0
+  - judul: DaengSaka/Dialog Ibu Kota/Daeng Aco
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0

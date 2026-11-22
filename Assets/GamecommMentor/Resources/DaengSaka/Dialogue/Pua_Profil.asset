@@ -11,21 +11,22 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 95e9f74f6e648324498d64e05054bab9, type: 3}
   m_Name: Pua_Profil
-  m_EditorClassIdentifier:
-  actorKey: pua
+  m_EditorClassIdentifier: 
+  actorKey: daeng_aco
   pixelActorId: 0
-  pixelActorName: "Pua\u2019"
+  pixelActorName: Daeng Aco
   aliases:
   - Pua
-  - "Pua'"
-  displayNameOverride: "Pua\u2019"
+  - Pua'
+  - "Pua\u2019"
+  displayNameOverride: Daeng Aco
   isProtagonist: 0
   hasStageVisual: 1
   stageVisualPrefab: {fileID: 0}
-  defaultStageSprite: {fileID: 0}
-  defaultPortraitSprite: {fileID: 0}
+  defaultStageSprite: {fileID: -1367914993, guid: faafd2e2c7c3cd8499367020c447a9b6, type: 3}
+  defaultPortraitSprite: {fileID: -1367914993, guid: faafd2e2c7c3cd8499367020c447a9b6, type: 3}
   characterExpressionLibrary: {fileID: 0}
-  preferredAnchorHint:
+  preferredAnchorHint: 
   defaultScale: 1
   defaultLocalOffset: {x: 0, y: 0}
   defaultFacing: 0

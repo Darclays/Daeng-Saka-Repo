@@ -10,7 +10,7 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Menu = "GamecommMentor/Daeng Saka/Set Up Ibu Kota Residents";
         private const string UndoName = "Set Up Ibu Kota Residents";
         private const string Capital = "Assets/GamecommMentor/Scenes_GamecommMentor/IbuKota.unity";
-        private const string AcoSource = "Assets/Asset2D_Pixel/SupportCharacter/SC_DaengAco/" +
+        internal const string AcoSource = "Assets/Asset2D_Pixel/SupportCharacter/SC_DaengAco/" +
             "SC_DaengAco_Idle/SC_DaengAco_Idle_Front.png";
         private const string JamuSource = NpcArt + "NPC_TukangJamu/NPC_TukangJamu_Idle/NPC_TukangJamu_Idle_Front.png";
         private const string FisherSource = NpcArt + "NPC_Nelayan/NPC_Nelayan_Ayah/" +

@@ -70,6 +70,7 @@ namespace GamecommMentor.DaengSaka
         public const string Guide = "guide";
         public const string Merchant = "merchant";
         public const string Blacksmith = "blacksmith";
+        public const string CastleGuard = "castle-guard";
         public const string Exit = "exit";
         public const string Encounter = "encounter";
         public const string Pakande = "pakande";
@@ -80,6 +81,14 @@ namespace GamecommMentor.DaengSaka
             "Pinjam perlengkapan dari Nelayan, lalu coba memancing di tepi sungai Sorelia.",
             new GmQuestGoal("Pinjam alat pancing dan umpan", GmQuestArea.DesaSorelia, Guide),
             new GmQuestGoal("Tangkap 1 ikan", GmQuestArea.DesaSorelia, FishingSpot, "0 / 1", "1 / 1"));
+
+        public const int CityDeliveryReward = 70;
+        public static readonly GmSideQuestDefinition CityDelivery = new GmSideQuestDefinition(
+            "side.delivery.capital", "Titipan Penempa Besi",
+            $"Antarkan pedang Pak Yusuf keliling Kerajaan. Upah {CityDeliveryReward} koin dari Penempa Besi.",
+            new GmQuestGoal("Minta Daeng Aco memeriksa pedang", GmQuestArea.Kerajaan, Guide),
+            new GmQuestGoal("Antarkan pedang ke Pak Yusuf", GmQuestArea.Kerajaan, CastleGuard),
+            new GmQuestGoal("Ambil upah dari Penempa Besi", GmQuestArea.Kerajaan, Blacksmith));
 
         private sealed class Chapter
         {
@@ -106,7 +115,7 @@ namespace GamecommMentor.DaengSaka
         {
             new Chapter("main.preparation", "Persiapan Sebelum Bertarung",
                 "Siapkan perbekalan dan perlengkapan di Kerajaan sebelum berangkat.",
-                (GmMainQuestStep.PersiapanSebelumBertarung, new GmQuestGoal("Bicara dengan Pua’", GmQuestArea.Kerajaan, Guide)),
+                (GmMainQuestStep.PersiapanSebelumBertarung, new GmQuestGoal("Bicara dengan Daeng Aco", GmQuestArea.Kerajaan, Guide)),
                 (GmMainQuestStep.KunjungiMerchant, new GmQuestGoal("Kunjungi toko Merchant", GmQuestArea.Kerajaan, Merchant)),
                 (GmMainQuestStep.KunjungiPenempaBesi, new GmQuestGoal("Kunjungi Penempa Besi", GmQuestArea.Kerajaan, Blacksmith))),
             new Chapter("main.sorelia", "Pergi ke Goa Lembayung",

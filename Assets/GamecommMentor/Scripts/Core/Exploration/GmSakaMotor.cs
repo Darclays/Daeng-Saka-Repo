@@ -9,6 +9,7 @@ namespace GamecommMentor.DaengSaka
     {
         [SerializeField] private Camera movementCamera;
         [SerializeField, Min(0.1f)] private float moveSpeed = 3.5f;
+        [SerializeField, Min(1f)] private float sprintMultiplier = 1.5f;
         [SerializeField, Min(0.1f)] private float acceleration = 28f;
         [SerializeField, Min(0.1f)] private float deceleration = 36f;
         [SerializeField, Min(0.1f)] private float gravity = 25f;
@@ -38,11 +39,13 @@ namespace GamecommMentor.DaengSaka
             stepOwner = null;
             horizontalVelocity = Vector3.zero;
             IsMoving = false;
+            WalkPlaybackSpeed = 1f;
         }
 
         public Vector2 Facing { get; private set; } = Vector2.down;
         public Vector3 WorldFacing { get; private set; } = Vector3.back;
         public bool IsMoving { get; private set; }
+        internal float WalkPlaybackSpeed { get; private set; } = 1f;
 
         public void SetCamera(Camera viewCamera) => movementCamera = viewCamera;
 
@@ -63,6 +66,7 @@ namespace GamecommMentor.DaengSaka
             horizontalVelocity = Vector3.zero;
             verticalVelocity = 0f;
             IsMoving = false;
+            WalkPlaybackSpeed = 1f;
         }
 
         private void Update()
@@ -82,7 +86,9 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
 
-            Vector2 move = gate.CanExplore ? input.ReadMove() : Vector2.zero;
+            bool exploring = gate.CanExplore;
+            bool sprint = false;
+            Vector2 move = exploring ? input.ReadMove(out sprint) : Vector2.zero;
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.transform.forward, Vector3.up) : Vector3.forward;
             if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
@@ -97,8 +103,8 @@ namespace GamecommMentor.DaengSaka
                 Facing = new Vector2(0f, Mathf.Sign(move.y));
             else
                 Facing = GmCardinalFacing.FromWorld(WorldFacing, movementCamera, Facing, directionHysteresis);
-            Vector3 desired = direction * moveSpeed;
-            horizontalVelocity = gate.CanExplore
+            Vector3 desired = direction * (sprint ? moveSpeed * sprintMultiplier : moveSpeed);
+            horizontalVelocity = exploring
                 ? Vector3.MoveTowards(horizontalVelocity, desired,
                     (move.sqrMagnitude > 0.001f ? acceleration : deceleration) * dt)
                 : Vector3.zero;
@@ -112,8 +118,9 @@ namespace GamecommMentor.DaengSaka
             verticalVelocity = Mathf.Max(verticalVelocity - gravity * dt, -50f);
             Vector3 previous = transform.position;
             controller.Move(planarTravel + Vector3.up * (verticalVelocity * dt));
-            IsMoving = Vector3.ProjectOnPlane(transform.position - previous, Vector3.up).sqrMagnitude
-                > 0.0004f * dt * dt;
+            float speed = Vector3.ProjectOnPlane(transform.position - previous, Vector3.up).magnitude / dt;
+            IsMoving = speed > 0.02f;
+            WalkPlaybackSpeed = Mathf.Clamp(speed / moveSpeed, 1f, sprintMultiplier);
         }
 
         public void Teleport(Vector3 position)
@@ -127,6 +134,7 @@ namespace GamecommMentor.DaengSaka
             horizontalVelocity = Vector3.zero;
             verticalVelocity = 0f;
             IsMoving = false;
+            WalkPlaybackSpeed = 1f;
         }
     }
 }

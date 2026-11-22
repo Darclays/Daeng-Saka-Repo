@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   enemies:
   - displayName: Manguni
-    maxHp: 68
+    maxHp: 84
     maxMp: 0
     startingMp: 0
     speed: 22

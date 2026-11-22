@@ -12,6 +12,7 @@ namespace GamecommMentor.DaengSaka
         private static readonly int Moving = Animator.StringToHash("Moving");
         [SerializeField] private GmSakaMotor motor;
         private Animator animator;
+        private float basePlaybackSpeed;
         private Transform dialoguePartner;
         private Camera dialogueCamera;
 
@@ -26,6 +27,7 @@ namespace GamecommMentor.DaengSaka
         private void Awake()
         {
             animator = GetComponent<Animator>();
+            basePlaybackSpeed = animator.speed;
             if (motor == null) motor = GetComponentInParent<GmSakaMotor>();
         }
 
@@ -42,6 +44,12 @@ namespace GamecommMentor.DaengSaka
             animator.SetFloat(FacingX, facing.x);
             animator.SetFloat(FacingY, facing.y);
             animator.SetBool(Moving, !talking && motor.IsMoving);
+            animator.speed = basePlaybackSpeed * (talking ? 1f : motor.WalkPlaybackSpeed);
+        }
+
+        private void OnDisable()
+        {
+            if (animator != null) animator.speed = basePlaybackSpeed;
         }
     }
 }

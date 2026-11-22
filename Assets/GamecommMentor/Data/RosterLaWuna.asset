@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   enemies:
   - displayName: La Wuna
-    maxHp: 40
+    maxHp: 88
     maxMp: 0
     startingMp: 0
     speed: 17

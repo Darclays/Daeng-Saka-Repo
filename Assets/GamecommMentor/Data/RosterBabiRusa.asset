@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   enemies:
   - displayName: Babi Rusa
-    maxHp: 48
+    maxHp: 90
     maxMp: 0
     startingMp: 0
     speed: 13

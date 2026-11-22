@@ -21,9 +21,9 @@ namespace GamecommMentor.DaengSaka
 
         public static GmBattleStats[] CreateDefaultParty() => new[]
         {
-            new GmBattleStats("Saka Barani", 110, 20, 8, 24, 24, GmBattleCharacter.Saka),
-            new GmBattleStats("Pacca Andi", 138, 16, 5, 17, 17, GmBattleCharacter.Pacca),
-            new GmBattleStats("Daung", 84, 28, 12, 20, 12, GmBattleCharacter.Daung)
+            new GmBattleStats("Saka Barani", 110, 20, 20, 24, 24, GmBattleCharacter.Saka),
+            new GmBattleStats("Pacca Andi", 138, 16, 16, 17, 17, GmBattleCharacter.Pacca),
+            new GmBattleStats("Daung", 84, 28, 28, 20, 12, GmBattleCharacter.Daung)
         };
 
         public GmBattleCharacter ResolvedCharacter
@@ -207,10 +207,10 @@ namespace GamecommMentor.DaengSaka
             return total;
         }
 
-        public int BeginTurn(int round)
+        public int BeginTurn(int round, int healthFloor = 0)
         {
             if (!IsAlive || lastTurnStarted == round) return 0;
-            int lost = (int)Math.Min(Hp, PendingPoisonDamage(round));
+            int lost = (int)Math.Min(Math.Max(0, Hp - healthFloor), PendingPoisonDamage(round));
             lastTurnStarted = round;
             for (int i = poison.Count - 1; i >= 0; i--)
             {
@@ -351,7 +351,7 @@ namespace GamecommMentor.DaengSaka
         public string UnavailableReason(GmBattleMove move)
         {
             if (Actor == null || Actor.IsStunned || move == null) return "Tidak tersedia";
-            if (move == GmBattleMove.BasicAttack) return null;
+            if (move == GmBattleMove.BasicAttack) return BossTransitionReason(move);
             if (move.IsEnemyMove)
             {
                 if (!Actor.SupportsEnemyMove(move) && (Boss?.Index != ActorIndex || !Boss.SupportsMove(move))) return "Tidak tersedia";
@@ -377,12 +377,22 @@ namespace GamecommMentor.DaengSaka
                     if (CanTarget(move, i) && CanBenefitFromHealing(units[i])) return null;
                 return "HP penuh · bebas efek negatif";
             }
-            return null;
+            return BossTransitionReason(move);
+        }
+
+        private string BossTransitionReason(GmBattleMove move)
+        {
+            if (!Actor.IsParty || Boss?.IsWaitingForPhaseChange != true ||
+                (move.Target != GmBattleTarget.Enemy && move.Target != GmBattleTarget.AllEnemies)) return null;
+            for (int index = PartyCount; index < units.Length; index++)
+                if (CanTarget(move, index)) return null;
+            return "Pakande bersiap berganti fase";
         }
 
         public bool CanTarget(GmBattleMove move, int index)
         {
             if (move == null || Actor == null || index < 0 || index >= units.Length || !units[index].IsAlive) return false;
+            if (Actor.IsParty && Boss?.Index == index && Boss.IsWaitingForPhaseChange) return false;
             if (move.Effect == GmBattleEffect.Charge && Boss?.Index == ActorIndex)
                 return index == ActorIndex || index == Boss.ChargeStunTarget;
             if (move.IsEnemyMove && move.Target == GmBattleTarget.AllAllies && index == ActorIndex) return false;
@@ -501,7 +511,8 @@ namespace GamecommMentor.DaengSaka
             // Round the reduction down so a guarded 1-damage hit still deals 1.
             if (Phase == GmBattlePhase.Enemy && target.GuardRound == RoundNumber)
                 power -= power * GuardReductionPercent / 100;
-            int damage = (int)Math.Min(target.Hp, power);
+            int healthFloor = target.IsBoss ? Boss?.HealthFloor ?? 0 : 0;
+            int damage = (int)Math.Min(Math.Max(0, target.Hp - healthFloor), power);
             target.Hp -= damage;
             return damage;
         }
@@ -591,7 +602,7 @@ namespace GamecommMentor.DaengSaka
         private int ResolveTurnStart()
         {
             GmBattleUnit actor = Actor;
-            int poisonDamage = actor.BeginTurn(RoundNumber);
+            int poisonDamage = actor.BeginTurn(RoundNumber, Boss?.Index == ActorIndex ? Boss.HealthFloor : 0);
             if (!actor.IsAlive) CompleteAction();
             return poisonDamage;
         }

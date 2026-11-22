@@ -30,7 +30,7 @@ namespace GamecommMentor.DaengSaka
         private GmNpcGuidance npcGuidance;
         private GmInteractor legacyPlayer;
         private Text questTitle;
-        private Text mapKey, menuKey;
+        private Text mapKey, menuKey, sprintKey;
         private ShortcutNotice questNotice;
         private ShortcutNotice itemNotice;
 
@@ -184,6 +184,12 @@ namespace GamecommMentor.DaengSaka
                 mapKey = CreateShortcut(font, "Map Shortcut", "[M] Peta", inset, mapWidth);
                 inset += mapWidth + gap;
                 Text journalKey = CreateShortcut(font, "Journal Shortcut", "[J] Jurnal", inset, journalWidth);
+                sprintKey = CreateLabel("Sprint Shortcut", canvasRect, font, TextAnchor.MiddleLeft);
+                sprintKey.gameObject.AddComponent<Outline>().effectColor = Color.black;
+                RectTransform sprintRect = sprintKey.rectTransform;
+                sprintRect.anchorMin = sprintRect.anchorMax = sprintRect.pivot = Vector2.zero;
+                sprintRect.anchoredPosition = new Vector2(24f, 24f);
+                sprintRect.sizeDelta = new Vector2(160f, 32f);
                 questNotice = new ShortcutNotice(canvasRect, font, journalKey, "New Quest Notice",
                     "Quest baru", "[J] Jurnal → Lacak quest");
                 itemNotice = new ShortcutNotice(canvasRect, font, bagKey, "New Item Notice",
@@ -283,8 +289,10 @@ namespace GamecommMentor.DaengSaka
             bool pad = GmGamepadInput.UsingGamepad;
             mapKey.gameObject.SetActive(visible);
             menuKey.gameObject.SetActive(visible);
+            sprintKey.gameObject.SetActive(visible);
             mapKey.text = pad ? "[LB] Peta" : "[M] Peta";
             menuKey.text = pad ? "[Menu] Jeda" : "[P] Jeda";
+            sprintKey.text = pad ? "[RT] Tahan untuk lari" : "[Shift] Tahan untuk lari";
             bool showQuest = questNotice.Render(visible, journal.NewQuestTitle,
                 GmQuestJournal.QuestNoticeDuration - journal.QuestNoticeRemaining, NoticeTop,
                 pad ? "[Y] Jurnal" : "[J] Jurnal", pad ? "[Y] Jurnal → Lacak quest" : null);

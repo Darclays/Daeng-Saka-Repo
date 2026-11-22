@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   enemies:
   - displayName: Babi Rusa
-    maxHp: 48
+    maxHp: 90
     maxMp: 0
     startingMp: 0
     speed: 13
@@ -23,7 +23,7 @@ MonoBehaviour:
     isBoss: 0
     enemyKind: 2
   - displayName: Manguni
-    maxHp: 48
+    maxHp: 84
     maxMp: 0
     startingMp: 0
     speed: 22
@@ -32,7 +32,7 @@ MonoBehaviour:
     isBoss: 0
     enemyKind: 3
   - displayName: La Wuna
-    maxHp: 40
+    maxHp: 88
     maxMp: 0
     startingMp: 0
     speed: 17

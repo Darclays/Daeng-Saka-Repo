@@ -53,13 +53,15 @@ namespace GamecommMentor.DaengSaka
             bool controller = pad.leftStick.ReadValue().sqrMagnitude >= .04f || pad.rightStick.ReadValue().sqrMagnitude >= .04f ||
                 pad.dpad.ReadValue().sqrMagnitude > .25f || pad.buttonSouth.wasPressedThisFrame ||
                 pad.buttonEast.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame ||
-                pad.startButton.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame;
+                pad.startButton.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame ||
+                pad.rightShoulder.wasPressedThisFrame || pad.rightTrigger.wasPressedThisFrame;
             if (controller) gamepadHints = true;
             else if (desktop) gamepadHints = false;
         }
 
         internal static bool UsingGamepad { get { SampleDevice(); return gamepadHints; } }
         internal static Vector2 Move => Stick(Current?.leftStick.ReadValue() ?? Vector2.zero);
+        internal static bool SprintHeld => Current?.rightTrigger.isPressed == true;
         internal static Vector2 Look => Stick(Current?.rightStick.ReadValue() ?? Vector2.zero);
         internal static bool SubmitHeld => Current?.buttonSouth.isPressed == true;
         internal static bool TakeSubmit() => cancelFrame != Time.frameCount && menuFrame != Time.frameCount &&

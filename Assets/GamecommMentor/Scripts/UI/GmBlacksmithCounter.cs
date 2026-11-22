@@ -47,6 +47,7 @@ namespace GamecommMentor.DaengSaka
         private readonly List<Entry> entries = new List<Entry>();
         private GmBlacksmithView view;
         private GmPixelCrushersMainQuestDialogue sequence;
+        private GmCapitalDeliveryDialogue delivery;
         private GmInteractor player;
         private GmPartyRun run;
         private AudioSource feedbackAudio;
@@ -60,7 +61,8 @@ namespace GamecommMentor.DaengSaka
             player.gameObject.scene == gameObject.scene && gameObject.scene == SceneManager.GetActiveScene() &&
             sequence != null && sequence.OffersBlacksmithTo(transform) && run == GmPartyRun.Current;
 
-        internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester)
+        internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester,
+            GmCapitalDeliveryDialogue cityDelivery = null)
         {
             if (run != null || !isActiveAndEnabled || requester == null || !requester.isActiveAndEnabled ||
                 dialogue == null || !dialogue.OffersBlacksmithTo(transform) || requester.gameObject.scene != gameObject.scene ||
@@ -69,14 +71,25 @@ namespace GamecommMentor.DaengSaka
             run = GmPartyRun.Current;
             player = requester;
             sequence = dialogue;
+            delivery = cityDelivery;
             player.ControlGate.Block(this);
             player.SuppressInteraction();
-            view ??= new GmBlacksmithView(ChangeTab, Select, Request, BackOrClose);
+            view ??= new GmBlacksmithView(ChangeTab, Select, Request, BackOrClose, TalkAboutDelivery);
             enchanting = false;
             notice = null;
             view.Show();
             RebuildEntries();
             return true;
+        }
+
+        private void TalkAboutDelivery()
+        {
+            if (!CanUseCounter || pending != null || delivery == null || !delivery.CanStartAt(transform)) return;
+            var quest = delivery;
+            var dialogue = sequence;
+            var requester = player;
+            Close();
+            if (!quest.TryStartAt(transform, requester)) TryOpen(dialogue, requester, quest);
         }
 
         private void ChangeTab(bool enchant)
@@ -158,6 +171,7 @@ namespace GamecommMentor.DaengSaka
             shownRevision = run.Equipment.Revision;
             shownPrice = Price(selected);
             view.ShowSelection(selected, shownBalance, enchanting && run.FreeEnchantAvailable, Badge);
+            view.ShowDelivery(delivery != null && delivery.CanStartAt(transform));
             if (selected == null) return;
 
             var member = Wielder(selected);
@@ -272,6 +286,7 @@ namespace GamecommMentor.DaengSaka
             }
             player = null;
             sequence = null;
+            delivery = null;
             run = null;
         }
 

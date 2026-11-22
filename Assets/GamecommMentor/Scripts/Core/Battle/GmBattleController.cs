@@ -150,7 +150,11 @@ namespace GamecommMentor.DaengSaka
         {
             if (!CanAct || menu != GmBattleMenu.Command) return;
             selectedOption = -1;
-            if (next == GmBattleMenu.Target) selection = GmBattleMove.BasicAttack;
+            if (next == GmBattleMenu.Target)
+            {
+                if (session.UnavailableReason(GmBattleMove.BasicAttack) != null) return;
+                selection = GmBattleMove.BasicAttack;
+            }
             menu = next;
             Refresh();
         }

@@ -11,6 +11,8 @@ namespace GamecommMentor.DaengSaka
         [SerializeField, Min(1)] private int bossHp = 260;
         [SerializeField, Range(2, 99)] private int phaseTwoAt = 70;
         [SerializeField, Range(1, 98)] private int phaseThreeAt = 45;
+        [Tooltip("Use three equal health segments. Damage stops at each phase boundary.")]
+        [SerializeField] private bool splitHealthIntoThirds;
         [SerializeField, Min(1)] private int minionHp = 22;
         [SerializeField, Min(1)] private int minionDamage = 7;
         [SerializeField, Min(1)] private int boltDamage = 20;
@@ -23,6 +25,7 @@ namespace GamecommMentor.DaengSaka
 
         internal int PhaseTwoAt => Math.Max(2, Math.Min(99, phaseTwoAt));
         internal int PhaseThreeAt => Math.Max(1, Math.Min(PhaseTwoAt - 1, phaseThreeAt));
+        internal bool HasHealthSegments => splitHealthIntoThirds && bossHp >= 3;
         internal int BoltDamage => Math.Max(1, boltDamage);
         internal int WaveDamage => Math.Max(1, waveDamage);
         internal int AirbornePoisonDamage => Math.Max(1, airbornePoisonDamage);

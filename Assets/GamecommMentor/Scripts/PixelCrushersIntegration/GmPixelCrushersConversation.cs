@@ -22,6 +22,7 @@ namespace GamecommMentor.DaengSaka
 
         [Header("Main Quest")]
         [SerializeField] private GmPixelCrushersMainQuestDialogue mainQuestDialogue;
+        [SerializeField] private GmCapitalDeliveryDialogue cityDelivery;
         [Header("Ambient Conversation")]
         [SerializeField] private GmMainQuestProgress requiredQuest;
         [SerializeField] private GmMainQuestStep requiredCompletedStep;
@@ -42,12 +43,16 @@ namespace GamecommMentor.DaengSaka
             string.IsNullOrWhiteSpace(QuestTitle);
         private bool OffersMerchant => mainQuestDialogue != null && mainQuestDialogue.OffersMerchantTo(transform);
         private bool OffersBlacksmith => mainQuestDialogue != null && mainQuestDialogue.OffersBlacksmithTo(transform);
+        private bool OffersCityDelivery => string.IsNullOrWhiteSpace(QuestTitle) &&
+            cityDelivery != null && cityDelivery.CanStartAt(transform);
 
         public override string Prompt
         {
             get
             {
                 if (OffersFishingLoan) return "[E] Pinjam alat pancing — Nelayan";
+                if (OffersCityDelivery)
+                    return OffersBlacksmith ? "[E] Layanan dan tugas — Penempa Besi" : base.Prompt;
                 if (OffersMerchant)
                     return string.IsNullOrWhiteSpace(QuestTitle) && !OffersBlacksmith
                         ? "[E] Belanja — Merchant"
@@ -70,6 +75,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void SetMainQuestDialogue(GmPixelCrushersMainQuestDialogue sequence) => mainQuestDialogue = sequence;
+        public void SetCityDelivery(GmCapitalDeliveryDialogue delivery) => cityDelivery = delivery;
 
         public void SetDemoConversations(GmDemoProgress progress, string poppoTitle, string pakandeTitle)
         {
@@ -93,7 +99,7 @@ namespace GamecommMentor.DaengSaka
         internal GmNpcGuideIcon GuidanceIcon(GmInteractor requester)
         {
             if (!CanInteract(requester)) return GmNpcGuideIcon.None;
-            if (OffersFishingLoan || !string.IsNullOrWhiteSpace(QuestTitle) ||
+            if (OffersFishingLoan || OffersCityDelivery || !string.IsNullOrWhiteSpace(QuestTitle) ||
                 (supplies != null && supplies.HasSuppliesToOffer))
                 return GmNpcGuideIcon.Quest;
             if (OffersMerchant || OffersBlacksmith) return GmNpcGuideIcon.Shop;
@@ -121,11 +127,13 @@ namespace GamecommMentor.DaengSaka
         }
 
         public override bool CanInteract(GmInteractor requester) => IsUnlocked && base.CanInteract(requester)
-            && (OffersFishingLoan || OffersMerchant || OffersBlacksmith || !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
+            && (OffersFishingLoan || OffersCityDelivery || OffersMerchant || OffersBlacksmith ||
+                !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
         {
-            if (mainQuestDialogue != null) return QuestTitle;
+            if (mainQuestDialogue != null && (!useAuthoredActors || !string.IsNullOrWhiteSpace(QuestTitle)))
+                return QuestTitle;
             if (demoProgress == null) return conversationTitle;
             string title = demoProgress.Stage switch
             {
@@ -150,9 +158,10 @@ namespace GamecommMentor.DaengSaka
             {
                 var counter = GetComponent<GmBlacksmithCounter>();
                 if (counter == null) counter = gameObject.AddComponent<GmBlacksmithCounter>();
-                return counter.TryOpen(mainQuestDialogue, requester);
+                return counter.TryOpen(mainQuestDialogue, requester, cityDelivery);
             }
-            if (mainQuestDialogue != null) return mainQuestDialogue.TryStartCurrent(requester, transform);
+            if (OffersCityDelivery) return cityDelivery.TryStartAt(transform, requester);
+            if (!string.IsNullOrWhiteSpace(QuestTitle)) return mainQuestDialogue.TryStartCurrent(requester, transform);
             string title = ResolveConversationTitle();
             if (string.IsNullOrWhiteSpace(title)) return false;
             if (dialogueBridge == null && DialogueManager.hasInstance)

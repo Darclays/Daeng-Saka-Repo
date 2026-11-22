@@ -39,6 +39,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmPixelCrushersDialogueBridge bridge;
         [SerializeField] private StepDialogue[] dialogues = Array.Empty<StepDialogue>();
         [SerializeField] private StepSpeaker[] speakers = Array.Empty<StepSpeaker>();
+        [SerializeField] private bool requireAssignedSpeaker;
         [SerializeField] private GmEnemyEncounter revealAfterEncounter;
         [SerializeField] private string caveRouteTitle;
         [SerializeField] private string pakandeRevealTitle;
@@ -67,10 +68,23 @@ namespace GamecommMentor.DaengSaka
         {
             foreach (var binding in speakers)
                 if (binding.step == step) return binding.speaker != null && binding.speaker == partner;
-            return true;
+            return !requireAssignedSpeaker;
         }
 
         public void SetSpeakers(params StepSpeaker[] bindings) => speakers = bindings ?? Array.Empty<StepSpeaker>();
+        public void UseAssignedSpeakersOnly() => requireAssignedSpeaker = true;
+
+        public void SetSpeaker(GmMainQuestStep step, Transform speaker)
+        {
+            speakers ??= Array.Empty<StepSpeaker>();
+            int index = Array.FindIndex(speakers, binding => binding.step == step);
+            if (index < 0)
+            {
+                index = speakers.Length;
+                Array.Resize(ref speakers, index + 1);
+            }
+            speakers[index] = new StepSpeaker(step, speaker);
+        }
 
         private string TitleFor(GmMainQuestStep step)
         {
