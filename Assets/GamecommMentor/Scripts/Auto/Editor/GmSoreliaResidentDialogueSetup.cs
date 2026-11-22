@@ -17,6 +17,16 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Profiles = "Assets/GamecommMentor/Resources/DaengSaka/Dialogue/";
         internal const string FamilyConversation = "DaengSaka/Dialog Warga Sorelia/Keluarga Warga";
         internal const string ChildrenConversation = "DaengSaka/Dialog Warga Sorelia/Anak-Anak Desa";
+        private const string Mother = "Ibu Nelayan";
+        private static readonly (string speaker, string previous, string replacement)[] OfferRevisions =
+        {
+            (Mother, "Terima kasih, Nak. Ini ada lima Ramuan HP dan lima Ramuan MP dari Ibu untuk bekal.",
+                "Oh iya, Nak... ibu ada titipan. Bisa bawa bungkusan bahan ramuan ini ke Merchant di Kerajaan?"),
+            ("Daung", "Wah, terima kasih banyak, Bu!",
+                "Bisa, Bu. Kita balik lewat gerbang yang tadi, kan?"),
+            (Mother, "Seharusnya Ibu yang berterima kasih.",
+                "Iya. Bilang saja ini titipan Ibu Nelayan. Dia sudah janji siapkan ramuan buat kalian.")
+        };
 
         [MenuItem(Menu, true)]
         private static bool CanSetUp() => CanInstall(Village);
@@ -34,7 +44,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 InstallInScene(scene);
                 EditorSceneManager.MarkSceneDirty(scene);
                 Undo.CollapseUndoOperations(group);
-                Debug.Log("[Daeng Saka 1E.22B] Dialog warga siap. Simpan scene DesaSorelia.");
+                Debug.Log("[Daeng Saka 1E.39B] Dialog warga dan Titipan Ibu Nelayan siap. Simpan scene DesaSorelia.");
             }
             catch (Exception exception)
             {
@@ -55,9 +65,11 @@ namespace GamecommMentor.DaengSaka.Editor
             Transform villagerFather = RequireChild(residents, "Warga Bapak");
             Transform villagerChild = RequireChild(residents, "Anak Warga");
             var quest = Require<GmMainQuestProgress>(RequireRoot(scene, "Daeng Saka - Encounter Flow"));
+            var journal = Require<GmQuestJournal>(RequireChild(world, "Quest Encounter Hint"));
             Transform manager = RequireChild(world, "Dialogue Manager");
             var bridge = Require<GmPixelCrushersDialogueBridge>(manager);
-            var database = bridge.AdditionalDatabase ?? Require<DialogueSystemController>(manager).initialDatabase;
+            var database = bridge.AdditionalDatabase;
+            if (database == null) database = Require<DialogueSystemController>(manager).initialDatabase;
             if (database == null) throw new InvalidOperationException("Dialogue Manager perlu Dialogue Database.");
 
             var catalog = AssetDatabase.LoadAssetAtPath<GmVnDialogueCatalog>(Profiles + "DaftarDialogVN.asset");
@@ -70,11 +82,14 @@ namespace GamecommMentor.DaengSaka.Editor
             BindResident(villagerMother, FamilyConversation, 1.65f, bridge, quest);
             BindResident(villagerFather, FamilyConversation, 1.85f, bridge, quest);
             BindResident(villagerChild, ChildrenConversation, 1.5f, bridge, quest);
-            var supplies = fisherMother.GetComponent<GmSoreliaSuppliesDialogue>();
-            if (supplies == null) supplies = Undo.AddComponent<GmSoreliaSuppliesDialogue>(fisherMother.gameObject);
+            var supplies = GetOrAdd<GmSoreliaSuppliesDialogue>(fisherMother);
             Undo.RecordObject(supplies, UndoName);
-            supplies.Configure(quest, bridge);
+            supplies.Configure(quest, bridge, journal);
             PrefabUtility.RecordPrefabInstancePropertyModifications(supplies);
+            Undo.RecordObject(journal, UndoName);
+            journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.FisherMother, Mother,
+                "Temui Ibu Nelayan setelah menyelamatkan keluarganya.", fisherMother));
+            PrefabUtility.RecordPrefabInstancePropertyModifications(journal);
 
             using var catalogData = new SerializedObject(catalog);
             var entries = catalogData.FindProperty("percakapan");
@@ -95,19 +110,21 @@ namespace GamecommMentor.DaengSaka.Editor
                 entry.FindPropertyRelative("kameraQuestUtama").boolValue = false;
             }
 
-            const string mother = "Ibu Nelayan";
-            Add(GmSoreliaSuppliesDialogue.FirstConversation, mother, GmSoreliaSuppliesDialogue.CompletionEntry,
-                (mother, "Kalian datang tepat waktu. Terima kasih banyak, ya, Nak."),
+            Add(GmSoreliaSuppliesDialogue.FirstConversation, Mother, GmSoreliaSuppliesDialogue.CompletionEntry,
+                (Mother, "Kalian datang tepat waktu. Terima kasih banyak, ya, Nak."),
                 ("Daung", "Sama-sama, Bu. Syukurlah kami kebetulan lewat sini."),
                 ("Saka", "Betul, tapi ini masalah besar kalau monster mulai datang ke desa."),
-                (mother, "Belakangan ini monster memang mulai sering terlihat di sekitar luar desa."),
-                (mother, "Semoga perjalanan kalian ke Gua Lembayung bisa menyelesaikan masalah ini."),
+                (Mother, "Belakangan ini monster memang mulai sering terlihat di sekitar luar desa."),
+                (Mother, "Semoga perjalanan kalian ke Gua Lembayung bisa menyelesaikan masalah ini."),
                 ("Pacca", "Tenang saja, Bu. Akan kami basmi siapa pun yang mengancam desa ini."),
-                (mother, "Terima kasih, Nak. Ini ada lima Ramuan HP dan lima Ramuan MP dari Ibu untuk bekal."),
-                ("Daung", "Wah, terima kasih banyak, Bu!"),
-                (mother, "Seharusnya Ibu yang berterima kasih."));
-            Add(GmSoreliaSuppliesDialogue.RepeatConversation, mother, null,
-                (mother, "Terima kasih sudah menolong keluarga Ibu, Nak. Hati-hati di jalan, ya."));
+                (Mother, OfferRevisions[0].replacement),
+                ("Daung", OfferRevisions[1].replacement),
+                (Mother, OfferRevisions[2].replacement));
+            foreach (var line in OfferRevisions)
+                databaseChanged |= GmMainQuestDialogueData.ReviseGeneratedLine(database, GmSoreliaSuppliesDialogue.FirstConversation,
+                    line.speaker, line.previous, line.replacement);
+            Add(GmSoreliaSuppliesDialogue.RepeatConversation, Mother, null,
+                (Mother, "Terima kasih sudah menolong keluarga Ibu, Nak. Hati-hati di jalan, ya."));
             Add(FamilyConversation, "Warga Ibu", null,
                 ("Warga Ibu", "Monsternya sudah dikalahkan, ya?"),
                 ("Warga Bapak", "Sepertinya sudah, Bu."),
@@ -136,13 +153,13 @@ namespace GamecommMentor.DaengSaka.Editor
 
             if (resident.GetComponentInChildren<Collider>(true) == null)
             {
-                var trigger = Undo.AddComponent<CapsuleCollider>(resident.gameObject);
+                var trigger = AddComponent<CapsuleCollider>(resident);
                 trigger.isTrigger = true;
                 trigger.height = height;
                 trigger.radius = .23f;
                 trigger.center = Vector3.up * (height * .5f);
             }
-            if (interaction == null) interaction = Undo.AddComponent<GmPixelCrushersConversation>(resident.gameObject);
+            if (interaction == null) interaction = AddComponent<GmPixelCrushersConversation>(resident);
             Undo.RecordObject(interaction, UndoName);
             interaction.SetPresentation(resident.name, "Bicara");
             interaction.ConfigureAmbientDialogue(title, bridge, quest, GmMainQuestStep.SelamatkanKeluargaNelayan);

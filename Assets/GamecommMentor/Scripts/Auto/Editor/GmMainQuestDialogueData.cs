@@ -201,6 +201,22 @@ namespace GamecommMentor.DaengSaka.Editor
             string title, string completionEntry, params (string actor, string text)[] lines) =>
             AddConversation(database, template, title, completionEntry, null, lines);
 
+        internal static bool ReviseGeneratedLine(DialogueDatabase database, string title, string speaker,
+            string previous, string replacement)
+        {
+            var conversation = database.GetConversation(title);
+            if (conversation == null) return false;
+            foreach (var entry in conversation.dialogueEntries)
+            {
+                if (entry.Title != speaker || entry.DialogueText != previous ||
+                    database.GetActor(entry.ActorID)?.Name != speaker) continue;
+                entry.DialogueText = replacement;
+                if (entry.MenuText == "[auto] " + previous) entry.MenuText = "[auto] " + replacement;
+                return true;
+            }
+            return false;
+        }
+
         internal static bool AddConversation(DialogueDatabase database, Template template,
             string title, string completionEntry, string partnerName, params (string actor, string text)[] lines)
         {

@@ -54,6 +54,9 @@ namespace GamecommMentor.DaengSaka
         }
     }
 
+    [Flags]
+    internal enum GmBagSection { Stock = 1, Equipment = 2 }
+
     public sealed class GmPartyRun
     {
         internal const int WipeRecoveryPercent = 50;
@@ -61,7 +64,6 @@ namespace GamecommMentor.DaengSaka
         public static GmPartyRun Current { get; private set; } = new GmPartyRun();
         public GmPartyInventory Inventory { get; } = new GmPartyInventory();
         public GmPartyWallet Wallet { get; } = new GmPartyWallet();
-        internal bool ReceivedSoreliaSupplies { get; private set; }
         internal bool FreeEnchantAvailable { get; private set; } = true;
         private GmEconomyCatalog economy;
         private GmPartyEquipment equipment;
@@ -69,6 +71,8 @@ namespace GamecommMentor.DaengSaka
         private readonly List<string> receivedItemNames = new List<string>();
         internal string NewItemSummary { get; private set; }
         internal float ItemNoticeRemaining { get; private set; }
+        internal GmBagSection? NewItemSection { get; private set; }
+        private GmBagSection unreadSections;
 
         internal bool HasDefeatedEncounter(string id) => defeatedOptionalEncounters.Contains(id);
         internal void RememberDefeatedEncounter(string id) => defeatedOptionalEncounters.Add(id);
@@ -91,7 +95,7 @@ namespace GamecommMentor.DaengSaka
                     // Load Unity assets on first gameplay/UI access, outside static run initialization.
                     equipment = new GmPartyEquipment(Resources.Load<GmWeaponCatalog>(GmWeaponCatalog.ResourcePath));
                     foreach (var member in Members) equipment.BindMember(member);
-                    equipment.WeaponReceived += RecordNewItem;
+                    equipment.WeaponReceived += name => RecordNewItem(name, GmBagSection.Equipment);
                 }
                 return equipment;
             }
@@ -105,15 +109,17 @@ namespace GamecommMentor.DaengSaka
         {
             Inventory.TryAdd(GmItemDefinition.HpPotion);
             Inventory.TryAdd(GmItemDefinition.MpPotion);
-            Inventory.ItemReceived += RecordNewItem;
+            Inventory.ItemReceived += name => RecordNewItem(name, GmBagSection.Stock);
             BindRoster(GmBattleStats.CreateDefaultParty(), true);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void BeginPlaySession() => Current = new GmPartyRun();
 
-        private void RecordNewItem(string name)
+        private void RecordNewItem(string name, GmBagSection section)
         {
+            unreadSections |= section;
+            NewItemSection = section;
             if (!receivedItemNames.Contains(name)) receivedItemNames.Add(name);
             NewItemSummary = receivedItemNames.Count <= 2
                 ? string.Join(" + ", receivedItemNames)
@@ -133,7 +139,12 @@ namespace GamecommMentor.DaengSaka
             receivedItemNames.Clear();
             NewItemSummary = null;
             ItemNoticeRemaining = 0f;
+            NewItemSection = null;
         }
+
+        internal bool HasUnreadItems(GmBagSection section) => (unreadSections & section) != 0;
+
+        internal void AcknowledgeBagSection(GmBagSection section) => unreadSections &= ~section;
 
         internal bool TryBuyWeapon(GmBlacksmithOffer offer, int expectedPrice)
         {
@@ -162,20 +173,6 @@ namespace GamecommMentor.DaengSaka
                 return Wallet.TrySpend(expectedPrice, () => Equipment.TryUpgrade(weapon, expectedRank, GmEconomyCatalog.MaxEnchantRank));
             if (!Equipment.TryUpgrade(weapon, expectedRank, GmEconomyCatalog.MaxEnchantRank)) return false;
             FreeEnchantAvailable = false;
-            return true;
-        }
-
-        internal bool TryReceiveSoreliaSupplies()
-        {
-            const int quantity = 5;
-            var hp = GmItemDefinition.HpPotion;
-            var mp = GmItemDefinition.MpPotion;
-            if (ReceivedSoreliaSupplies || Inventory.Count(hp) > int.MaxValue - quantity ||
-                Inventory.Count(mp) > int.MaxValue - quantity) return false;
-
-            Inventory.TryAdd(hp, quantity);
-            Inventory.TryAdd(mp, quantity);
-            ReceivedSoreliaSupplies = true;
             return true;
         }
 

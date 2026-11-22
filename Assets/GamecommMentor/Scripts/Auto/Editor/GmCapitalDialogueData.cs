@@ -23,6 +23,19 @@ namespace GamecommMentor.DaengSaka.Editor
 
         internal const string YusufTitle = "DaengSaka/Dialog Penjaga/Pak Yusuf";
 
+        internal static readonly (string title, string speaker, string previous, string replacement)[] HerbalRevisions =
+        {
+            (GmCapitalDeliveryDialogue.HerbalOfferTitle, Yusuf,
+                "Iya. Saya sudah pesan sebotol buat dia. Tolong ambil di Tukang Jamu, lalu antar ke rumah mereka. Saya masih berjaga di sini.",
+                "Iya. Saya pesan sebotol dari kemarin. Tolong ambil di kedai jamu terus antar ke rumahnya, ya. Saya masih berjaga di sini."),
+            (GmCapitalDeliveryDialogue.HerbalOfferTitle, Saka,
+                "Ayo. Kalau mampir sekarang, jamunya mungkin masih hangat.",
+                "Yuk. Kita ambil jamunya dulu, baru ke rumah putih."),
+            (GmCapitalDeliveryDialogue.HerbalPickupTitle, Jamu,
+                "Oh, yang botol kecil ini? Baru saja ibu buat. Titip juga kantong dari Pak Yusuf, ya. Katanya buat upah yang mengantar.",
+                "Jamu jualan sudah habis, Nak. Untung botol Pak Yusuf sudah Ibu sisihkan kemarin. Ini sama kantong upah dari beliau, ya.")
+        };
+
         internal static readonly (string actor, string text)[] FormerOpening =
         {
             (FormerPua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
@@ -83,14 +96,14 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 (Yusuf, "Tuan Putri, boleh minta tolong sebentar? Anak di dekat rumah putih tadi mengeluh pusing."),
                 (Daung, "Oh, yang mau ke kedai jamu sama ibunya? Mereka sudah pulang, Pak?"),
-                (Yusuf, "Iya. Saya sudah pesan sebotol buat dia. Tolong ambil di Tukang Jamu, lalu antar ke rumah mereka. Saya masih berjaga di sini."),
+                (Yusuf, HerbalRevisions[0].replacement),
                 (Pacca, "Baik, Pak. Yang ini lebih ringan dari pedang, kan?"),
-                (Saka, "Ayo. Kalau mampir sekarang, jamunya mungkin masih hangat.")
+                (Saka, HerbalRevisions[1].replacement)
             }),
             (GmCapitalDeliveryDialogue.HerbalPickupTitle, Jamu, new[]
             {
                 (Saka, "Bu, kami mau ambil jamu yang dipesan Pak Yusuf."),
-                (Jamu, "Oh, yang botol kecil ini? Baru saja ibu buat. Titip juga kantong dari Pak Yusuf, ya. Katanya buat upah yang mengantar."),
+                (Jamu, HerbalRevisions[2].replacement),
                 (Pacca, "Wah, baunya sampai sini..."),
                 (Daung, "Jangan dibuka, Pacca. Ibunya menunggu.")
             }),
@@ -101,6 +114,15 @@ namespace GamecommMentor.DaengSaka.Editor
                 (Child, "Kalau aku sudah baikan, Kak Saka mau main lagi?"),
                 (Saka, "Kalau sudah baikan, baru boleh lari-lari. Istirahat dulu, ya."),
                 (Mother, "Iya, nanti ibu temani. Sampaikan terima kasih ibu ke Pak Yusuf kalau ketemu lagi, ya.")
+            }),
+            (GmSoreliaSuppliesDialogue.DeliveryConversation, Merchant, new[]
+            {
+                (Saka, "Pak, kami bawa titipan Ibu Nelayan dari Sorelia."),
+                (Merchant, "Lho, bungkusan ini akhirnya sampai juga. Ibu dan anaknya baik-baik saja?"),
+                (Daung, "Syukurlah mereka selamat, Pak. Ibu bilang bahan ini buat racikan Bapak."),
+                (Merchant, "Betul. Nih, sesuai janji. Lima Ramuan HP dan lima Ramuan MP buat bekal kalian."),
+                (Pacca, "Wah, banyak juga! Biar Pacca yang bawa."),
+                (Daung, "Boleh, asal jangan lupa keluarin pas kita butuh, ya.")
             })
         };
 

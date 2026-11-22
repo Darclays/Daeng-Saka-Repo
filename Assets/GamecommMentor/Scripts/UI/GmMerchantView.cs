@@ -18,7 +18,7 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform root, services, shop, list, detail, confirm, confirmActions;
         private readonly CanvasGroup shopControls;
         private readonly Button talk, merchantShop, blacksmith, serviceClose, back, buy;
-        private readonly Text balance, backLabel, title, recovery, stock, projected, status, buyLabel, empty;
+        private readonly Text serviceTitle, balance, backLabel, title, recovery, stock, projected, status, buyLabel, empty;
         private readonly Text confirmTitle, confirmPrice, confirmBalance;
         private readonly Image itemIcon;
         private readonly Action<GmMerchantOffer> select;
@@ -45,7 +45,7 @@ namespace GamecommMentor.DaengSaka
 
             services = Rect("Layanan Pemandu Kerajaan", root, .285f, .25f, .715f, .75f);
             Fill(services, Paper);
-            AddText(font, services, "Pemandu", "Pemandu Kerajaan", 32, .075f, .76f, .925f, .95f, bold: true);
+            serviceTitle = AddText(font, services, "Pemandu", "Pemandu Kerajaan", 32, .075f, .76f, .925f, .95f, bold: true);
             talk = AddButton(font, services, "Bicara dengan Penempa", .075f, .52f, .925f, .70f, talkToNpc, primary: true);
             blacksmith = AddButton(font, services, "Penempa Besi", .075f, .52f, .925f, .70f, openBlacksmith, primary: true);
             merchantShop = AddButton(font, services, "Belanja di Merchant", .075f, .31f, .925f, .48f, openShop);
@@ -96,17 +96,28 @@ namespace GamecommMentor.DaengSaka
             root.gameObject.SetActive(false);
         }
 
-        internal void ShowServices(bool hasTalk, bool hasBlacksmith)
+        internal void ShowServices(bool hasTalk, bool hasBlacksmith, bool hasDelivery, bool canDeliver)
         {
             root.gameObject.SetActive(true);
             confirm.gameObject.SetActive(false);
             shop.gameObject.SetActive(false);
             services.gameObject.SetActive(true);
-            talk.gameObject.SetActive(hasTalk);
+            serviceTitle.text = hasDelivery ? "Merchant" : "Pemandu Kerajaan";
+            Caption(talk).text = hasDelivery ? (canDeliver ? "Serahkan bahan Ibu Nelayan" : "Tas penuh untuk ramuan")
+                : "Bicara dengan Penempa";
+            talk.gameObject.SetActive(hasTalk || hasDelivery);
+            talk.interactable = !hasDelivery || canDeliver;
             blacksmith.gameObject.SetActive(hasBlacksmith);
-            ((RectTransform)blacksmith.transform).anchorMin = new Vector2(.075f, hasTalk ? .235f : .52f);
-            ((RectTransform)blacksmith.transform).anchorMax = new Vector2(.925f, hasTalk ? .305f : .70f);
-            Focus(hasTalk ? talk : hasBlacksmith ? blacksmith : merchantShop);
+            bool forgeBelowShop = hasBlacksmith && (hasTalk || hasDelivery);
+            var forge = (RectTransform)blacksmith.transform;
+            forge.anchorMin = new Vector2(.075f, forgeBelowShop ? .235f : .52f);
+            forge.anchorMax = new Vector2(.925f, forgeBelowShop ? .305f : .70f);
+            Button first = GmMenuButton.Available(talk) ? talk : hasBlacksmith && !forgeBelowShop ? blacksmith : null;
+            if (first != null) GmMenuButton.Link(first, null, merchantShop);
+            GmMenuButton.Link(merchantShop, first, forgeBelowShop ? blacksmith : serviceClose);
+            if (forgeBelowShop) GmMenuButton.Link(blacksmith, merchantShop, serviceClose);
+            GmMenuButton.Link(serviceClose, forgeBelowShop ? blacksmith : merchantShop, null);
+            Focus(first ?? merchantShop);
             UpdateInputHints();
         }
 

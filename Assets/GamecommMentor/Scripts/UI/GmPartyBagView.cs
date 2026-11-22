@@ -34,6 +34,7 @@ namespace GamecommMentor.DaengSaka
             Panel = Rect("Tas Party", window, .026f, .045f, .974f, .833f);
             stockTab = AddButton(font, Panel, "Isi tas", 0f, .905f, .205f, 1f, () => SelectTab(false));
             equipmentTab = AddButton(font, Panel, "Perlengkapan", .22f, .905f, .49f, 1f, () => SelectTab(true));
+            Caption(stockTab).supportRichText = Caption(equipmentTab).supportRichText = true;
             wallet = AddText(font, Panel, "Kas Party", "", 22, .54f, .905f, 1f, 1f,
                 TextAnchor.MiddleRight, bold: true);
             RectTransform content = Rect("Halaman Tas", Panel, 0f, 0f, 1f, .885f);
@@ -65,13 +66,26 @@ namespace GamecommMentor.DaengSaka
         private void SelectTab(bool equipment)
         {
             if (!Panel.gameObject.activeInHierarchy) return;
+            if (showEquipment != equipment) MarkViewed();
             showEquipment = equipment;
             Render();
         }
 
+        internal void Open(GmBagSection? section)
+        {
+            if (section.HasValue) showEquipment = section.Value == GmBagSection.Equipment;
+            Render();
+            if (section.HasValue && GmGamepadInput.UsingGamepad)
+                GmMenuButton.Focus(showEquipment ? equipmentTab : stockTab);
+        }
+
+        internal void MarkViewed() =>
+            GmPartyRun.Current.AcknowledgeBagSection(showEquipment ? GmBagSection.Equipment : GmBagSection.Stock);
+
         internal void Render()
         {
             RenderWallet();
+            RenderBadges();
             SetSelected(stockTab, !showEquipment);
             SetSelected(equipmentTab, showEquipment);
             stockPage.gameObject.SetActive(!showEquipment);
@@ -97,8 +111,16 @@ namespace GamecommMentor.DaengSaka
         internal void RefreshStock()
         {
             RenderWallet();
+            RenderBadges();
             if (showEquipment) equipmentView.RefreshIfChanged();
             else if (lastInventoryRevision != GmPartyRun.Current.Inventory.Revision) RenderItems();
+        }
+
+        private void RenderBadges()
+        {
+            var run = GmPartyRun.Current;
+            Caption(stockTab).text = WithAlert("Isi tas", run.HasUnreadItems(GmBagSection.Stock));
+            Caption(equipmentTab).text = WithAlert("Perlengkapan", run.HasUnreadItems(GmBagSection.Equipment));
         }
 
         private void RenderWallet()

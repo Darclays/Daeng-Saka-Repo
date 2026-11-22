@@ -69,12 +69,19 @@ namespace GamecommMentor.DaengSaka.Editor
             var jamuProfile = LoadProfile<VNActorVisualProfile>("TukangJamu_Dialog_Profil");
             Transform aco = FindOrPlaceAco(scene, world, residents, smith, merchant);
             BindDeliveryRoute(world, flow, aco, smith, merchant, guard, herbalist, mother, bridge, sequence, journal);
+            var supplies = GetOrAdd<GmSoreliaSuppliesDialogue>(merchant);
+            Undo.RecordObject(supplies, UndoName);
+            supplies.Configure(null, bridge, journal, merchant: true);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(supplies);
             var template = Template.FromDefault();
             var kept = new List<string>();
             using var catalogData = new SerializedObject(catalog);
             SerializedProperty entries = catalogData.FindProperty("percakapan");
             Undo.RecordObject(database, UndoName);
             bool databaseChanged = GmMainQuestDialogueData.UpgradeCapitalStory(database, template, kept);
+            foreach (var line in GmCapitalDialogueData.HerbalRevisions)
+                databaseChanged |= GmMainQuestDialogueData.ReviseGeneratedLine(database, line.title, line.speaker,
+                    line.previous, line.replacement);
             int bound = 0;
 
             foreach (var talk in GmCapitalDialogueData.Residents)
@@ -103,7 +110,12 @@ namespace GamecommMentor.DaengSaka.Editor
 
             foreach (var talk in GmCapitalDialogueData.Delivery)
             {
-                string terminal = talk.title == GmCapitalDeliveryDialogue.AcoGreeting ? null : GmCapitalDeliveryDialogue.CompletionEntry;
+                string terminal = talk.title switch
+                {
+                    GmCapitalDeliveryDialogue.AcoGreeting => null,
+                    GmSoreliaSuppliesDialogue.DeliveryConversation => GmSoreliaSuppliesDialogue.CompletionEntry,
+                    _ => GmCapitalDeliveryDialogue.CompletionEntry
+                };
                 databaseChanged |= GmMainQuestDialogueData.AddConversation(database, template, talk.title, terminal,
                     talk.partner, talk.lines);
                 var profile = talk.title switch
@@ -125,7 +137,7 @@ namespace GamecommMentor.DaengSaka.Editor
             }
             if (kept.Count > 0) Debug.LogWarning("[Daeng Saka] Periksa penempatan atau dialog kustom berikut. " +
                 string.Join(", ", kept));
-            Debug.Log($"[Daeng Saka] Daeng Aco dan dua quest kota siap. {bound} dialog warga terhubung. Simpan scene IbuKota.");
+            Debug.Log($"[Daeng Saka 1E.39B] Dialog Ibu Kota dan penyerahan Titipan Ibu Nelayan siap. {bound} dialog warga terhubung. Simpan scene IbuKota.");
         }
 
         private static Transform FindOrPlaceAco(Scene scene, Transform world, Transform residents,
@@ -186,6 +198,8 @@ namespace GamecommMentor.DaengSaka.Editor
             Undo.RecordObject(journal, UndoName);
             journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.Guide, GmCapitalDialogueData.Aco,
                 "Di area permukiman Kerajaan.", aco));
+            journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.Merchant, "Merchant",
+                "Perbekalan dan ramuan.", merchant));
             journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.CastleGuard, "Pak Yusuf",
                 "Penjaga di kaki tangga istana.", guard));
             journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.Blacksmith, "Penempa Besi",

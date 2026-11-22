@@ -55,7 +55,8 @@ namespace GamecommMentor.DaengSaka
             tabHint = AddText(font, header, "Pintasan tab", "", 15, .026f, .13f, .31f, .47f);
             tabHint.color = Muted;
             journalTab = AddButton(font, header, "Jurnal  [J]", .35f, .21f, .50f, .79f, ShowJournal);
-            mapTab = AddButton(font, header, "Peta  [M]", .51f, .21f, .64f, .79f, () => ShowMap(journal.Tracked));
+            mapTab = AddButton(font, header, "Peta  [M]", .51f, .21f, .64f, .79f, journal.OpenMap);
+            Caption(mapTab).supportRichText = true;
             bagTab = AddButton(font, header, "Tas  [I]", .65f, .21f, .78f, .79f, ShowBag);
             close = AddButton(font, header, "Tutup  [Esc]", .79f, .21f, .973f, .79f, journal.Back);
 
@@ -94,6 +95,7 @@ namespace GamecommMentor.DaengSaka
                 () => journal.OpenFromPause(GmJournalPage.Journal));
             pauseMap = AddButton(font, pausePanel, "Peta", .09f, .342f, .91f, .472f,
                 () => journal.OpenFromPause(GmJournalPage.Map));
+            Caption(pauseMap).supportRichText = true;
             pauseBag = AddButton(font, pausePanel, "Tas", .09f, .194f, .91f, .324f,
                 () => journal.OpenFromPause(GmJournalPage.Bag));
             GmMenuButton.Link(resume, null, pauseJournal);
@@ -107,6 +109,7 @@ namespace GamecommMentor.DaengSaka
 
         private void SelectPage(GmJournalPage page)
         {
+            if (page != GmJournalPage.Bag) LeaveBag();
             Page = page;
             pausePanel.gameObject.SetActive(false);
             root.gameObject.SetActive(true);
@@ -128,6 +131,7 @@ namespace GamecommMentor.DaengSaka
 
         internal void ShowPause(GmJournalPage? previous)
         {
+            LeaveBag();
             Page = GmJournalPage.Pause;
             window.gameObject.SetActive(false);
             pausePanel.gameObject.SetActive(true);
@@ -148,13 +152,14 @@ namespace GamecommMentor.DaengSaka
             bool pad = GmGamepadInput.UsingGamepad;
             if (Page == GmJournalPage.Pause)
             {
+                Caption(pauseMap).text = WithAlert("Peta", journal.HasMapQuest);
                 pauseHint.text = pad ? "[A] Pilih    [B] Lanjutkan" : "[Enter] Pilih    [Esc] Lanjutkan";
                 if (pad) GmMenuButton.FocusWithin(pausePanel, resume);
                 return;
             }
             tabHint.text = pad ? "[LB/RB] Ganti tab" : "";
             Caption(journalTab).text = pad ? "Jurnal" : "Jurnal  [J]";
-            Caption(mapTab).text = pad ? "Peta" : "Peta  [M]";
+            Caption(mapTab).text = WithAlert(pad ? "Peta" : "Peta  [M]", journal.HasMapQuest);
             Caption(bagTab).text = pad ? "Tas" : "Tas  [I]";
             string action = journal.ReturnsToPause ? "Kembali" : "Tutup";
             Caption(close).text = $"{action}  [{GmGamepadInput.BackLabel}]";
@@ -177,9 +182,11 @@ namespace GamecommMentor.DaengSaka
 
         internal void ShowBag()
         {
-            GmPartyRun.Current.DismissItemNotice();
+            var run = GmPartyRun.Current;
+            GmBagSection? section = run.NewItemSection;
+            run.DismissItemNotice();
             SelectPage(GmJournalPage.Bag);
-            bagView.Render();
+            bagView.Open(section);
         }
 
         internal void Refresh()
@@ -203,10 +210,16 @@ namespace GamecommMentor.DaengSaka
 
         internal void Hide()
         {
+            LeaveBag();
             EventSystem system = EventSystem.current;
             GameObject selected = system != null ? system.currentSelectedGameObject : null;
             if (selected != null && selected.transform.IsChildOf(root)) system.SetSelectedGameObject(null);
             root.gameObject.SetActive(false);
+        }
+
+        private void LeaveBag()
+        {
+            if (IsOpen && Page == GmJournalPage.Bag) bagView.MarkViewed();
         }
 
         private void SetFilter(bool completed)
@@ -355,6 +368,9 @@ namespace GamecommMentor.DaengSaka
         }
 
         internal static Text Caption(Button button) => button.GetComponentInChildren<Text>(true);
+
+        internal static string WithAlert(string label, bool visible) =>
+            visible ? label + "  <color=#B62237>!</color>" : label;
 
         internal static RectTransform CreateScrollContent(RectTransform viewport, out ScrollRect scroll)
         {

@@ -109,3 +109,6 @@ MonoBehaviour:
   - judul: DaengSaka/Side Quest/Jamu untuk Si Kecil/Antar Jamu
     profil: {fileID: 11400000, guid: 273557a68c715b13b837eb70b855601e, type: 2}
     kameraQuestUtama: 0
+  - judul: DaengSaka/Side Quest/Titipan Ibu Nelayan/Serahkan Bahan
+    profil: {fileID: 11400000, guid: f9e8ca41c3a84c7f9f773e259b34ee05, type: 2}
+    kameraQuestUtama: 0

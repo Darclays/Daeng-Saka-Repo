@@ -69,6 +69,8 @@ namespace GamecommMentor.DaengSaka
         private GmMainQuestStep lastStep;
         private GmQuestJournalView view;
         private GmJournalPage? pauseSelection;
+        private GmPixelCrushersConversation trackedGiver;
+        private string trackedOfferId;
 
         internal GmQuestArea Area => area;
         internal GmQuestArea ExitArea => exitArea;
@@ -90,6 +92,7 @@ namespace GamecommMentor.DaengSaka
         {
             get
             {
+                if (TryGetTrackedOffer(out _, out _)) return null;
                 RefreshEntries();
                 foreach (GmQuestEntry entry in entries)
                 {
@@ -177,6 +180,7 @@ namespace GamecommMentor.DaengSaka
             SideRuns.Add(definition.Id, new SideRun(definition));
             revision++;
             NotifyNewQuest(definition.Title);
+            if (trackedOfferId == definition.Id) TrackSideQuest(definition.Id);
             return true;
         }
 
@@ -203,8 +207,119 @@ namespace GamecommMentor.DaengSaka
         {
             if (entry == null || entry.IsComplete) return;
             bool stop = Tracked?.Id == entry.Id;
+            ClearOfferTracking();
             autoTrackMain = !stop && !entry.IsSideQuest;
             trackedSideId = !stop && entry.IsSideQuest ? entry.Id : null;
+        }
+
+        internal void TrackSideQuest(string id)
+        {
+            ClearOfferTracking();
+            autoTrackMain = false;
+            trackedSideId = id;
+        }
+
+        internal GmSideQuestDefinition QuestOfferAt(GmPixelCrushersConversation giver) =>
+            giver != null && giver.gameObject.scene == gameObject.scene ? giver.QuestToOffer(player) : null;
+
+        internal IEnumerable<(GmPixelCrushersConversation giver, GmSideQuestDefinition quest)> LocalOffers()
+        {
+            foreach (var giver in GmPixelCrushersConversation.ActiveConversations)
+            {
+                var offered = QuestOfferAt(giver);
+                if (offered != null) yield return (giver, offered);
+            }
+        }
+
+        internal GmQuestLandmark OfferLandmark(GmPixelCrushersConversation giver, GmSideQuestDefinition offer)
+        {
+            foreach (GmQuestLandmark landmark in landmarks)
+                if (landmark.Point == giver.transform) return landmark;
+            return new GmQuestLandmark(offer.Id, giver.name, "Bicara untuk mengambil quest ini.", giver.transform);
+        }
+
+        internal bool TryGetTrackedOffer(out GmSideQuestDefinition quest, out GmQuestLandmark landmark)
+        {
+            quest = QuestOfferAt(trackedGiver);
+            if (quest != null && quest.Id == trackedOfferId)
+            {
+                landmark = OfferLandmark(trackedGiver, quest);
+                return true;
+            }
+            landmark = default;
+            return false;
+        }
+
+        internal bool TryTrackOffer(GmPixelCrushersConversation giver, string id)
+        {
+            if (id == null || QuestOfferAt(giver)?.Id != id) return false;
+            trackedGiver = giver;
+            trackedOfferId = id;
+            return true;
+        }
+
+        private void ClearOfferTracking()
+        {
+            trackedGiver = null;
+            trackedOfferId = null;
+        }
+
+        internal bool HasMapQuest
+        {
+            get
+            {
+                if (LocalActiveQuest() != null) return true;
+                foreach (var giver in GmPixelCrushersConversation.ActiveConversations)
+                    if (QuestOfferAt(giver) != null) return true;
+                return false;
+            }
+        }
+
+        private GmQuestEntry LocalActiveQuest()
+        {
+            RefreshEntries();
+            foreach (GmQuestEntry entry in entries)
+                if (!entry.IsComplete && entry.CurrentGoal.Area == area && TryGetNavigation(entry.CurrentGoal, out _))
+                    return entry;
+            return null;
+        }
+
+        internal void OpenMap()
+        {
+            GmPixelCrushersConversation nearest = null;
+            string nearestId = null;
+            float nearestDistance = float.PositiveInfinity;
+            foreach (var (giver, offered) in LocalOffers())
+            {
+                float distance = (giver.transform.position - Player.position).sqrMagnitude;
+                if (distance >= nearestDistance) continue;
+                nearest = giver;
+                nearestId = offered.Id;
+                nearestDistance = distance;
+            }
+            if (nearest != null && TryTrackOffer(nearest, nearestId))
+            {
+                view.ShowMap(null);
+                return;
+            }
+
+            ClearOfferTracking();
+            GmQuestEntry target = Tracked;
+            if (target == null || (!target.IsSideQuest && target.CurrentGoal.Area != area))
+            {
+                GmQuestEntry local = LocalActiveQuest();
+                if (local != null)
+                {
+                    if (local.IsSideQuest) TrackSideQuest(local.Id);
+                    else
+                    {
+                        autoTrackMain = true;
+                        trackedSideId = null;
+                    }
+                    target = local;
+                }
+            }
+            view.ShowMap(target);
         }
 
         private bool RefreshEntries()
@@ -366,7 +481,7 @@ namespace GamecommMentor.DaengSaka
         private void ShowPage(GmJournalPage page)
         {
             if (page == GmJournalPage.Bag) view.ShowBag();
-            else if (page == GmJournalPage.Map) view.ShowMap(Tracked);
+            else if (page == GmJournalPage.Map) OpenMap();
             else view.ShowJournal();
         }
 

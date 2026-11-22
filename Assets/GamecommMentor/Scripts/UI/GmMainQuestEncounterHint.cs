@@ -175,13 +175,14 @@ namespace GamecommMentor.DaengSaka
                 titleRect.anchoredPosition = new Vector2(14f, -6f);
                 titleRect.sizeDelta = new Vector2(400f, 20f);
                 const float gap = 8f;
-                const float menuWidth = 110f, bagWidth = 78f, mapWidth = 82f, journalWidth = 89f;
+                const float menuWidth = 110f, bagWidth = 78f, mapWidth = 100f, journalWidth = 89f;
                 float inset = 24f;
                 menuKey = CreateShortcut(font, "Menu Shortcut", "[P] Jeda", inset, menuWidth);
                 inset += menuWidth + gap;
                 Text bagKey = CreateShortcut(font, "Bag Shortcut", "[I] Tas", inset, bagWidth);
                 inset += bagWidth + gap;
                 mapKey = CreateShortcut(font, "Map Shortcut", "[M] Peta", inset, mapWidth);
+                mapKey.supportRichText = true;
                 inset += mapWidth + gap;
                 Text journalKey = CreateShortcut(font, "Journal Shortcut", "[J] Jurnal", inset, journalWidth);
                 sprintKey = CreateLabel("Sprint Shortcut", canvasRect, font, TextAnchor.MiddleLeft);
@@ -291,8 +292,9 @@ namespace GamecommMentor.DaengSaka
             menuKey.gameObject.SetActive(visible);
             sprintKey.gameObject.SetActive(visible);
             mapKey.text = pad ? "[LB] Peta" : "[M] Peta";
+            if (visible && journal.HasMapQuest) mapKey.text += "  <color=#FF787D>!</color>";
             menuKey.text = pad ? "[Menu] Jeda" : "[P] Jeda";
-            sprintKey.text = pad ? "[RT] Tahan untuk lari" : "[Shift] Tahan untuk lari";
+            sprintKey.text = pad ? "[RT] Sprint" : "[Shift] Sprint";
             bool showQuest = questNotice.Render(visible, journal.NewQuestTitle,
                 GmQuestJournal.QuestNoticeDuration - journal.QuestNoticeRemaining, NoticeTop,
                 pad ? "[Y] Jurnal" : "[J] Jurnal", pad ? "[Y] Jurnal → Lacak quest" : null);
@@ -306,13 +308,26 @@ namespace GamecommMentor.DaengSaka
         private void UpdateJournalHint(bool exploring, Camera camera)
         {
             UpdateShortcuts(exploring);
-            GmQuestEntry tracked = exploring ? journal.Tracked : null;
+            GmSideQuestDefinition offer = null;
             GmQuestLandmark landmark = default;
-            bool targetFound = tracked != null && journal.TryGetNavigation(tracked.CurrentGoal, out landmark);
+            bool tracksOffer = exploring && journal.TryGetTrackedOffer(out offer, out landmark);
+            GmQuestEntry tracked = exploring && !tracksOffer ? journal.Tracked : null;
+            bool targetFound = tracksOffer || (tracked != null && journal.TryGetNavigation(tracked.CurrentGoal, out landmark));
             npcGuidance.Render(exploring ? journal.Interactor : null, camera, targetFound ? landmark.Point : null);
             bool showCompletion = exploring && showQuestCompletion && journal.ShowMainCompletion;
-            objectivePanel.gameObject.SetActive(tracked != null || showCompletion);
-            if (tracked == null)
+            objectivePanel.gameObject.SetActive(tracksOffer || tracked != null || showCompletion);
+            if (tracksOffer)
+            {
+                questTitle.text = offer.Title;
+                objectiveLabel.text = "Bicara dengan " + landmark.Label;
+            }
+            else if (tracked != null)
+            {
+                GmQuestGoal goal = tracked.CurrentGoal;
+                questTitle.text = tracked.Title;
+                objectiveLabel.text = string.IsNullOrEmpty(goal.Progress) ? goal.Text : goal.Text + "   " + goal.Progress;
+            }
+            else
             {
                 HideMarkers();
                 if (showCompletion)
@@ -323,9 +338,6 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
 
-            GmQuestGoal goal = tracked.CurrentGoal;
-            questTitle.text = tracked.Title;
-            objectiveLabel.text = string.IsNullOrEmpty(goal.Progress) ? goal.Text : goal.Text + "   " + goal.Progress;
             if (!targetFound)
             {
                 HideMarkers();

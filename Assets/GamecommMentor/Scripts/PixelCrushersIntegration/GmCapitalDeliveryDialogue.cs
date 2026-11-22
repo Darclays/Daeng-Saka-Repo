@@ -100,6 +100,13 @@ namespace GamecommMentor.DaengSaka
         };
 
         internal bool CanStartAt(Transform npc) => StepAt(npc) != Stop.None;
+        internal GmSideQuestDefinition QuestOfferedAt(Transform npc) => StepAt(npc) switch
+        {
+            Stop.OfferSword => GmQuestCatalog.CityDelivery,
+            Stop.OfferJamu => GmQuestCatalog.HerbalDelivery,
+            _ => null
+        };
+
         internal bool SmithHasPayment => StepAt(blacksmith) == Stop.SwordPayment;
 
         internal bool TryStartAt(Transform npc, GmInteractor requester)

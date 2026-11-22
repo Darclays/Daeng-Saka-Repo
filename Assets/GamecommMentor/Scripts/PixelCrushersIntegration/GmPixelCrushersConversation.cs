@@ -45,18 +45,24 @@ namespace GamecommMentor.DaengSaka
         private bool OffersBlacksmith => mainQuestDialogue != null && mainQuestDialogue.OffersBlacksmithTo(transform);
         private bool OffersCityDelivery => string.IsNullOrWhiteSpace(QuestTitle) &&
             cityDelivery != null && cityDelivery.CanStartAt(transform);
+        private bool OffersSoreliaQuest => supplies != null && supplies.HasQuestToOffer;
+        private bool HasSoreliaDelivery => supplies != null && supplies.HasDelivery;
 
         public override string Prompt
         {
             get
             {
                 if (OffersFishingLoan) return "[E] Pinjam alat pancing — Nelayan";
+                if (OffersSoreliaQuest) return "[E] Lihat quest — Ibu Nelayan";
                 if (OffersCityDelivery)
                     return OffersBlacksmith ? "[E] Layanan dan tugas — Penempa Besi" : base.Prompt;
                 if (OffersMerchant)
+                {
+                    if (HasSoreliaDelivery) return "[E] Layanan dan titipan — Merchant";
                     return string.IsNullOrWhiteSpace(QuestTitle) && !OffersBlacksmith
                         ? "[E] Belanja — Merchant"
                         : "[E] Bicara atau belanja — Pemandu Kerajaan";
+                }
                 return OffersBlacksmith ? "[E] Belanja atau enchant — Penempa Besi" : base.Prompt;
             }
         }
@@ -100,10 +106,17 @@ namespace GamecommMentor.DaengSaka
         {
             if (!CanInteract(requester)) return GmNpcGuideIcon.None;
             if (OffersFishingLoan || OffersCityDelivery || !string.IsNullOrWhiteSpace(QuestTitle) ||
-                (supplies != null && supplies.HasSuppliesToOffer))
+                OffersSoreliaQuest || HasSoreliaDelivery)
                 return GmNpcGuideIcon.Quest;
             if (OffersMerchant || OffersBlacksmith) return GmNpcGuideIcon.Shop;
             return GmNpcGuideIcon.Dialogue;
+        }
+
+        internal GmSideQuestDefinition QuestToOffer(GmInteractor requester)
+        {
+            if (!IsUnlocked || !base.CanInteract(requester) || !string.IsNullOrWhiteSpace(QuestTitle)) return null;
+            if (OffersSoreliaQuest) return GmQuestCatalog.SoreliaDelivery;
+            return cityDelivery != null ? cityDelivery.QuestOfferedAt(transform) : null;
         }
 
         internal bool TryGetGuidanceHead(out Vector3 head)
@@ -127,7 +140,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         public override bool CanInteract(GmInteractor requester) => IsUnlocked && base.CanInteract(requester)
-            && (OffersFishingLoan || OffersCityDelivery || OffersMerchant || OffersBlacksmith ||
+            && (OffersFishingLoan || OffersCityDelivery || OffersSoreliaQuest || OffersMerchant || OffersBlacksmith ||
                 !string.IsNullOrWhiteSpace(ResolveConversationTitle()));
 
         private string ResolveConversationTitle()
@@ -148,11 +161,12 @@ namespace GamecommMentor.DaengSaka
         {
             if (!IsUnlocked || !base.CanInteract(requester)) return false;
             if (OffersFishingLoan) return fishingQuest.TryBorrow(requester);
+            if (OffersSoreliaQuest) return supplies.TryStartOffer(requester);
             if (OffersMerchant)
             {
                 var counter = GetComponent<GmMerchantCounter>();
                 if (counter == null) counter = gameObject.AddComponent<GmMerchantCounter>();
-                return counter.TryOpen(mainQuestDialogue, requester);
+                return counter.TryOpen(mainQuestDialogue, requester, supplies);
             }
             if (OffersBlacksmith)
             {

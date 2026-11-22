@@ -29,6 +29,7 @@ namespace GamecommMentor.DaengSaka
         private GmMerchantView view;
         private AudioSource feedbackAudio;
         private GmPixelCrushersMainQuestDialogue sequence;
+        private GmSoreliaSuppliesDialogue supplies;
         private GmInteractor player;
         private GmPartyRun run;
         private GmMerchantOffer selected;
@@ -43,9 +44,11 @@ namespace GamecommMentor.DaengSaka
 
         private bool CanTalk => sequence != null && !string.IsNullOrWhiteSpace(sequence.CurrentTitleFor(transform));
         private bool CanOpenBlacksmith => sequence != null && sequence.OffersBlacksmithTo(transform);
-        private bool HasServices => CanTalk || CanOpenBlacksmith;
+        private bool HasDelivery => supplies != null && supplies.HasDelivery;
+        private bool HasServices => CanTalk || CanOpenBlacksmith || HasDelivery;
 
-        internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester)
+        internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester,
+            GmSoreliaSuppliesDialogue delivery = null)
         {
             if (page != Page.Closed || !isActiveAndEnabled || requester == null || !requester.isActiveAndEnabled ||
                 dialogue == null || !dialogue.OffersMerchantTo(transform) || requester.gameObject.scene != gameObject.scene ||
@@ -54,6 +57,7 @@ namespace GamecommMentor.DaengSaka
             run = GmPartyRun.Current;
             player = requester;
             sequence = dialogue;
+            supplies = delivery;
             player.ControlGate.Block(this);
             player.SuppressInteraction();
             view ??= new GmMerchantView(Talk, OpenShop, OpenBlacksmith, Select, Request, BackOrClose);
@@ -66,12 +70,23 @@ namespace GamecommMentor.DaengSaka
         private void OpenServices()
         {
             page = Page.Services;
-            view.ShowServices(CanTalk, CanOpenBlacksmith);
+            view.ShowServices(CanTalk, CanOpenBlacksmith, HasDelivery, HasDelivery && supplies.CanDeliver);
         }
 
         private void Talk()
         {
-            if (page != Page.Services || !CanUseCounter || !CanTalk) return;
+            if (page != Page.Services || !CanUseCounter) return;
+            if (HasDelivery)
+            {
+                if (!supplies.CanDeliver) return;
+                var delivery = supplies;
+                var dialogue = sequence;
+                var visitor = player;
+                Close();
+                if (!delivery.TryStartDelivery(visitor)) TryOpen(dialogue, visitor, delivery);
+                return;
+            }
+            if (!CanTalk) return;
             var current = sequence;
             var requester = player;
             Close();
@@ -221,6 +236,7 @@ namespace GamecommMentor.DaengSaka
             }
             player = null;
             sequence = null;
+            supplies = null;
             run = null;
         }
 

@@ -78,6 +78,7 @@ namespace GamecommMentor.DaengSaka
         public const string Encounter = "encounter";
         public const string Pakande = "pakande";
         public const string FishingSpot = "fishing-spot";
+        public const string FisherMother = "fisher-mother";
 
         public static readonly GmSideQuestDefinition Fishing = new GmSideQuestDefinition(
             "side.fishing.sorelia", "Memancing di Sorelia",
@@ -99,6 +100,12 @@ namespace GamecommMentor.DaengSaka
             "Ambil jamu pesanan Pak Yusuf dan antarkan ke ibu dan anak di permukiman.",
             new GmQuestGoal("Ambil pesanan Pak Yusuf di Tukang Jamu", GmQuestArea.Kerajaan, Herbalist),
             new GmQuestGoal("Antarkan jamu ke ibu dan anak", GmQuestArea.Kerajaan, CityFamily));
+
+        public const int SoreliaSupplyReward = 5;
+        public static readonly GmSideQuestDefinition SoreliaDelivery = new GmSideQuestDefinition(
+            "side.delivery.sorelia", "Titipan Ibu Nelayan",
+            $"Antarkan bahan ramuan dari Sorelia ke Merchant di Kerajaan. Upah {SoreliaSupplyReward} Ramuan HP dan {SoreliaSupplyReward} Ramuan MP.",
+            new GmQuestGoal("Serahkan bahan ramuan ke Merchant", GmQuestArea.Kerajaan, Merchant));
 
         private sealed class Chapter
         {

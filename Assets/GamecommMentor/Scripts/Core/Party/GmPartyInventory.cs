@@ -10,10 +10,11 @@ namespace GamecommMentor.DaengSaka
         public static readonly GmItemDefinition Wader = new GmItemDefinition("fish.wader", "Ikan Wader");
         public static readonly GmItemDefinition Nila = new GmItemDefinition("fish.nila", "Ikan Nila");
         public static readonly GmItemDefinition Gabus = new GmItemDefinition("fish.gabus", "Ikan Gabus");
+        public static readonly GmItemDefinition SoreliaHerbs = new GmItemDefinition("quest.sorelia.herbs", "Bahan Ramuan Sorelia");
         public static readonly GmItemDefinition GrilledWader = new GmItemDefinition(
             "food.wader.grilled", "Wader Bakar", hpRecovery: 15, ingredient: Wader);
         public static IReadOnlyList<GmItemDefinition> All { get; } =
-            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader, Nila, Gabus, GrilledWader });
+            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader, Nila, Gabus, GrilledWader, SoreliaHerbs });
 
         public string Id { get; }
         public string Name { get; }
@@ -72,6 +73,26 @@ namespace GamecommMentor.DaengSaka
             SetCount(dish.Ingredient, Count(dish.Ingredient) - 1);
             quantities[dish.Id] = Count(dish) + 1;
             Revision++;
+            return true;
+        }
+
+        internal bool CanExchangeSoreliaHerbs =>
+            Count(GmItemDefinition.SoreliaHerbs) > 0 &&
+            Count(GmItemDefinition.HpPotion) <= int.MaxValue - GmQuestCatalog.SoreliaSupplyReward &&
+            Count(GmItemDefinition.MpPotion) <= int.MaxValue - GmQuestCatalog.SoreliaSupplyReward;
+
+        internal bool TryExchangeSoreliaHerbs()
+        {
+            if (!CanExchangeSoreliaHerbs) return false;
+            var herbs = GmItemDefinition.SoreliaHerbs;
+            var hp = GmItemDefinition.HpPotion;
+            var mp = GmItemDefinition.MpPotion;
+            SetCount(herbs, Count(herbs) - 1);
+            SetCount(hp, Count(hp) + GmQuestCatalog.SoreliaSupplyReward);
+            SetCount(mp, Count(mp) + GmQuestCatalog.SoreliaSupplyReward);
+            Revision++;
+            ItemReceived?.Invoke(hp.Name);
+            ItemReceived?.Invoke(mp.Name);
             return true;
         }
 

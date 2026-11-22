@@ -14,6 +14,7 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color QuestPin = new Color32(242, 201, 106, 255);
         private static readonly Color PlayerPin = new Color32(49, 112, 109, 255);
         private static readonly Color PortalPin = new Color32(66, 85, 105, 255);
+        private static readonly Color OfferInk = new Color32(182, 34, 55, 255);
         private readonly GmQuestJournal journal;
         private readonly Font font;
         private readonly RectTransform plot, pins, list;
@@ -32,6 +33,7 @@ namespace GamecommMentor.DaengSaka
             internal Text Icon;
             internal Button Row;
             internal bool Outside;
+            internal GmSideQuestDefinition Offer;
         }
 
         internal RectTransform Panel { get; }
@@ -72,8 +74,11 @@ namespace GamecommMentor.DaengSaka
             north.sizeDelta = new Vector2(39f, 54f);
             Fill(north, Ink);
             AddText(font, north, "North", "↑\nU", 19, 0f, 0f, 1f, 1f, TextAnchor.MiddleCenter, bold: true).color = Paper;
-            AddText(font, panel, "Legenda", "▲  Saka      ◆  Objektif      ↗  Portal      ●  Lokasi", 16,
-                .004f, .001f, .704f, .075f).color = Muted;
+            var legend = AddText(font, panel, "Legenda",
+                "▲  Saka    ◆  Objektif    <color=#B62237>!</color>  Tawaran quest    ↗  Portal    ●  Lokasi", 16,
+                .004f, .001f, .704f, .075f);
+            legend.supportRichText = true;
+            legend.color = Muted;
 
             RectTransform sidebar = Rect("Map Detail", panel, .72f, .087f, 1f, .873f);
             Fill(sidebar, Inset);
@@ -97,18 +102,26 @@ namespace GamecommMentor.DaengSaka
             ClearChildren(list);
             locations.Clear();
             GmQuestEntry tracked = journal.Tracked;
-            trackedLandmark = NavigationId(tracked);
+            bool trackingOffer = journal.TryGetTrackedOffer(out var offer, out var giverLocation) && focus == null;
+            trackedLandmark = trackingOffer ? giverLocation.Id : NavigationId(tracked);
             string focusedLandmark = NavigationId(focus);
 
             if (journal.Player != null)
                 AddLocation(new GmQuestLandmark(PlayerId, "Saka", "Posisi dan arah hadap Saka saat membuka peta.", journal.Player));
             foreach (GmQuestLandmark landmark in journal.Landmarks)
                 if (landmark.IsVisible) AddLocation(landmark);
+            foreach (var (giver, quest) in journal.LocalOffers())
+            {
+                if (locations.Exists(location => location.Landmark.Point == giver.transform)) continue;
+                AddLocation(journal.OfferLandmark(giver, quest));
+            }
             Canvas.ForceUpdateCanvases();
             scroll.verticalNormalizedPosition = 1f;
 
             GmQuestEntry context = focus != null && !focus.IsComplete ? focus : tracked;
-            if (context == null)
+            if (trackingOffer)
+                ShowOffer(offer);
+            else if (context == null)
                 objectiveText.text = "";
             else
             {
@@ -137,11 +150,14 @@ namespace GamecommMentor.DaengSaka
 
         private void AddLocation(GmQuestLandmark landmark)
         {
+            landmark.Point.TryGetComponent(out GmPixelCrushersConversation giver);
+            var offer = journal.QuestOfferAt(giver);
             bool playerPin = landmark.Id == PlayerId;
             bool questPin = landmark.Id == trackedLandmark;
-            string glyph = playerPin ? "▲" : questPin ? "◆" : GmQuestJournal.IsRouteLandmark(landmark.Id) ? "↗" : "●";
+            string glyph = playerPin ? "▲" : offer != null ? "!" :
+                questPin ? "◆" : GmQuestJournal.IsRouteLandmark(landmark.Id) ? "↗" : "●";
             Vector2 normalized = GmQuestMapArtwork.Project(bounds, landmark.Point.position, out bool outside);
-            var location = new Location { Landmark = landmark, Outside = outside };
+            var location = new Location { Landmark = landmark, Outside = outside, Offer = offer };
             if (!outside)
             {
                 RectTransform marker = Rect(landmark.Label, pins, normalized.x, normalized.y, normalized.x, normalized.y);
@@ -150,7 +166,7 @@ namespace GamecommMentor.DaengSaka
                 var outline = marker.gameObject.AddComponent<Outline>();
                 outline.effectColor = Ink;
                 outline.effectDistance = new Vector2(1f, -1f);
-                Clickable(location.Mark, () => Select(landmark.Id)).navigation = new Navigation { mode = Navigation.Mode.None };
+                Clickable(location.Mark, Activate).navigation = new Navigation { mode = Navigation.Mode.None };
                 location.Icon = AddText(font, marker, "Symbol", glyph, 15, 0f, 0f, 1f, 1f,
                     TextAnchor.MiddleCenter, bold: true);
                 if (playerPin)
@@ -162,11 +178,25 @@ namespace GamecommMentor.DaengSaka
                 }
             }
 
-            location.Row = AddButton(font, list, glyph + "   " + landmark.Label, 0f, 0f, 1f, 1f, () => Select(landmark.Id));
-            Caption(location.Row).alignment = TextAnchor.MiddleLeft;
+            location.Row = AddButton(font, list, glyph + "   " + landmark.Label, 0f, 0f, 1f, 1f, Activate);
+            var caption = Caption(location.Row);
+            caption.alignment = TextAnchor.MiddleLeft;
+            if (offer != null) caption.color = OfferInk;
             location.Row.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
             locations.Add(location);
+
+            void Activate()
+            {
+                if (offer != null && journal.TryTrackOffer(giver, offer.Id))
+                {
+                    trackedLandmark = landmark.Id;
+                    ShowOffer(offer);
+                }
+                Select(landmark.Id);
+            }
         }
+
+        private void ShowOffer(GmSideQuestDefinition offer) => objectiveText.text = "Tawaran dilacak\n" + offer.Title;
 
         private void Select(string id)
         {
@@ -199,7 +229,8 @@ namespace GamecommMentor.DaengSaka
                 bool portal = GmQuestJournal.IsRouteLandmark(key);
                 location.Mark.color = key == PlayerId ? PlayerPin : tracked ? QuestPin :
                     portal ? PortalPin : selected ? LeafLight : Paper;
-                location.Icon.color = key == PlayerId || (portal && !tracked) ? Paper : Ink;
+                location.Icon.color = location.Offer != null ? OfferInk :
+                    key == PlayerId || (portal && !tracked) ? Paper : Ink;
             }
         }
 
