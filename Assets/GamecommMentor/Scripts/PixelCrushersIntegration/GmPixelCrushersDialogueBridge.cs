@@ -58,6 +58,13 @@ namespace GamecommMentor.DaengSaka
 
         private void Start() => EnsureAdditionalDatabase();
 
+        private void Update()
+        {
+            if (controller == null || !controller.isConversationActive || !GmGamepadInput.UsingGamepad) return;
+            if (controller.conversationView?.dialogueUI is AbstractDialogueUI ui && !(ui is GmVnDialogueUI))
+                GmMenuButton.FocusWithin(ui.transform);
+        }
+
         private void EnsureAdditionalDatabase()
         {
             if (databaseAdded || additionalDatabase == null || controller == null

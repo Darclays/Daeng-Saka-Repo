@@ -108,6 +108,7 @@ namespace GamecommMentor.DaengSaka
         {
             GmMainQuestStep completed = Step;
             Run.Advance();
+            GmQuestJournal.NotifyNewQuest(GmQuestCatalog.ChapterStartingAt(Step));
             if (completed == GmMainQuestStep.PersiapanSebelumBertarung ||
                 completed == GmMainQuestStep.SelamatkanKeluargaNelayan)
             {

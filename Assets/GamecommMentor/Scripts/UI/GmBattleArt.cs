@@ -45,6 +45,10 @@ namespace GamecommMentor.DaengSaka
             if (guardData != null)
                 LoadClips(guardData, ResourceFolder + "CaveGuards/");
 
+            TextAsset statusData = Resources.Load<TextAsset>(ResourceFolder + "Statuses/Atlas");
+            if (statusData != null)
+                LoadClips(statusData, ResourceFolder + "Statuses/");
+
             Shader shader = Resources.Load<Shader>(ResourceFolder + "GmBattleBlur");
             if (shader != null && shader.isSupported)
             {
@@ -70,6 +74,16 @@ namespace GamecommMentor.DaengSaka
         }
 
         public Clip Find(string key) => key != null && clips.TryGetValue(key, out Clip clip) ? clip : null;
+
+        public Texture2D FindLocationBackdrop(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName)) return null;
+            // Support the authored scene filename as well as the displayed spelling.
+            string key = sceneName == "GoaLembanyung" ? "GoaLembayung" : sceneName;
+            return Resources.Load<Texture2D>(ResourceFolder + "Backdrops/" + key);
+        }
+
+        public Texture2D FindContactShadow() => Resources.Load<Texture2D>(ResourceFolder + "ContactShadow");
 
         public static string IdleKey(GmBattleCharacter character) => character switch
         {

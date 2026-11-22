@@ -23,7 +23,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Image icon;
         private readonly Action<Entry> select;
         private readonly Action back;
-        private Button selectedRow;
+        private Button selectedRow, confirmCancel;
 
         internal GmBlacksmithView(Action<bool> changeTab, Action<Entry> select, Action request, Action back)
         {
@@ -151,22 +151,43 @@ namespace GamecommMentor.DaengSaka
             confirmTitle.text = title;
             confirmPrice.text = "Biaya   " + PriceLabel(price);
             confirmBalance.text = $"Saldo   {before:N0} → {before - price:N0} koin";
-            var cancel = AddButton(font, confirmActions, "Batal [Esc]", 0f, 0f, .46f, 1f, back);
-            AddButton(font, confirmActions, enchant ? "Konfirmasi enchant" : "Konfirmasi beli",
+            confirmCancel = AddButton(font, confirmActions, "Batal [Esc]", 0f, 0f, .46f, 1f, back);
+            var acceptButton = AddButton(font, confirmActions, enchant ? "Konfirmasi enchant" : "Konfirmasi beli",
                 .51f, 0f, 1f, 1f, accept, primary: true);
+            GmMenuButton.Link(confirmCancel, null, acceptButton);
+            GmMenuButton.Link(acceptButton, confirmCancel, null);
             controls.interactable = controls.blocksRaycasts = false;
             confirm.gameObject.SetActive(true);
-            Focus(cancel);
+            GmMenuButton.Focus(confirmCancel);
+            UpdateInputHints();
         }
 
         internal void HideConfirmation()
         {
             confirm.gameObject.SetActive(false);
             ClearChildren(confirmActions);
+            confirmCancel = null;
             controls.interactable = controls.blocksRaycasts = true;
         }
 
-        internal void FocusSelection() => Focus(selectedRow != null ? selectedRow : close);
+        internal void FocusSelection()
+        {
+            GmMenuButton.Focus(selectedRow != null ? selectedRow : close);
+            UpdateInputHints();
+        }
+
+        internal void UpdateInputHints()
+        {
+            bool pad = GmGamepadInput.UsingGamepad;
+            string key = GmGamepadInput.BackLabel;
+            Caption(close).text = $"Tutup [{key}]";
+            Caption(buyTab).text = pad ? "Senjata [LB]" : "Senjata";
+            Caption(enchantTab).text = pad ? "Enchant [RB]" : "Enchant";
+            if (confirmCancel != null) Caption(confirmCancel).text = $"Batal [{key}]";
+            if (!pad) return;
+            if (confirm.gameObject.activeSelf) GmMenuButton.FocusWithin(confirm, confirmCancel);
+            else GmMenuButton.FocusWithin(root, selectedRow != null ? selectedRow : close);
+        }
 
         internal void Hide()
         {
@@ -193,9 +214,5 @@ namespace GamecommMentor.DaengSaka
             image.enabled = sprite != null;
         }
 
-        private static void Focus(Button button)
-        {
-            if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(button.gameObject);
-        }
     }
 }

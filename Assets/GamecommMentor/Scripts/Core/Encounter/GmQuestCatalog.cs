@@ -138,6 +138,13 @@ namespace GamecommMentor.DaengSaka
 
         internal static bool IsMainQuestId(string id) => Array.Exists(MainChapters, chapter => chapter.Id == id);
 
+        internal static string ChapterStartingAt(GmMainQuestStep step)
+        {
+            foreach (Chapter chapter in MainChapters)
+                if (chapter.Steps[0] == step) return chapter.Title;
+            return null;
+        }
+
         public static string AreaName(GmQuestArea area) => area switch
         {
             GmQuestArea.Kerajaan => "Kerajaan",

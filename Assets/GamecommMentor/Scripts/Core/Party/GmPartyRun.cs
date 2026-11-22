@@ -57,6 +57,7 @@ namespace GamecommMentor.DaengSaka
     public sealed class GmPartyRun
     {
         internal const int WipeRecoveryPercent = 50;
+        internal const float ItemNoticeDuration = 10f;
         public static GmPartyRun Current { get; private set; } = new GmPartyRun();
         public GmPartyInventory Inventory { get; } = new GmPartyInventory();
         public GmPartyWallet Wallet { get; } = new GmPartyWallet();
@@ -65,6 +66,9 @@ namespace GamecommMentor.DaengSaka
         private GmEconomyCatalog economy;
         private GmPartyEquipment equipment;
         private readonly HashSet<string> defeatedOptionalEncounters = new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<string> receivedItemNames = new List<string>();
+        internal string NewItemSummary { get; private set; }
+        internal float ItemNoticeRemaining { get; private set; }
 
         internal bool HasDefeatedEncounter(string id) => defeatedOptionalEncounters.Contains(id);
         internal void RememberDefeatedEncounter(string id) => defeatedOptionalEncounters.Add(id);
@@ -87,6 +91,7 @@ namespace GamecommMentor.DaengSaka
                     // Load Unity assets on first gameplay/UI access, outside static run initialization.
                     equipment = new GmPartyEquipment(Resources.Load<GmWeaponCatalog>(GmWeaponCatalog.ResourcePath));
                     foreach (var member in Members) equipment.BindMember(member);
+                    equipment.WeaponReceived += RecordNewItem;
                 }
                 return equipment;
             }
@@ -100,11 +105,35 @@ namespace GamecommMentor.DaengSaka
         {
             Inventory.TryAdd(GmItemDefinition.HpPotion);
             Inventory.TryAdd(GmItemDefinition.MpPotion);
+            Inventory.ItemReceived += RecordNewItem;
             BindRoster(GmBattleStats.CreateDefaultParty(), true);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void BeginPlaySession() => Current = new GmPartyRun();
+
+        private void RecordNewItem(string name)
+        {
+            if (!receivedItemNames.Contains(name)) receivedItemNames.Add(name);
+            NewItemSummary = receivedItemNames.Count <= 2
+                ? string.Join(" + ", receivedItemNames)
+                : receivedItemNames.Count + " jenis item";
+            ItemNoticeRemaining = ItemNoticeDuration;
+        }
+
+        internal void TickItemNotice(float seconds)
+        {
+            if (ItemNoticeRemaining <= 0f) return;
+            ItemNoticeRemaining -= seconds;
+            if (ItemNoticeRemaining <= 0f) DismissItemNotice();
+        }
+
+        internal void DismissItemNotice()
+        {
+            receivedItemNames.Clear();
+            NewItemSummary = null;
+            ItemNoticeRemaining = 0f;
+        }
 
         internal bool TryBuyWeapon(GmBlacksmithOffer offer, int expectedPrice)
         {

@@ -5,25 +5,29 @@ namespace GamecommMentor.DaengSaka
 {
     internal enum GmBattleCharacter { Unspecified, Saka, Pacca, Daung }
     internal enum GmBattleTarget { Enemy, AllEnemies, Ally, AllAllies, Self }
-    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff, Summon, Charge }
+    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff, Summon, Charge, Poison }
     internal enum GmBattleBuff { None, Attack, Defense, Weaken }
+    internal enum GmBattleCleanse { None, DefenseDown, AllNegative }
 
     internal sealed class GmBattleMove
     {
         public static readonly GmBattleMove BasicAttack = new GmBattleMove(
             "Basic Attack", GmBattleTarget.Enemy, GmBattleEffect.Damage, 0);
         public static readonly GmBattleMove GBite = new GmBattleMove(
-            "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 3,
-            animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true);
+            "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 1,
+            animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true, poisonTurns: 2, poisonDamage: 4);
         public static readonly GmBattleMove HammerSweep = new GmBattleMove(
-            "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 12, cooldown: 3,
-            animation: "babiRusaHammerSweep", enemyOnly: true);
+            "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 18, cooldown: 1,
+            buff: GmBattleBuff.Defense, buffPercent: -20, buffRounds: 2, animation: "babiRusaHammerSweep", enemyOnly: true);
         public static readonly GmBattleMove Uppercut = new GmBattleMove(
-            "Uppercut", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 0, cooldown: 4,
+            "Uppercut", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 0, cooldown: 2,
             animation: "manguniUppercut", enemyOnly: true);
         public static readonly GmBattleMove TailSweep = new GmBattleMove(
-            "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 13, cooldown: 3,
+            "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 13, cooldown: 1,
             animation: "laWunaTailSweep", enemyOnly: true);
+        public static readonly GmBattleMove Glare = new GmBattleMove(
+            "Glare", GmBattleTarget.Enemy, GmBattleEffect.Poison, 7, cooldown: 2,
+            animation: "laWunaGlare", impact: "glareImpact", impactScale: 0.75f, enemyOnly: true, poisonTurns: 2);
         public static readonly GmBattleMove CaneStrike = new GmBattleMove(
             "Cane Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 22, cooldown: 3,
             animation: "pakandeCane", impact: "shieldImpact", impactScale: 0.72f, enemyOnly: true);
@@ -41,19 +45,20 @@ namespace GamecommMentor.DaengSaka
             bossStunChance: 50, animation: "paccaSkill", impact: "shieldImpact");
         public static readonly GmBattleMove BattleAura = new GmBattleMove(
             "Battle Aura", GmBattleTarget.AllAllies, GmBattleEffect.Buff, 0, 5, 3,
-            buff: GmBattleBuff.Defense, buffPercent: 30, buffRounds: 3, animation: "auraCast", impact: "shieldImpact");
+            buff: GmBattleBuff.Defense, buffPercent: 30, buffRounds: 3, animation: "auraCast", impact: "shieldImpact",
+            cleanse: GmBattleCleanse.DefenseDown);
         public static readonly GmBattleMove DominionStrike = new GmBattleMove(
-            "Dominion Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 26, 7, 5,
-            buff: GmBattleBuff.Defense, buffPercent: 20, buffRounds: 3, animation: "dominionCast", impact: "dominionImpact");
+            "Dominion Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 26, 5, 5,
+            buff: GmBattleBuff.Defense, buffPercent: -25, buffRounds: 2, animation: "dominionCast", impact: "dominionImpact");
         public static readonly GmBattleMove RayOfHealing = new GmBattleMove(
-            "Ray of Healing", GmBattleTarget.Ally, GmBattleEffect.Heal, 20, 5,
-            animation: "daungSkill", impact: "healingImpact");
+            "Ray of Healing", GmBattleTarget.Ally, GmBattleEffect.Heal, 40, 5,
+            animation: "daungSkill", impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative);
         public static readonly GmBattleMove GrimoireInvocation = new GmBattleMove(
             "Grimoire Invocation", GmBattleTarget.AllAllies, GmBattleEffect.Buff, 0, 6, 5,
             buff: GmBattleBuff.Attack, buffPercent: 30, buffRounds: 3, animation: "grimoireCast", impact: "grimoireImpact");
         public static readonly GmBattleMove SanctuaryBloom = new GmBattleMove(
             "Sanctuary Bloom", GmBattleTarget.AllAllies, GmBattleEffect.HealPercent, 50, 12, 5,
-            animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f);
+            animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f, cleanse: GmBattleCleanse.AllNegative);
         public static readonly GmBattleMove HpItem = new GmBattleMove(
             GmItemDefinition.HpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.HpPotion.HpRecovery,
             item: GmItemDefinition.HpPotion, impact: "healingImpact");
@@ -74,7 +79,8 @@ namespace GamecommMentor.DaengSaka
             int amount, int mpCost = 0, int cooldown = 0, GmItemDefinition item = null,
             GmBattleBuff buff = GmBattleBuff.None, int buffPercent = 0, int buffRounds = 0, int bossStunChance = 100,
             string animation = null, string impact = null, float impactScale = 0.94f,
-            bool enemyOnly = false, bool freeAction = false)
+            bool enemyOnly = false, bool freeAction = false, int poisonTurns = 0,
+            GmBattleCleanse cleanse = GmBattleCleanse.None, int poisonDamage = 0)
         {
             Name = name;
             Target = target;
@@ -92,12 +98,18 @@ namespace GamecommMentor.DaengSaka
             ImpactScale = impactScale;
             IsEnemyMove = enemyOnly;
             IsFreeAction = freeAction;
+            PoisonTurns = poisonTurns;
+            PoisonDamage = effect == GmBattleEffect.Poison ? amount : poisonDamage;
+            Cleanse = cleanse;
         }
 
         public string Name { get; }
         public GmBattleTarget Target { get; }
         public GmBattleEffect Effect { get; }
         public int Amount { get; }
+        public int PoisonTurns { get; }
+        public int PoisonDamage { get; }
+        public bool InflictsPoison => PoisonDamage > 0 && PoisonTurns > 0;
         public int MpCost { get; }
         public int Cooldown { get; }
         public GmItemDefinition Item { get; }
@@ -105,6 +117,7 @@ namespace GamecommMentor.DaengSaka
         public GmBattleBuff Buff { get; }
         public int BuffPercent { get; }
         public int BuffRounds { get; }
+        public GmBattleCleanse Cleanse { get; }
         public int BossStunChance { get; }
         public string AnimationKey { get; }
         public string ImpactKey { get; }
@@ -114,6 +127,9 @@ namespace GamecommMentor.DaengSaka
         public bool TargetsAll => Target == GmBattleTarget.AllEnemies || Target == GmBattleTarget.AllAllies;
         public bool NeedsConfirm => TargetsAll || Target == GmBattleTarget.Self;
         public bool IsDamaging => Effect == GmBattleEffect.Damage || Effect == GmBattleEffect.StunDamage;
+        public bool IsNegativeBuff => Buff == GmBattleBuff.Weaken ? BuffPercent > 0
+            : Buff != GmBattleBuff.None && BuffPercent < 0;
+        public bool AppliesDebuffOnHit => IsDamaging && IsNegativeBuff;
 
         // Raw power before attack buffs, weaken, guard, or the target's remaining HP.
         internal int PowerWithWeapon(int baseAttack, int weaponBonus)
@@ -137,12 +153,19 @@ namespace GamecommMentor.DaengSaka
         public readonly int Index;
         public readonly int Amount;
         public readonly bool Stunned;
+        public readonly bool DebuffApplied;
+        public readonly int CleansedCount;
+        public readonly bool Poisoned;
 
-        public GmBattleHit(int index, int amount, bool stunned)
+        public GmBattleHit(int index, int amount, bool stunned, bool debuffApplied = false, int cleansedCount = 0,
+            bool poisoned = false)
         {
             Index = index;
             Amount = amount;
             Stunned = stunned;
+            DebuffApplied = debuffApplied;
+            CleansedCount = cleansedCount;
+            Poisoned = poisoned;
         }
     }
 }

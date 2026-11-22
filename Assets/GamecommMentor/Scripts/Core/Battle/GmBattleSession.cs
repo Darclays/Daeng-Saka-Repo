@@ -60,10 +60,27 @@ namespace GamecommMentor.DaengSaka
 
     internal enum GmBattlePhase { Party, Enemy, Victory, Defeat, BetweenWaves }
 
+    internal readonly struct GmBattlePoisonStack
+    {
+        public GmBattlePoisonStack(int damage, int turns, GmBattleMove source)
+        {
+            Damage = damage;
+            Turns = turns;
+            Source = source;
+        }
+
+        public int Damage { get; }
+        public int Turns { get; }
+        public GmBattleMove Source { get; }
+    }
+
     internal sealed class GmBattleUnit
     {
+        private const int MaxPoisonStacks = 2;
         private readonly Dictionary<GmBattleMove, int> cooldowns = new Dictionary<GmBattleMove, int>();
         private readonly Dictionary<GmBattleMove, int> buffEndRounds = new Dictionary<GmBattleMove, int>();
+        private readonly List<GmBattlePoisonStack> poison = new List<GmBattlePoisonStack>(MaxPoisonStacks);
+        private int lastTurnStarted = -1;
 
         private readonly GmPartyVitals vitals;
 
@@ -91,7 +108,7 @@ namespace GamecommMentor.DaengSaka
             GmBattleEnemyKind.Poppo => GmBattleMove.GBite,
             GmBattleEnemyKind.BabiRusa => GmBattleMove.HammerSweep,
             GmBattleEnemyKind.Manguni => GmBattleMove.Uppercut,
-            GmBattleEnemyKind.LaWuna => GmBattleMove.TailSweep,
+            GmBattleEnemyKind.LaWuna => GmBattleMove.Glare,
             _ => null
         };
         public string Name => vitals.Name;
@@ -110,6 +127,10 @@ namespace GamecommMentor.DaengSaka
         public int GuardRound { get; internal set; } = -1;
         public int CompletedActions { get; internal set; }
         public bool IsStunned { get; internal set; }
+        public IReadOnlyList<GmBattlePoisonStack> Poison => poison;
+
+        public bool SupportsEnemyMove(GmBattleMove move) => move == EnemySkill ||
+            EnemyKind == GmBattleEnemyKind.LaWuna && move == GmBattleMove.TailSweep;
 
         public int CooldownRemaining(GmBattleMove move) => cooldowns.TryGetValue(move, out int readyAfter)
             ? Math.Max(0, readyAfter - CompletedActions) : 0;
@@ -126,13 +147,80 @@ namespace GamecommMentor.DaengSaka
             buffEndRounds[move] = round + move.BuffRounds - (countsFromNextRound ? 0 : 1);
         }
 
-        public int BuffPercent(GmBattleBuff buff, int round)
+        public int BuffPercent(GmBattleBuff buff, int round, bool negativeOnly = false)
         {
-            int percent = 0;
+            long percent = 0;
             foreach (var active in buffEndRounds)
-                if (active.Key.Buff == buff && active.Value >= round)
-                    percent = Math.Max(percent, active.Key.BuffPercent);
-            return percent;
+                if (active.Key.Buff == buff && active.Value >= round && (!negativeOnly || active.Key.IsNegativeBuff))
+                    percent += active.Key.BuffPercent;
+            return (int)Math.Max(-100, Math.Min(100, percent));
+        }
+
+        public int DefenseDownPercent(int round) => -BuffPercent(GmBattleBuff.Defense, round, negativeOnly: true);
+
+        public bool HasNegativeEffects(int round) => IsStunned || poison.Count > 0 ||
+            buffEndRounds.Any(entry => entry.Value >= round && entry.Key.IsNegativeBuff);
+
+        public IEnumerable<(GmBattleMove Move, int Rounds)> ActiveBuffs(int round)
+        {
+            foreach (var buff in buffEndRounds)
+                if (buff.Value >= round)
+                    yield return (buff.Key, Math.Min(buff.Key.BuffRounds, buff.Value - round + 1));
+        }
+
+        public int ClearNegativeEffects(GmBattleCleanse cleanse, int round)
+        {
+            if (cleanse == GmBattleCleanse.None) return 0;
+            bool all = cleanse == GmBattleCleanse.AllNegative;
+            GmBattleMove[] removable = buffEndRounds
+                .Where(entry => entry.Value >= round && entry.Key.IsNegativeBuff && (all || entry.Key.Buff == GmBattleBuff.Defense))
+                .Select(entry => entry.Key).ToArray();
+            foreach (GmBattleMove move in removable) buffEndRounds.Remove(move);
+            if (!all) return removable.Length;
+
+            int count = removable.Length + poison.Count + (IsStunned ? 1 : 0);
+            poison.Clear();
+            IsStunned = false;
+            return count;
+        }
+
+        public void ApplyPoison(int damage, int turns, GmBattleMove source = null)
+        {
+            if (!IsAlive || damage <= 0 || turns <= 0) return;
+            var stack = new GmBattlePoisonStack(damage, turns, source);
+            if (poison.Count < MaxPoisonStacks)
+            {
+                poison.Add(stack);
+                return;
+            }
+
+            // Refresh the stack that would expire first.
+            int expiring = poison[1].Turns < poison[0].Turns ? 1 : 0;
+            poison[expiring] = stack;
+        }
+
+        public long PendingPoisonDamage(int round)
+        {
+            if (!IsAlive || lastTurnStarted == round) return 0;
+            long total = 0;
+            foreach (GmBattlePoisonStack stack in poison) total += stack.Damage;
+            return total;
+        }
+
+        public int BeginTurn(int round)
+        {
+            if (!IsAlive || lastTurnStarted == round) return 0;
+            int lost = (int)Math.Min(Hp, PendingPoisonDamage(round));
+            lastTurnStarted = round;
+            for (int i = poison.Count - 1; i >= 0; i--)
+            {
+                GmBattlePoisonStack stack = poison[i];
+                if (stack.Turns == 1) poison.RemoveAt(i);
+                else poison[i] = new GmBattlePoisonStack(stack.Damage, stack.Turns - 1, stack.Source);
+            }
+            Hp -= lost;
+            if (!IsAlive) poison.Clear();
+            return lost;
         }
     }
 
@@ -232,10 +320,14 @@ namespace GamecommMentor.DaengSaka
         public bool CanChoosePartyMember(int index) =>
             IsChoosingPartyMember && index >= 0 && index < PartyCount && CanActThisRound(units[index]);
 
-        public bool TryChoosePartyMember(int index)
+        public bool TryChoosePartyMember(int index) => TryChoosePartyMember(index, out _);
+
+        public bool TryChoosePartyMember(int index, out int poisonDamage)
         {
+            poisonDamage = 0;
             if (!CanChoosePartyMember(index)) return false;
             ActorIndex = index;
+            poisonDamage = ResolveTurnStart();
             return true;
         }
 
@@ -262,7 +354,7 @@ namespace GamecommMentor.DaengSaka
             if (move == GmBattleMove.BasicAttack) return null;
             if (move.IsEnemyMove)
             {
-                if (move != Actor.EnemySkill && (Boss?.Index != ActorIndex || !Boss.SupportsMove(move))) return "Tidak tersedia";
+                if (!Actor.SupportsEnemyMove(move) && (Boss?.Index != ActorIndex || !Boss.SupportsMove(move))) return "Tidak tersedia";
             }
             else
             {
@@ -278,16 +370,27 @@ namespace GamecommMentor.DaengSaka
             }
             int cooldown = Actor.CooldownRemaining(move);
             if (cooldown > 0) return $"CD {cooldown}";
-            return Actor.Mp < move.MpCost ? "MP kurang" : null;
+            if (Actor.Mp < move.MpCost) return "MP kurang";
+            if (move.Cleanse == GmBattleCleanse.AllNegative)
+            {
+                for (int i = 0; i < PartyCount; i++)
+                    if (CanTarget(move, i) && CanBenefitFromHealing(units[i])) return null;
+                return "HP penuh · bebas efek negatif";
+            }
+            return null;
         }
 
         public bool CanTarget(GmBattleMove move, int index)
         {
             if (move == null || Actor == null || index < 0 || index >= units.Length || !units[index].IsAlive) return false;
+            if (move.Effect == GmBattleEffect.Charge && Boss?.Index == ActorIndex)
+                return index == ActorIndex || index == Boss.ChargeStunTarget;
             if (move.IsEnemyMove && move.Target == GmBattleTarget.AllAllies && index == ActorIndex) return false;
             GmBattleUnit unit = units[index];
             if (move.IsItem && ((move.Effect == GmBattleEffect.Heal && unit.Hp >= unit.MaxHp) ||
                                 (move.Effect == GmBattleEffect.RestoreMp && unit.Mp >= unit.MaxMp))) return false;
+            if (move.Target == GmBattleTarget.Ally && move.Cleanse == GmBattleCleanse.AllNegative &&
+                !CanBenefitFromHealing(unit)) return false;
             bool ally = unit.IsParty == Actor.IsParty;
             return move.Target switch
             {
@@ -298,9 +401,16 @@ namespace GamecommMentor.DaengSaka
             };
         }
 
+        private bool CanBenefitFromHealing(GmBattleUnit unit) => unit.Hp < unit.MaxHp || unit.HasNegativeEffects(RoundNumber);
+
         public int[] TargetsFor(GmBattleMove move, int targetIndex)
         {
             if (move == null) return Array.Empty<int>();
+            if (move.Effect == GmBattleEffect.Charge && Boss?.Index == ActorIndex)
+            {
+                int marked = Boss.ChargeStunTarget;
+                return marked >= 0 ? new[] { ActorIndex, marked } : new[] { ActorIndex };
+            }
             if (move.Target == GmBattleTarget.Self) targetIndex = ActorIndex;
             if (!move.TargetsAll)
                 return CanTarget(move, targetIndex) ? new[] { targetIndex } : Array.Empty<int>();
@@ -327,16 +437,36 @@ namespace GamecommMentor.DaengSaka
             {
                 int targetIndexInBattle = targets[index];
                 GmBattleUnit target = units[targetIndexInBattle];
+                int cleansed = target.ClearNegativeEffects(move.Cleanse, RoundNumber);
                 int amount = ApplyMove(move, target);
-                bool stunned = move.Effect == GmBattleEffect.StunDamage && target.IsAlive &&
-                    (!target.IsBoss || random.Next(100) < move.BossStunChance);
+                bool stunned = target.IsAlive && (move.Effect == GmBattleEffect.StunDamage && RollStun(move, target) ||
+                    move.Effect == GmBattleEffect.Charge && Boss?.Index == ActorIndex && targetIndexInBattle != ActorIndex);
                 if (stunned) target.IsStunned = true;
-                hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned);
+                bool appliedDebuff = target.IsAlive && move.AppliesDebuffOnHit;
+                if (appliedDebuff) target.ApplyBuff(move, RoundNumber);
+                bool poisoned = target.IsAlive && move.InflictsPoison;
+                if (poisoned) target.ApplyPoison(move.PoisonDamage, move.PoisonTurns, move);
+                hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned, appliedDebuff, cleansed, poisoned);
             }
-            if (move.IsDamaging && move.Buff != GmBattleBuff.None) Actor.ApplyBuff(move, RoundNumber);
+            if (move.IsDamaging && move.Buff != GmBattleBuff.None && !move.AppliesDebuffOnHit)
+                Actor.ApplyBuff(move, RoundNumber);
             if (move.IsEnemyMove && Boss?.Index == ActorIndex) Boss.ResolveMove(move);
             if (!move.IsItem && !move.IsFreeAction) CompleteAction();
             return true;
+        }
+
+        private bool RollStun(GmBattleMove move, GmBattleUnit target)
+        {
+            if (target.IsBoss) return random.Next(100) < move.BossStunChance;
+            if (Actor.IsParty) return true;
+            int chance = target.Character switch
+            {
+                GmBattleCharacter.Saka => 90,
+                GmBattleCharacter.Pacca => 70,
+                GmBattleCharacter.Daung => 40,
+                _ => 70
+            };
+            return random.Next(100) < chance;
         }
 
         private int ApplyMove(GmBattleMove move, GmBattleUnit target)
@@ -360,6 +490,7 @@ namespace GamecommMentor.DaengSaka
                 target.ApplyBuff(move, RoundNumber);
                 return move.BuffPercent;
             }
+            if (move.Effect == GmBattleEffect.Poison) return 0;
 
             long power = Actor.PowerFor(move);
             power += power * Actor.BuffPercent(GmBattleBuff.Attack, RoundNumber) / 100;
@@ -404,20 +535,65 @@ namespace GamecommMentor.DaengSaka
             return true;
         }
 
-        public int FindEnemyTarget()
+        public int FindEnemyTarget() => FindEnemyTarget(spreadPoison: false);
+
+        private int FindEnemyTarget(bool spreadPoison)
         {
             int target = -1;
             for (int i = 0; i < PartyCount; i++)
             {
                 if (!units[i].IsAlive) continue;
-                if (target < 0 || units[i].Hp < units[target].Hp) target = i;
+                if (target < 0)
+                {
+                    target = i;
+                    continue;
+                }
+                if (spreadPoison && units[i].Poison.Count != units[target].Poison.Count)
+                {
+                    if (units[i].Poison.Count < units[target].Poison.Count) target = i;
+                    continue;
+                }
+                if (units[i].Hp < units[target].Hp) target = i;
             }
             return target;
         }
 
-        public void PrepareEnemyTurn()
+        private int ChooseStunTarget()
         {
-            if (Phase == GmBattlePhase.Enemy && Boss?.Index == ActorIndex) Boss.UpdatePhase();
+            int totalWeight = 0;
+            int selected = -1;
+            for (int index = 0; index < PartyCount; index++)
+            {
+                GmBattleUnit unit = units[index];
+                if (!unit.IsAlive || unit.IsStunned) continue;
+                int weight = unit.Character switch
+                {
+                    GmBattleCharacter.Saka => 65,
+                    GmBattleCharacter.Pacca => 25,
+                    GmBattleCharacter.Daung => 10,
+                    _ => 25
+                };
+                totalWeight += weight;
+                if (selected < 0 || random.Next(totalWeight) < weight) selected = index;
+            }
+            return selected >= 0 ? selected : FindEnemyTarget();
+        }
+
+        public int PrepareEnemyTurn()
+        {
+            if (Phase != GmBattlePhase.Enemy || Actor == null) return 0;
+            int index = ActorIndex;
+            int poisonDamage = ResolveTurnStart();
+            if (index == ActorIndex && Boss?.Index == index) Boss.UpdatePhase();
+            return poisonDamage;
+        }
+
+        private int ResolveTurnStart()
+        {
+            GmBattleUnit actor = Actor;
+            int poisonDamage = actor.BeginTurn(RoundNumber);
+            if (!actor.IsAlive) CompleteAction();
+            return poisonDamage;
         }
 
         public GmBattleMove ChooseEnemyMove(out GmBattleMove support, out int target)
@@ -429,6 +605,11 @@ namespace GamecommMentor.DaengSaka
                 target = -1;
                 if (move.Target == GmBattleTarget.Enemy)
                 {
+                    if (move.InflictsPoison)
+                    {
+                        target = FindEnemyTarget(spreadPoison: true);
+                        return move;
+                    }
                     var living = new List<int>(PartyCount);
                     for (int index = 0; index < PartyCount; index++)
                         if (units[index].IsAlive) living.Add(index);
@@ -436,12 +617,13 @@ namespace GamecommMentor.DaengSaka
                 }
                 return move;
             }
-            target = FindEnemyTarget();
             GmBattleMove skill = Actor.EnemySkill;
-            // Babi Rusa shows its area threat on its first turn. The other skills come in after an action.
-            if (skill != null && (Actor.CompletedActions > 0 || skill == GmBattleMove.HammerSweep) &&
-                UnavailableReason(skill) == null) return skill;
-            return GmBattleMove.BasicAttack;
+            if (UnavailableReason(skill) != null)
+                skill = Actor.EnemyKind == GmBattleEnemyKind.LaWuna && UnavailableReason(GmBattleMove.TailSweep) == null
+                    ? GmBattleMove.TailSweep : GmBattleMove.BasicAttack;
+            target = skill.Effect == GmBattleEffect.StunDamage
+                ? ChooseStunTarget() : FindEnemyTarget(skill.InflictsPoison);
+            return skill;
         }
 
         private void CompleteAction()

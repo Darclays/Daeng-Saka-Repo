@@ -16,6 +16,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!isActiveAndEnabled || !Application.isFocused) return false;
 #if ENABLE_INPUT_SYSTEM
+            if (GmGamepadInput.TakeSubmit()) return true;
             if (interactAction != null)
                 return interactAction.action != null && interactAction.action.enabled
                     && interactAction.action.WasPressedThisFrame();

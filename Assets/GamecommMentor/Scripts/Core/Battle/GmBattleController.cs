@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
+using UnityEngine.EventSystems;
 
 namespace GamecommMentor.DaengSaka
 {
@@ -13,8 +11,8 @@ namespace GamecommMentor.DaengSaka
     {
         private static readonly GmBattleStats[] PoppoEnemies =
         {
-            new GmBattleStats("Poppo A", 48, 0, 0, 20, 8, enemyKind: GmBattleEnemyKind.Poppo),
-            new GmBattleStats("Poppo B", 42, 0, 0, 16, 7, enemyKind: GmBattleEnemyKind.Poppo)
+            new GmBattleStats("Poppo A", 60, 0, 0, 20, 8, enemyKind: GmBattleEnemyKind.Poppo),
+            new GmBattleStats("Poppo B", 54, 0, 0, 16, 7, enemyKind: GmBattleEnemyKind.Poppo)
         };
 
         [SerializeField] private Canvas battleCanvas;
@@ -37,6 +35,7 @@ namespace GamecommMentor.DaengSaka
         private GmPakandePhasePresentation pakandePresentation;
         private GmBattleMenu menu;
         private GmBattleMove selection;
+        private int selectedOption = -1;
         private bool resolving;
         private bool leaving;
         private bool enhancedImpact;
@@ -45,7 +44,7 @@ namespace GamecommMentor.DaengSaka
 
         public void SetCanvas(Canvas canvas) => battleCanvas = canvas;
 
-        private bool CanAct => session != null && !leaving && !resolving &&
+        private bool CanAct => session != null && !leaving && !resolving && view?.HasControlDialog != true &&
             session.IsPartyTurn && !session.Actor.IsStunned;
 
         private void OnEnable() => StartCoroutine(BeginBattle());
@@ -73,7 +72,9 @@ namespace GamecommMentor.DaengSaka
                 if (session.Boss != null)
                     pakandePresentation = Resources.Load<GmPakandePhasePresentation>(GmPakandePhasePresentation.ResourcePath);
                 enhancedImpact = useEnhancedImpact;
-                view = new GmBattleView(battleCanvas.transform, session, hitZoom, impactSfxVolume, SelectUnit,
+                GmGamepadInput.ConfigureUi(EventSystem.current);
+                view = new GmBattleView(battleCanvas.transform, session, encounter.OriginSceneName,
+                    hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
                     () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
                     PickMove, Back, ConfirmMove, ExitBattle, RecoverAndExitBattle, ToggleImpactMode);
@@ -89,12 +90,16 @@ namespace GamecommMentor.DaengSaka
 
         private void Update()
         {
-            if (!CanAct) return;
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Back();
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            if (Input.GetKeyDown(KeyCode.Escape)) Back();
-#endif
+            if (session == null || leaving || view == null) return;
+            view.UpdateStatusPresentation(session);
+            if (resolving || (!CanAct && !session.IsChoosingPartyMember && !view.HasControlDialog)) return;
+            if (GmGamepadInput.PressedMenu()) view.TogglePause();
+            else if (GmGamepadInput.PressedBack())
+            {
+                if (view.HasControlDialog) view.BackFromOverlay();
+                else Back();
+            }
+            else if (GmGamepadInput.PressedInfo()) view.ToggleUnitInfo(session);
         }
 
         private void OnDisable()
@@ -106,6 +111,7 @@ namespace GamecommMentor.DaengSaka
             pakandePresentation = null;
             menu = GmBattleMenu.Command;
             selection = null;
+            selectedOption = -1;
             resolving = false;
             leaving = false;
             shownBossPhase = 0;
@@ -114,11 +120,17 @@ namespace GamecommMentor.DaengSaka
 
         private void SelectUnit(int index)
         {
-            if (session == null || leaving || resolving) return;
+            if (session == null || leaving || resolving || view?.HasControlDialog == true) return;
             if (session.IsChoosingPartyMember)
             {
-                if (!session.TryChoosePartyMember(index)) return;
-                if (session.Actor.IsStunned) StartCoroutine(PlayAutomaticTurns());
+                int round = session.RoundNumber;
+                if (!session.TryChoosePartyMember(index, out int poisonDamage)) return;
+                if (poisonDamage > 0)
+                {
+                    resolving = true;
+                    StartCoroutine(PlaySelectedTurnPoison(index, round, poisonDamage));
+                }
+                else if (session.Actor.IsStunned) StartCoroutine(PlayAutomaticTurns());
                 else Refresh();
                 return;
             }
@@ -128,7 +140,8 @@ namespace GamecommMentor.DaengSaka
 
         private void ToggleImpactMode()
         {
-            if (session == null || leaving || resolving || session.Phase != GmBattlePhase.Party) return;
+            if (session == null || leaving || resolving || view?.HasControlDialog == true ||
+                session.Phase != GmBattlePhase.Party) return;
             enhancedImpact = !enhancedImpact;
             Refresh();
         }
@@ -136,6 +149,7 @@ namespace GamecommMentor.DaengSaka
         private void OpenMenu(GmBattleMenu next)
         {
             if (!CanAct || menu != GmBattleMenu.Command) return;
+            selectedOption = -1;
             if (next == GmBattleMenu.Target) selection = GmBattleMove.BasicAttack;
             menu = next;
             Refresh();
@@ -162,6 +176,7 @@ namespace GamecommMentor.DaengSaka
             }
             if (session.UnavailableReason(move) != null) return;
             selection = move;
+            selectedOption = index;
             menu = GmBattleMenu.Target;
             Refresh();
         }
@@ -169,6 +184,8 @@ namespace GamecommMentor.DaengSaka
         private void Back()
         {
             if (!CanAct) return;
+            GmBattleMenu previous = menu;
+            int actor = session.ActorIndex;
             switch (menu)
             {
                 case GmBattleMenu.Command:
@@ -183,6 +200,7 @@ namespace GamecommMentor.DaengSaka
                     break;
             }
             selection = null;
+            view.RestoreFocusAfterBack(previous, menu, actor, selectedOption);
             Refresh();
         }
 
@@ -207,6 +225,31 @@ namespace GamecommMentor.DaengSaka
             yield return PlayAutomaticTurns();
         }
 
+        private IEnumerator PlaySelectedTurnPoison(int index, int round, int damage)
+        {
+            yield return PlayPoisonTick(index, round, damage);
+            yield return PlayAutomaticTurns();
+        }
+
+        private IEnumerator PlayPoisonTick(int index, int round, int damage)
+        {
+            resolving = true;
+            GmBattleUnit unit = session.Units[index];
+            lastAction = $"{GmBattleView.ShortName(unit)} · Racun −{damage} HP";
+            if (!unit.IsAlive) lastAction += " · KO";
+            Refresh(index, round);
+            const float duration = 0.42f;
+            double start = Time.unscaledTimeAsDouble;
+            float age = 0f;
+            while (age < duration && session != null && !leaving)
+            {
+                view.DrawPoisonTick(index, damage, age / duration);
+                yield return null;
+                age = (float)(Time.unscaledTimeAsDouble - start);
+            }
+            view?.ClearAction();
+        }
+
         private IEnumerator PlayMove(GmBattleMove move, int targetIndex, int[] targets)
         {
             int actorIndex = session.ActorIndex;
@@ -216,7 +259,16 @@ namespace GamecommMentor.DaengSaka
             menu = GmBattleMenu.Command;
             selection = null;
             lastAction = $"{GmBattleView.ShortName(actor)} · {move.Name}";
-            if (!actor.IsParty && move.IsDamaging && move.TargetsAll) lastAction += " · Seluruh party";
+            if (!actor.IsParty && move.IsDamaging && move.TargetsAll)
+            {
+                lastAction += " · Seluruh party";
+                if (move.AppliesDebuffOnHit) lastAction += $" · {GmBattleView.BuffDetail(move)}";
+            }
+            if (move.Effect == GmBattleEffect.Charge && targets.Length > 1)
+                lastAction += $" · Membidik {GmBattleView.ShortName(session.Units[targets[1]])}";
+            else if (!actor.IsParty && move.Effect == GmBattleEffect.StunDamage && targets.Length == 1)
+                lastAction += $" · Membidik {GmBattleView.ShortName(session.Units[targets[0]])}";
+            if (move.IsDamaging && move.InflictsPoison) lastAction += $" · {PoisonDetail(move)}";
             Refresh();
 
             GmBattleImpactCue cue = GmBattleImpactCue.For(move, actor.Character);
@@ -301,8 +353,17 @@ namespace GamecommMentor.DaengSaka
             while (session != null && !leaving && session.Actor != null &&
                 (session.Phase == GmBattlePhase.Enemy || session.Actor.IsStunned))
             {
+                GmBattleUnit actor = session.Actor;
+                int actorIndex = session.ActorIndex;
+                int round = session.RoundNumber;
                 resolving = false;
-                session.PrepareEnemyTurn();
+                int poisonDamage = session.PrepareEnemyTurn();
+                if (poisonDamage > 0)
+                {
+                    yield return PlayPoisonTick(actorIndex, round, poisonDamage);
+                    if (session == null || leaving) yield break;
+                    if (!actor.IsAlive) continue;
+                }
                 int phase = session.Boss?.Phase ?? 0;
                 bool firstTurnOfPhase = phase > shownBossPhase;
                 if (firstTurnOfPhase)
@@ -313,13 +374,13 @@ namespace GamecommMentor.DaengSaka
 
                 Refresh();
                 yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, enemyActionDelay));
-                GmBattleUnit actor = session.Actor;
-                int actorIndex = session.ActorIndex;
-                int round = session.RoundNumber;
+                if (session == null || leaving) yield break;
+                bool charged = session.Boss?.Index == actorIndex && session.Boss.IsCharging;
                 if (session.TrySkipStunnedTurn())
                 {
                     resolving = true;
-                    lastAction = $"{GmBattleView.ShortName(actor)} melewatkan giliran · Stun";
+                    lastAction = charged ? "Pakande terkena Stun · Greater Shadow batal"
+                        : $"{GmBattleView.ShortName(actor)} melewatkan giliran · Stun";
                     Refresh(actorIndex, round);
                     yield return new WaitForSecondsRealtime(0.35f);
                     continue;
@@ -361,20 +422,33 @@ namespace GamecommMentor.DaengSaka
         private IEnumerator PlayBossPhase(int phase)
         {
             resolving = true;
+            int previousVisual = phase == 3 ? session.Boss.WasAirborne ? 2 : 1 : 0;
+            if (phase == 3 && pakandePresentation?.EnragedOpening?.Length > 0)
+            {
+                lastAction = "Nenek Pakande bersiap berubah";
+                Refresh(bossVisualPhase: previousVisual);
+                yield return view.PlayBossDialogue(pakandePresentation.EnragedOpening);
+            }
+
             if (phase > 1)
             {
                 lastAction = phase == 3 ? "Nenek Pakande mengaum"
                     : session.Boss.BasicAttackReduction > 0 ? "Pakande terbang. Gunakan skill yang memberi damage."
                     : $"Nenek Pakande memasuki Fase {phase}";
-                Refresh();
+                Refresh(bossVisualPhase: previousVisual);
                 float hold = phase == 3 && pakandePresentation != null
                     ? view.PlayBattleSound(pakandePresentation.Roar) : 0f;
                 yield return PlayBossTransition(phase, hold);
             }
 
             Refresh();
-            if (pakandePresentation != null && phase < 3)
-                yield return view.PlayBossDialogue(phase == 1 ? pakandePresentation.Opening : pakandePresentation.Airborne);
+            if (pakandePresentation == null) yield break;
+            yield return view.PlayBossDialogue(phase switch
+            {
+                1 => pakandePresentation.Opening,
+                2 => pakandePresentation.Airborne,
+                _ => pakandePresentation.EnragedReaction
+            });
         }
 
         private IEnumerator PlayBossTransition(int phase, float minimumDuration)
@@ -397,10 +471,25 @@ namespace GamecommMentor.DaengSaka
         private string FormatAction(GmBattleUnit actor, GmBattleMove move, GmBattleHit[] hits, int round)
         {
             string title = $"{GmBattleView.ShortName(actor)} · {move.Name} · ";
-            if (move.Effect == GmBattleEffect.Buff) return title + GmBattleView.BuffDetail(move);
+            if (move.Effect == GmBattleEffect.Buff)
+            {
+                int cleared = Array.FindAll(hits, hit => hit.CleansedCount > 0).Length;
+                return title + GmBattleView.BuffDetail(move) +
+                    (cleared > 0 ? $" · DEF Down hilang dari {cleared} anggota" : "");
+            }
+            if (move.Effect == GmBattleEffect.Poison)
+            {
+                string[] affected = Array.ConvertAll(hits, hit => GmBattleView.ShortName(session.Units[hit.Index]));
+                return title + $"{string.Join(" / ", affected)} · {PoisonDetail(move)}";
+            }
             if (move.Effect == GmBattleEffect.Summon) return "Nenek Pakande memanggil Poppo";
             if (move.Effect == GmBattleEffect.Charge)
-                return $"{session.Boss.ChargedMove.Name} siap menghantam party pada fase musuh berikutnya";
+            {
+                string warning = $"{session.Boss.ChargedMove.Name} siap · AoE pada giliran musuh berikutnya";
+                int marked = Array.FindIndex(hits, hit => hit.Stunned);
+                if (marked >= 0) warning += $" · {GmBattleView.ShortName(session.Units[hits[marked].Index])} terkena Stun";
+                return warning;
+            }
 
             string[] effects = new string[hits.Length];
             for (int i = 0; i < hits.Length; i++)
@@ -414,29 +503,37 @@ namespace GamecommMentor.DaengSaka
                 }
                 string amount = move.Effect switch
                 {
+                    GmBattleEffect.StunDamage when hit.Amount == 0 => "",
+                    GmBattleEffect.Heal or GmBattleEffect.HealPercent when hit.Amount == 0 && hit.CleansedCount > 0 => "",
                     GmBattleEffect.Heal => $"+{hit.Amount} HP",
                     GmBattleEffect.HealPercent => $"+{hit.Amount} HP",
                     GmBattleEffect.RestoreMp => $"+{hit.Amount} MP",
                     _ => $"−{hit.Amount} HP"
                 };
                 string status = !target.IsAlive ? " · KO" : hit.Stunned ? " · Stun" : "";
-                if (move.Effect == GmBattleEffect.StunDamage && target.IsBoss && target.IsAlive && !hit.Stunned)
+                if (move.Effect == GmBattleEffect.StunDamage && target.IsAlive && !hit.Stunned)
                     status = " · Tahan Stun";
                 if (!actor.IsParty && target.GuardRound == round && move.IsDamaging)
                     status += " · Guard";
-                effects[i] = $"{GmBattleView.ShortName(target)} {amount}{status}";
+                if (hit.CleansedCount > 0) status += " · Bersih";
+                effects[i] = $"{GmBattleView.ShortName(target)}{(amount.Length > 0 ? " " + amount : "")}{status}";
             }
             string summary = title + string.Join(" / ", effects);
-            if (move.IsDamaging && move.Buff != GmBattleBuff.None)
+            if (Array.Exists(hits, hit => hit.DebuffApplied))
+                summary += $" · {GmBattleView.BuffDetail(move)}";
+            else if (move.IsDamaging && move.Buff != GmBattleBuff.None && !move.AppliesDebuffOnHit)
                 summary += $" · Diri {GmBattleView.BuffDetail(move)}";
+            if (Array.Exists(hits, hit => hit.Poisoned)) summary += $" · {PoisonDetail(move)}";
             return summary;
         }
 
-        private void Refresh(int actorIndex = -1, int round = -1)
+        private static string PoisonDetail(GmBattleMove move) => $"Racun {move.PoisonDamage} HP × {move.PoisonTurns} giliran";
+
+        private void Refresh(int actorIndex = -1, int round = -1, int bossVisualPhase = 0)
         {
             view.Render(session, menu, selection, lastAction, resolving,
                 actorIndex >= 0 ? actorIndex : session.ActorIndex,
-                round >= 0 ? round : session.RoundNumber, enhancedImpact);
+                round >= 0 ? round : session.RoundNumber, enhancedImpact, bossVisualPhase);
         }
 
         private void RecoverAndExitBattle()

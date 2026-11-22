@@ -165,6 +165,7 @@ namespace GamecommMentor.DaengSaka
 
         private GmControlGate gate;
         private GmInteractor interactor;
+        private Text skipLabel;
         private bool started;
         private bool playing;
         private bool holdFinalShot;
@@ -261,7 +262,9 @@ namespace GamecommMentor.DaengSaka
                 sprite.enabled = false;
             }
 
+            skipLabel = overlay.transform.Find("Lewati")?.GetComponent<Text>();
             overlay.SetActive(true);
+            UpdateSkipHint();
             EnterShot(0);
             SetFade(1f);
             return true;
@@ -270,6 +273,7 @@ namespace GamecommMentor.DaengSaka
         private void Update()
         {
             if (!playing) return;
+            UpdateSkipHint();
             if (view == null || orbit == null || gate == null || !gate.isActiveAndEnabled)
             {
                 Finish();
@@ -392,8 +396,16 @@ namespace GamecommMentor.DaengSaka
 
         private static float Ease(float t) => t * t * (3f - 2f * t);
 
+        private void UpdateSkipHint()
+        {
+            if (skipLabel == null) return;
+            string text = GmGamepadInput.UsingGamepad ? "[B] Lewati" : "[Esc] Lewati";
+            if (skipLabel.text != text) skipLabel.text = text;
+        }
+
         private static bool SkipPressed()
         {
+            if (GmGamepadInput.TakeCancel()) return true;
 #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) return true;
 #endif

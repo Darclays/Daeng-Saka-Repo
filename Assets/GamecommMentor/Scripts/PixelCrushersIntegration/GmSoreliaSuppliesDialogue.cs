@@ -16,6 +16,10 @@ namespace GamecommMentor.DaengSaka
         private GmPixelCrushersConversation interaction;
         private DialogueSystemController controller;
 
+        internal bool HasSuppliesToOffer => isActiveAndEnabled && controller != null && controller.isActiveAndEnabled &&
+            quest != null && quest.isActiveAndEnabled && quest.HasCompleted(GmMainQuestStep.SelamatkanKeluargaNelayan) &&
+            !GmPartyRun.Current.ReceivedSoreliaSupplies;
+
         public void Configure(GmMainQuestProgress progress, GmPixelCrushersDialogueBridge dialogueBridge)
         {
             quest = progress;
@@ -40,8 +44,7 @@ namespace GamecommMentor.DaengSaka
         private void OnLinePrepared(Subtitle subtitle)
         {
             DialogueEntry entry = subtitle?.dialogueEntry;
-            if (entry == null || entry.Title != CompletionEntry || interaction == null || quest == null || controller == null ||
-                !quest.isActiveAndEnabled || !quest.HasCompleted(GmMainQuestStep.SelamatkanKeluargaNelayan) ||
+            if (entry == null || entry.Title != CompletionEntry || interaction == null || !HasSuppliesToOffer ||
                 controller.lastConversationStarted != FirstConversation ||
                 controller.masterDatabase?.GetConversation(FirstConversation)?.id != entry.conversationID) return;
 

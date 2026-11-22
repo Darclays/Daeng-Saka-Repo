@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace GamecommMentor.DaengSaka
 {
@@ -250,19 +247,15 @@ namespace GamecommMentor.DaengSaka
                 Close();
                 return;
             }
-#if ENABLE_INPUT_SYSTEM
-            bool cancel = Keyboard.current?.escapeKey.wasPressedThisFrame == true;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            bool cancel = Input.GetKeyDown(KeyCode.Escape);
-#else
-            bool cancel = false;
-#endif
-            if (cancel) BackOrClose();
+            if (GmGamepadInput.PressedBack()) BackOrClose();
             else if (pending == null)
             {
-                if (shownRevision != run.Equipment.Revision) RebuildEntries();
+                if (enchanting && GmGamepadInput.PreviousTabPressed) ChangeTab(false);
+                else if (!enchanting && GmGamepadInput.NextTabPressed) ChangeTab(true);
+                else if (shownRevision != run.Equipment.Revision) RebuildEntries();
                 else if (shownBalance != run.Wallet.Coins || shownPrice != Price(selected)) Render();
             }
+            if (run != null) view.UpdateInputHints();
         }
 
         private void Close()

@@ -4,6 +4,7 @@ namespace GamecommMentor.DaengSaka
 {
     internal sealed class GmBossBattle
     {
+        public const int AirbornePoisonTurns = 2;
         private static readonly GmBattleMove Summon = new GmBattleMove(
             "Panggil Poppo", GmBattleTarget.Self, GmBattleEffect.Summon, 0,
             animation: "pakandeSummon", enemyOnly: true);
@@ -41,15 +42,17 @@ namespace GamecommMentor.DaengSaka
             this.units = units;
             Index = index;
             bolt = new GmBattleMove("Bola Bayangan", GmBattleTarget.Enemy, GmBattleEffect.Damage, profile.BoltDamage,
-                animation: "pakandeBolt", impact: "pakandeBoltImpact", enemyOnly: true);
+                animation: "pakandeBolt", impact: "pakandeBoltImpact", enemyOnly: true,
+                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage);
             magicCharge = new GmBattleMove("Magic Charge", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.WaveDamage,
-                cooldown: 3, animation: "pakandeBolt", impact: "pakandeMagicImpact", enemyOnly: true);
+                cooldown: 2, animation: "pakandeBolt", impact: "pakandeMagicImpact", enemyOnly: true,
+                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage);
             shadow = new GmBattleMove("Serangan Bayangan", GmBattleTarget.Enemy, GmBattleEffect.Damage, profile.ShadowDamage,
                 animation: "pakandeCharge", impact: "pakandeBoltImpact", enemyOnly: true);
             fireRain = new GmBattleMove("Hujan Api", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.FireRainDamage,
                 cooldown: 3, animation: "pakandeFireRain", impact: "pakandeFireImpact", impactScale: 0.82f, enemyOnly: true);
             greaterShadow = new GmBattleMove("Greater Shadow", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.GreaterShadowDamage,
-                cooldown: 6, animation: "pakandeShadow", impact: "pakandeShadowImpact", impactScale: 0.54f, enemyOnly: true);
+                cooldown: 4, animation: "pakandeShadow", impact: "pakandeShadowImpact", impactScale: 0.54f, enemyOnly: true);
             DespawnMinions();
         }
 
@@ -60,6 +63,17 @@ namespace GamecommMentor.DaengSaka
         public GmBattleMove FireRain => fireRain;
         public GmBattleMove ChargedMove => IsCharging ? greaterShadow : null;
         public int BasicAttackReduction => Phase == 2 ? profile.AirborneBasicReduction : 0;
+        public GmBattleMove AirborneMove => units[Index].CooldownRemaining(magicCharge) == 0 ? magicCharge : bolt;
+
+        public int ChargeStunTarget
+        {
+            get
+            {
+                for (int index = 0; index < Index; index++)
+                    if (units[index].IsAlive && units[index].Character == GmBattleCharacter.Saka) return index;
+                return -1;
+            }
+        }
 
         public bool SupportsMove(GmBattleMove move) => Phase switch
         {
@@ -97,12 +111,17 @@ namespace GamecommMentor.DaengSaka
             }
             if (Phase == 2)
             {
-                support = Weaken;
-                return boss.CooldownRemaining(magicCharge) == 0 && random.Next(2) == 0 ? magicCharge : bolt;
+                GmBattleMove move = AirborneMove;
+                if (move == magicCharge) support = Weaken;
+                return move;
             }
             if (IsCharging) return greaterShadow;
-            support = firstPhaseThreeAction || random.Next(2) == 0 ? Fury : Weaken;
-            if (chargeNext && boss.CooldownRemaining(greaterShadow) == 0) return Charge;
+            if ((firstPhaseThreeAction || chargeNext) && boss.CooldownRemaining(greaterShadow) == 0)
+            {
+                support = Fury;
+                return Charge;
+            }
+            support = random.Next(2) == 0 ? Fury : Weaken;
             return boss.CooldownRemaining(fireRain) == 0 ? fireRain : shadow;
         }
 

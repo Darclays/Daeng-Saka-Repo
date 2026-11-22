@@ -17,13 +17,14 @@ namespace GamecommMentor.DaengSaka
             new List<(GmMerchantOffer, Button, Text)>();
         private readonly RectTransform root, services, shop, list, detail, confirm, confirmActions;
         private readonly CanvasGroup shopControls;
-        private readonly Button talk, merchantShop, blacksmith, back, buy;
+        private readonly Button talk, merchantShop, blacksmith, serviceClose, back, buy;
         private readonly Text balance, backLabel, title, recovery, stock, projected, status, buyLabel, empty;
         private readonly Text confirmTitle, confirmPrice, confirmBalance;
         private readonly Image itemIcon;
         private readonly Action<GmMerchantOffer> select;
         private readonly Action backOrClose;
-        private Button selectedRow;
+        private Button selectedRow, confirmCancel;
+        private bool hasServiceMenu;
 
         internal GmMerchantView(Action talkToNpc, Action openShop, Action openBlacksmith, Action<GmMerchantOffer> selectOffer,
             Action request, Action backOrClose)
@@ -48,7 +49,7 @@ namespace GamecommMentor.DaengSaka
             talk = AddButton(font, services, "Bicara dengan Penempa", .075f, .52f, .925f, .70f, talkToNpc, primary: true);
             blacksmith = AddButton(font, services, "Penempa Besi", .075f, .52f, .925f, .70f, openBlacksmith, primary: true);
             merchantShop = AddButton(font, services, "Belanja di Merchant", .075f, .31f, .925f, .48f, openShop);
-            AddButton(font, services, "Tutup [Esc]", .075f, .075f, .925f, .23f, backOrClose);
+            serviceClose = AddButton(font, services, "Tutup [Esc]", .075f, .075f, .925f, .23f, backOrClose);
 
             shop = Rect("Etalase Merchant", root, .075f, .075f, .925f, .925f);
             Fill(shop, Paper);
@@ -106,6 +107,7 @@ namespace GamecommMentor.DaengSaka
             ((RectTransform)blacksmith.transform).anchorMin = new Vector2(.075f, hasTalk ? .235f : .52f);
             ((RectTransform)blacksmith.transform).anchorMax = new Vector2(.925f, hasTalk ? .305f : .70f);
             Focus(hasTalk ? talk : hasBlacksmith ? blacksmith : merchantShop);
+            UpdateInputHints();
         }
 
         internal void ShowShop(IReadOnlyList<GmMerchantOffer> offers, bool hasServices)
@@ -113,7 +115,7 @@ namespace GamecommMentor.DaengSaka
             root.gameObject.SetActive(true);
             services.gameObject.SetActive(false);
             shop.gameObject.SetActive(true);
-            backLabel.text = hasServices ? "Kembali [Esc]" : "Tutup [Esc]";
+            hasServiceMenu = hasServices;
             ClearChildren(list);
             rows.Clear();
             foreach (GmMerchantOffer offer in offers)
@@ -167,19 +169,36 @@ namespace GamecommMentor.DaengSaka
             confirmTitle.text = $"Beli 1 {item.Name}?";
             confirmPrice.text = $"Biaya   {price:N0} koin";
             confirmBalance.text = $"Saldo   {before:N0} → {before - price:N0} koin";
-            var cancel = AddButton(font, confirmActions, "Batal [Esc]", 0f, 0f, .46f, 1f, backOrClose);
-            AddButton(font, confirmActions, "Konfirmasi beli", .51f, 0f, 1f, 1f, accept, primary: true);
+            confirmCancel = AddButton(font, confirmActions, "Batal [Esc]", 0f, 0f, .46f, 1f, backOrClose);
+            var acceptButton = AddButton(font, confirmActions, "Konfirmasi beli", .51f, 0f, 1f, 1f, accept, primary: true);
+            GmMenuButton.Link(confirmCancel, null, acceptButton);
+            GmMenuButton.Link(acceptButton, confirmCancel, null);
             shopControls.interactable = shopControls.blocksRaycasts = false;
             confirm.gameObject.SetActive(true);
-            Focus(cancel);
+            Focus(confirmCancel);
+            UpdateInputHints();
         }
 
         internal void HideConfirmation()
         {
             ClearChildren(confirmActions);
+            confirmCancel = null;
             confirm.gameObject.SetActive(false);
             shopControls.interactable = shopControls.blocksRaycasts = true;
             Focus(selectedRow != null ? selectedRow : back);
+            UpdateInputHints();
+        }
+
+        internal void UpdateInputHints()
+        {
+            string key = GmGamepadInput.BackLabel;
+            Caption(serviceClose).text = $"Tutup [{key}]";
+            backLabel.text = (hasServiceMenu ? "Kembali" : "Tutup") + $" [{key}]";
+            if (confirmCancel != null) Caption(confirmCancel).text = $"Batal [{key}]";
+            if (!GmGamepadInput.UsingGamepad) return;
+            if (confirm.gameObject.activeSelf) GmMenuButton.FocusWithin(confirm, confirmCancel);
+            else if (shop.gameObject.activeSelf) GmMenuButton.FocusWithin(shop, selectedRow != null ? selectedRow : back);
+            else GmMenuButton.FocusWithin(services);
         }
 
         internal void Hide()
@@ -209,9 +228,6 @@ namespace GamecommMentor.DaengSaka
             image.enabled = sprite != null;
         }
 
-        private static void Focus(Button button)
-        {
-            if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(button.gameObject);
-        }
+        private static void Focus(Button button) => GmMenuButton.Focus(button);
     }
 }

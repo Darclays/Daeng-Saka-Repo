@@ -10,9 +10,6 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string Saka = "Saka";
         private const string Pacca = "Pacca";
         private const string Daung = "Daung";
-        private const string Pua = "Pua’";
-        private const string Merchant = "Merchant";
-        private const string Penempa = "Penempa Besi";
         private const string Nelayan = "Nelayan";
         private const string Pakande = "Nenek Pakande";
         private const string Petunjuk = "Petunjuk";
@@ -46,21 +43,13 @@ namespace GamecommMentor.DaengSaka.Editor
         {
             var dialogues = new List<GmPixelCrushersMainQuestDialogue.StepDialogue>();
             Template template = Template.FromDefault();
-            Add(database, template, dialogues, GmMainQuestStep.PersiapanSebelumBertarung, "Persiapan Sebelum Bertarung",
-                (Pua, "Jadi kalian akan pergi ke gua lembayung selanjutnya kan?"),
-                (Saka, "Betul mangge. kata Acci artifact selanjutnya ada disana"),
-                (Pua, "Nih sedikit uang sangu, pastikan stok barang kalian cukup hingga ke gua lembayung"),
-                (Saka, "Yuk, kita mampir ke toko-toko dulu"));
-            Add(database, template, dialogues, GmMainQuestStep.KunjungiMerchant, "Kunjungi Merchant",
-                (Merchant, "Selamat siang anak anak, ada yang bisa saya bantu?"),
-                (Saka, "Siang bu, kita perlu membeli beberapa jamu dan makanan untuk perjalanan kami"),
-                (Merchant, "Ini dia nak, sudah ibu kemas untuk kalian"),
-                (Merchant, "Kalian sepertinya akan menempuh perjalanan jauh ya? bawakan ini ke bapak penempa"));
-            Add(database, template, dialogues, GmMainQuestStep.KunjungiPenempaBesi, "Kunjungi Penempa Besi",
-                (Pacca, "Pak tua, kami ingin membuat aksesoris dari bahan ini"),
-                (Daung, "Heh Pacca, yang sopan dikit kenapa sih"),
-                (Penempa, "Ini dia anak-anak, Anting untuk si gadis, kalung untuk si merah, dan cincin untuk nak Saka"),
-                (Penempa, "Dengan senang hati anak-anak, semangat dengan misi kalian"));
+            foreach (var story in GmCapitalDialogueData.Story)
+            {
+                string title = Prefix + story.suffix;
+                dialogues.Add(new GmPixelCrushersMainQuestDialogue.StepDialogue(story.step, title));
+                AddConversation(database, template, title,
+                    GmPixelCrushersMainQuestDialogue.CompletionEntryTitle, story.partner, story.lines);
+            }
             Add(database, template, dialogues, GmMainQuestStep.TemuiKeluargaNelayan, "Keluarga Nelayan di Sorelia",
                 (Nelayan, "Tolooooong!!!!!!!"),
                 (Saka, "Cepat, lari kerumah! akan kita tahan mereka disini"));
@@ -123,8 +112,8 @@ namespace GamecommMentor.DaengSaka.Editor
 
         internal static bool UpgradeSoreliaAfterPoppo(DialogueDatabase database, Conversation conversation)
         {
-            if (MatchesSoreliaAfterPoppo(database, conversation, SoreliaAfterPoppoLines)) return false;
-            if (!MatchesSoreliaAfterPoppo(database, conversation, PreviousSoreliaAfterPoppoLines))
+            if (MatchesGeneratedQuest(database, conversation, Nelayan, SoreliaAfterPoppoLines)) return false;
+            if (!MatchesGeneratedQuest(database, conversation, Nelayan, PreviousSoreliaAfterPoppoLines))
                 throw new InvalidOperationException(
                     $"Dialog '{conversation.Title}' sudah diedit. Cadangkan versi itu sebelum memasukkan revisi.");
 
@@ -135,8 +124,36 @@ namespace GamecommMentor.DaengSaka.Editor
             return true;
         }
 
-        private static bool MatchesSoreliaAfterPoppo(DialogueDatabase database, Conversation conversation,
-            (string actor, string text)[] lines)
+        internal static bool UpgradeCapitalStory(DialogueDatabase database, Template template, ICollection<string> kept)
+        {
+            bool changed = false;
+            const string completion = GmPixelCrushersMainQuestDialogue.CompletionEntryTitle;
+            foreach (var story in GmCapitalDialogueData.Story)
+            {
+                string title = Prefix + story.suffix;
+                Conversation conversation = database.GetConversation(title);
+                if (conversation == null)
+                {
+                    changed |= AddConversation(database, template, title, completion, story.partner, story.lines);
+                    continue;
+                }
+                if (MatchesGeneratedQuest(database, conversation, story.partner, story.lines)) continue;
+                if (!MatchesGeneratedQuest(database, conversation, story.previous[0].actor, story.previous, checkPresentation: true))
+                {
+                    kept.Add(title);
+                    continue;
+                }
+                conversation.ConversantID = GetOrCreateActor(database, template, story.partner).id;
+                var updated = CreateLinearEntries(database, template, conversation, completion, story.lines);
+                conversation.dialogueEntries.Clear();
+                conversation.dialogueEntries.AddRange(updated);
+                changed = true;
+            }
+            return changed;
+        }
+
+        private static bool MatchesGeneratedQuest(DialogueDatabase database, Conversation conversation,
+            string partner, (string actor, string text)[] lines, bool checkPresentation = false)
         {
             var entries = conversation.dialogueEntries;
             int end = lines.Length + 1;
@@ -144,7 +161,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 entries[end].Title != GmPixelCrushersMainQuestDialogue.CompletionEntryTitle ||
                 !string.IsNullOrEmpty(entries[0].DialogueText) || !string.IsNullOrEmpty(entries[end].DialogueText) ||
                 database.GetActor(conversation.ActorID)?.Name != Saka ||
-                database.GetActor(conversation.ConversantID)?.Name != Nelayan) return false;
+                database.GetActor(conversation.ConversantID)?.Name != partner) return false;
 
             for (int i = 0; i <= end; i++)
             {
@@ -152,6 +169,19 @@ namespace GamecommMentor.DaengSaka.Editor
                 if (entry.id != i || entry.conversationID != conversation.id ||
                     !string.IsNullOrEmpty(entry.conditionsString) || !string.IsNullOrEmpty(entry.userScript) ||
                     entry.outgoingLinks.Count != (i == end ? 0 : 1)) return false;
+                if (checkPresentation)
+                {
+                    bool terminal = i == 0 || i == end;
+                    if (terminal ? entry.Sequence != "None()" : !string.IsNullOrEmpty(entry.Sequence)) return false;
+                    if (!terminal)
+                    {
+                        var speaker = database.GetActor(entry.ActorID);
+                        string menu = speaker?.IsPlayer == true ? "[auto] " + lines[i - 1].text : "";
+                        if (entry.Title != lines[i - 1].actor || (entry.MenuText ?? "") != menu ||
+                            entry.ConversantID != (entry.ActorID == conversation.ActorID
+                                ? conversation.ConversantID : conversation.ActorID)) return false;
+                    }
+                }
                 if (i == end) break;
 
                 Link next = entry.outgoingLinks[0];

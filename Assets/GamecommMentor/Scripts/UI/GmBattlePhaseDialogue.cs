@@ -45,6 +45,8 @@ namespace GamecommMentor.DaengSaka
                     advanceClicked = speedClicked = false;
                     if (focused && wasFocused)
                     {
+                        advance |= GmGamepadInput.TakeSubmit();
+                        changeSpeed |= GmGamepadInput.PreviousTabPressed;
 #if ENABLE_INPUT_SYSTEM
                         var keyboard = Keyboard.current;
                         advance |= keyboard != null &&

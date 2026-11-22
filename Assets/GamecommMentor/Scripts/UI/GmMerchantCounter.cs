@@ -1,9 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace GamecommMentor.DaengSaka
 {
@@ -205,16 +202,10 @@ namespace GamecommMentor.DaengSaka
                 Close();
                 return;
             }
-#if ENABLE_INPUT_SYSTEM
-            bool cancel = Keyboard.current?.escapeKey.wasPressedThisFrame == true;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            bool cancel = Input.GetKeyDown(KeyCode.Escape);
-#else
-            bool cancel = false;
-#endif
-            if (cancel) BackOrClose();
+            if (GmGamepadInput.PressedBack()) BackOrClose();
             else if (page == Page.Shop && (shownBalance != run.Wallet.Coins ||
                      shownOwned != run.Inventory.Count(selected?.Item) || shownPrice != (selected?.Price ?? 0))) Render();
+            if (page != Page.Closed) view.UpdateInputHints();
         }
 
         private void Close()

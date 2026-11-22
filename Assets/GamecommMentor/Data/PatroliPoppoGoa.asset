@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   enemies:
   - displayName: Poppo Patroli
-    maxHp: 58
+    maxHp: 74
     maxMp: 0
     startingMp: 0
     speed: 20

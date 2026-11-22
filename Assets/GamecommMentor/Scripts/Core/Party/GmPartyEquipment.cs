@@ -34,6 +34,7 @@ namespace GamecommMentor.DaengSaka
         public IEnumerable<GmWeaponDefinition> Definitions => catalog.Values;
         internal IReadOnlyList<GmOwnedWeapon> OwnedWeapons => owned;
         internal int Revision { get; private set; }
+        internal event Action<string> WeaponReceived;
 
         internal GmWeaponDefinition FindDefinition(string id) =>
             !string.IsNullOrEmpty(id) && catalog.TryGetValue(id, out var definition) ? definition : null;
@@ -82,6 +83,7 @@ namespace GamecommMentor.DaengSaka
             if (definition == null || definition.IsStarter || OwnsDefinition(definitionId)) return false;
             owned.Add(new GmOwnedWeapon(definition));
             Revision++;
+            WeaponReceived?.Invoke(definition.Name);
             return true;
         }
 

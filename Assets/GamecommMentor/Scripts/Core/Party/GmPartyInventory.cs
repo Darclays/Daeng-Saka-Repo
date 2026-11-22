@@ -36,6 +36,7 @@ namespace GamecommMentor.DaengSaka
     {
         private readonly Dictionary<string, int> quantities = new Dictionary<string, int>(StringComparer.Ordinal);
         internal int Revision { get; private set; }
+        internal event Action<string> ItemReceived;
 
         public int Count(GmItemDefinition item) =>
             item != null && quantities.TryGetValue(item.Id, out int count) ? count : 0;
@@ -47,6 +48,7 @@ namespace GamecommMentor.DaengSaka
             if (quantity > int.MaxValue - current) return false;
             quantities[item.Id] = current + quantity;
             Revision++;
+            ItemReceived?.Invoke(item.Name);
             return true;
         }
 

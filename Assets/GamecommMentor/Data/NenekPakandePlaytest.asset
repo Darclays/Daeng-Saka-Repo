@@ -12,13 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e07f57b1b3755d2184cf62a1db430a9d, type: 3}
   m_Name: NenekPakandePlaytest
   m_EditorClassIdentifier:
-  bossHp: 220
+  bossHp: 260
   phaseTwoAt: 70
-  phaseThreeAt: 35
+  phaseThreeAt: 45
   minionHp: 22
   minionDamage: 7
   boltDamage: 20
-  waveDamage: 12
+  waveDamage: 14
+  airbornePoisonDamage: 4
   shadowDamage: 24
   fireRainDamage: 27
+  greaterShadowDamage: 42
   airborneBasicReduction: 70

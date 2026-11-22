@@ -194,10 +194,30 @@ namespace GamecommMentor.DaengSaka
 
         public override void Update()
         {
-            if (!isOpen || showingResponses || !Application.isFocused || Time.frameCount == focusFrame)
+            if (!isOpen || !Application.isFocused || Time.frameCount == focusFrame)
                 return;
+            if (showingResponses)
+            {
+                if (GmGamepadInput.UsingGamepad && stock != null) GmMenuButton.FocusWithin(stock.transform);
+                return;
+            }
             stage.Tick(Time.unscaledDeltaTime);
             if (current == null) return;
+            if (HasBackdropOptions && GmGamepadInput.NextTabPressed) ChangeBackdrop();
+            else if (GmGamepadInput.PreviousTabPressed) ChangeSpeed();
+            else if (GmGamepadInput.TakeSubmit()) OnContinueConversation();
+            else ReadKeyboard();
+            if (current == null || Time.frameCount == shownFrame || !reveal.Tick(Time.unscaledDeltaTime, speed)) return;
+            stage.RefreshText();
+            if (!reveal.IsWriting)
+            {
+                completedFrame = Time.frameCount;
+                stage.SetAction(false, canContinue);
+            }
+        }
+
+        private void ReadKeyboard()
+        {
 #if ENABLE_INPUT_SYSTEM
             var keyboard = Keyboard.current;
             if (keyboard != null)
@@ -212,13 +232,6 @@ namespace GamecommMentor.DaengSaka
             else if (UnityEngine.Input.GetKeyDown(KeyCode.E) || UnityEngine.Input.GetKeyDown(KeyCode.Space))
                 OnContinueConversation();
 #endif
-            if (current == null || Time.frameCount == shownFrame || !reveal.Tick(Time.unscaledDeltaTime, speed)) return;
-            stage.RefreshText();
-            if (!reveal.IsWriting)
-            {
-                completedFrame = Time.frameCount;
-                stage.SetAction(false, canContinue);
-            }
         }
 
         private bool AcceptsInput => isActiveAndEnabled && isOpen && Application.isFocused && current != null &&

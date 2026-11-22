@@ -33,4 +33,21 @@ MonoBehaviour:
   - portrait: {fileID: 11400000, guid: 965ad3fbff9c415db64e49846bd244f3, type: 2}
     speaker: Daung
     text: "Tenang, jaga aku dan Baran, kita pasti bisa kalain dia."
+  enragedOpening:
+  - portrait: {fileID: 11400000, guid: 3886f6ed97e140dcaa027ca044a6f96b, type: 2}
+    speaker: Nenek Pakande
+    text: "tidak....TIDAK! TAK SUDI DIRIKU DIKALAHKAN ANAK-ANAK"
+  - portrait: {fileID: 11400000, guid: 3886f6ed97e140dcaa027ca044a6f96b, type: 2}
+    speaker: Nenek Pakande
+    text: "AKAN KU TUNJUKAN KEKUATAN ASLIKU"
+  enragedReaction:
+  - portrait: {fileID: 11400000, guid: 965ad3fbff9c415db64e49846bd244f3, type: 2}
+    speaker: Daung
+    text: "KYYAAAAAAA DIA BERUBAH JADI SERIGALA"
+  - portrait: {fileID: 11400000, guid: dcb01a4e11094b2ca6380832903a8d97, type: 2}
+    speaker: Saka
+    text: "Teman-teman berhati-hari, aku merasakan kekuatan yang besar dari dia"
+  - portrait: {fileID: 11400000, guid: 4cdf993bc7bd4fbd9668c47c52cf936c, type: 2}
+    speaker: Pacca
+    text: "HAHAHA SETIDAKNYA DIA KEMBALI KEDARAT!, AYO KITA CEPAT KALAHKAN DIA"
   roar: {fileID: 8300000, guid: 2ff95c44cef3584baf9bb82e3855b40e, type: 3}

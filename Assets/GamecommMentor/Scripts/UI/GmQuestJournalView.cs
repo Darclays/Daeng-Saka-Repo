@@ -8,7 +8,7 @@ using static GamecommMentor.DaengSaka.GmBattleView;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmJournalPage { Journal, Map, Bag }
+    internal enum GmJournalPage { Journal, Map, Bag, Pause }
 
     internal sealed class GmQuestJournalView
     {
@@ -24,6 +24,7 @@ namespace GamecommMentor.DaengSaka
         private readonly GmQuestJournal journal;
         private readonly Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         private readonly RectTransform root;
+        private readonly RectTransform window, pausePanel;
         private readonly RectTransform journalPanel;
         private readonly GmQuestAreaMapView mapView;
         private readonly GmPartyBagView bagView;
@@ -31,8 +32,9 @@ namespace GamecommMentor.DaengSaka
         private readonly ScrollRect scroll;
         private readonly List<(GmQuestEntry entry, Image background, Text label)> rows =
             new List<(GmQuestEntry, Image, Text)>();
-        private readonly Button journalTab, mapTab, bagTab, activeTab, completeTab, trackAction, mapAction;
-        private readonly Text category, title, description, objectives, trackLabel;
+        private readonly Button journalTab, mapTab, bagTab, close, activeTab, completeTab, trackAction, mapAction;
+        private readonly Button resume, pauseJournal, pauseMap, pauseBag;
+        private readonly Text category, title, description, objectives, trackLabel, tabHint, pauseHint;
         private bool showCompleted;
         private string selectedId, mapQuestId;
 
@@ -45,15 +47,17 @@ namespace GamecommMentor.DaengSaka
             this.journal = journal;
             root = Rect("Quest Menu", canvas, 0f, 0f, 1f, 1f);
             Fill(root, new Color(0.07f, 0.12f, 0.09f, .82f)).raycastTarget = true;
-            RectTransform window = Rect("Window", root, .04f, .055f, .96f, .945f);
+            window = Rect("Window", root, .04f, .055f, .96f, .945f);
             Fill(window, Paper);
             RectTransform header = Rect("Header", window, 0f, .865f, 1f, 1f);
             Fill(header, Inset);
-            AddText(font, header, "Game", "Daeng Saka", 26, .026f, 0f, .31f, 1f, bold: true);
+            AddText(font, header, "Game", "Daeng Saka", 26, .026f, .49f, .31f, .93f, bold: true);
+            tabHint = AddText(font, header, "Pintasan tab", "", 15, .026f, .13f, .31f, .47f);
+            tabHint.color = Muted;
             journalTab = AddButton(font, header, "Jurnal  [J]", .35f, .21f, .50f, .79f, ShowJournal);
             mapTab = AddButton(font, header, "Peta  [M]", .51f, .21f, .64f, .79f, () => ShowMap(journal.Tracked));
             bagTab = AddButton(font, header, "Tas  [I]", .65f, .21f, .78f, .79f, ShowBag);
-            AddButton(font, header, "Tutup  [Esc]", .79f, .21f, .973f, .79f, journal.Close);
+            close = AddButton(font, header, "Tutup  [Esc]", .79f, .21f, .973f, .79f, journal.Back);
 
             journalPanel = Rect("Jurnal", window, .026f, .045f, .974f, .833f);
             RectTransform sidebar = Rect("Quest List", journalPanel, 0f, 0f, .328f, 1f);
@@ -79,23 +83,87 @@ namespace GamecommMentor.DaengSaka
             RectTransform mapPanel = Rect("Peta Area", window, .026f, .045f, .974f, .833f);
             mapView = new GmQuestAreaMapView(mapPanel, journal, font);
             bagView = new GmPartyBagView(window, font);
+
+            pausePanel = Rect("Jeda", root, .30f, .20f, .70f, .80f);
+            Fill(pausePanel, Paper);
+            Fill(Rect("Aksen", pausePanel, 0f, .98f, 1f, 1f), Leaf);
+            AddText(font, pausePanel, "Judul jeda", "Jeda", 36, .09f, .795f, .91f, .96f, bold: true);
+            Fill(Rect("Pilihan jeda", pausePanel, .075f, .16f, .925f, .785f), Inset);
+            resume = AddButton(font, pausePanel, "Lanjutkan", .09f, .638f, .91f, .768f, journal.Close, primary: true);
+            pauseJournal = AddButton(font, pausePanel, "Jurnal", .09f, .49f, .91f, .62f,
+                () => journal.OpenFromPause(GmJournalPage.Journal));
+            pauseMap = AddButton(font, pausePanel, "Peta", .09f, .342f, .91f, .472f,
+                () => journal.OpenFromPause(GmJournalPage.Map));
+            pauseBag = AddButton(font, pausePanel, "Tas", .09f, .194f, .91f, .324f,
+                () => journal.OpenFromPause(GmJournalPage.Bag));
+            GmMenuButton.Link(resume, null, pauseJournal);
+            GmMenuButton.Link(pauseJournal, resume, pauseMap);
+            GmMenuButton.Link(pauseMap, pauseJournal, pauseBag);
+            GmMenuButton.Link(pauseBag, pauseMap, null);
+            pauseHint = AddText(font, pausePanel, "Pintasan jeda", "", 16, .09f, .044f, .91f, .144f);
+            pauseHint.color = Muted;
             root.gameObject.SetActive(false);
         }
 
         private void SelectPage(GmJournalPage page)
         {
             Page = page;
+            pausePanel.gameObject.SetActive(false);
             root.gameObject.SetActive(true);
+            root.SetAsLastSibling();
+            window.gameObject.SetActive(true);
             journalPanel.gameObject.SetActive(page == GmJournalPage.Journal);
             mapView.Panel.gameObject.SetActive(page == GmJournalPage.Map);
             bagView.Panel.gameObject.SetActive(page == GmJournalPage.Bag);
             SetSelected(journalTab, page == GmJournalPage.Journal);
             SetSelected(mapTab, page == GmJournalPage.Map);
             SetSelected(bagTab, page == GmJournalPage.Bag);
+            if (page != GmJournalPage.Map)
+                mapTab.navigation = new Navigation { mode = Navigation.Mode.Automatic };
+            GmMenuButton.Focus(PageTab);
+            UpdateInputHints();
+        }
+
+        private Button PageTab => Page == GmJournalPage.Map ? mapTab : Page == GmJournalPage.Bag ? bagTab : journalTab;
+
+        internal void ShowPause(GmJournalPage? previous)
+        {
+            Page = GmJournalPage.Pause;
+            window.gameObject.SetActive(false);
+            pausePanel.gameObject.SetActive(true);
+            root.SetAsLastSibling();
+            root.gameObject.SetActive(true);
+            GmMenuButton.Focus(previous switch
+            {
+                GmJournalPage.Journal => pauseJournal,
+                GmJournalPage.Map => pauseMap,
+                GmJournalPage.Bag => pauseBag,
+                _ => resume
+            });
+            UpdateInputHints();
+        }
+
+        internal void UpdateInputHints()
+        {
+            bool pad = GmGamepadInput.UsingGamepad;
+            if (Page == GmJournalPage.Pause)
+            {
+                pauseHint.text = pad ? "[A] Pilih    [B] Lanjutkan" : "[Enter] Pilih    [Esc] Lanjutkan";
+                if (pad) GmMenuButton.FocusWithin(pausePanel, resume);
+                return;
+            }
+            tabHint.text = pad ? "[LB/RB] Ganti tab" : "";
+            Caption(journalTab).text = pad ? "Jurnal" : "Jurnal  [J]";
+            Caption(mapTab).text = pad ? "Peta" : "Peta  [M]";
+            Caption(bagTab).text = pad ? "Tas" : "Tas  [I]";
+            string action = journal.ReturnsToPause ? "Kembali" : "Tutup";
+            Caption(close).text = $"{action}  [{GmGamepadInput.BackLabel}]";
+            if (pad) GmMenuButton.FocusWithin(window, PageTab);
         }
 
         internal void ShowJournal()
         {
+            GmQuestJournal.DismissNewQuestNotice();
             SelectPage(GmJournalPage.Journal);
             RenderJournal();
         }
@@ -104,20 +172,33 @@ namespace GamecommMentor.DaengSaka
         {
             mapQuestId = quest?.Id;
             SelectPage(GmJournalPage.Map);
-            mapView.Render(quest);
+            RenderMap(quest);
         }
 
         internal void ShowBag()
         {
+            GmPartyRun.Current.DismissItemNotice();
             SelectPage(GmJournalPage.Bag);
             bagView.Render();
         }
 
         internal void Refresh()
         {
-            if (IsMap) mapView.Render(FindEntry(mapQuestId));
+            if (IsMap) RenderMap(FindEntry(mapQuestId));
             else if (Page == GmJournalPage.Bag) bagView.RefreshStock();
             else RenderJournal();
+        }
+
+        private void RenderMap(GmQuestEntry quest)
+        {
+            Button location = mapView.Render(quest, mapTab);
+            mapTab.navigation = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnLeft = journalTab,
+                selectOnRight = bagTab,
+                selectOnDown = location
+            };
         }
 
         internal void Hide()
@@ -265,8 +346,15 @@ namespace GamecommMentor.DaengSaka
 
         internal static void SetSelected(Button button, bool selected)
         {
+            // GmMenuButton draws the focus ring independently of the active tab or row.
+            ColorBlock colors = button.colors;
+            colors.selectedColor = colors.normalColor;
+            colors.highlightedColor = new Color(.98f, .96f, .92f);
+            button.colors = colors;
             ((Image)button.targetGraphic).color = selected ? LeafLight : Paper;
         }
+
+        internal static Text Caption(Button button) => button.GetComponentInChildren<Text>(true);
 
         internal static RectTransform CreateScrollContent(RectTransform viewport, out ScrollRect scroll)
         {

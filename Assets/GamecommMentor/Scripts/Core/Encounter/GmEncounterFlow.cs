@@ -30,6 +30,7 @@ namespace GamecommMentor.DaengSaka
         public GmEnemyEncounter CurrentEncounter { get; private set; }
         public GmSakaMotor CurrentPlayer { get; private set; }
         internal GmEnemyEncounter Reinforcement { get; private set; }
+        internal string OriginSceneName => explorationScene.IsValid() ? explorationScene.name : null;
 
         public event Action<GmSakaMotor, GmEnemyEncounter> VictoryReturned;
 

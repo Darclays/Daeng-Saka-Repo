@@ -6,15 +6,16 @@ namespace GamecommMentor.DaengSaka
     [CreateAssetMenu(menuName = "Daeng Saka/Nenek Pakande Battle Profile")]
     public sealed class GmBossBattleProfile : ScriptableObject
     {
-        private const int DefaultGreaterShadowDamage = 40;
+        private const int DefaultGreaterShadowDamage = 42;
 
-        [SerializeField, Min(1)] private int bossHp = 220;
+        [SerializeField, Min(1)] private int bossHp = 260;
         [SerializeField, Range(2, 99)] private int phaseTwoAt = 70;
-        [SerializeField, Range(1, 98)] private int phaseThreeAt = 35;
+        [SerializeField, Range(1, 98)] private int phaseThreeAt = 45;
         [SerializeField, Min(1)] private int minionHp = 22;
         [SerializeField, Min(1)] private int minionDamage = 7;
         [SerializeField, Min(1)] private int boltDamage = 20;
-        [SerializeField, Min(1)] private int waveDamage = 12;
+        [SerializeField, Min(1)] private int waveDamage = 14;
+        [SerializeField, Min(1)] private int airbornePoisonDamage = 4;
         [SerializeField, Min(1)] private int shadowDamage = 24;
         [SerializeField, Min(1)] private int fireRainDamage = 30;
         [SerializeField, Min(1)] private int greaterShadowDamage = DefaultGreaterShadowDamage;
@@ -24,6 +25,7 @@ namespace GamecommMentor.DaengSaka
         internal int PhaseThreeAt => Math.Max(1, Math.Min(PhaseTwoAt - 1, phaseThreeAt));
         internal int BoltDamage => Math.Max(1, boltDamage);
         internal int WaveDamage => Math.Max(1, waveDamage);
+        internal int AirbornePoisonDamage => Math.Max(1, airbornePoisonDamage);
         internal int ShadowDamage => Math.Max(1, shadowDamage);
         internal int FireRainDamage => Math.Max(1, fireRainDamage);
         internal int GreaterShadowDamage => greaterShadowDamage > 0 ? greaterShadowDamage : DefaultGreaterShadowDamage;

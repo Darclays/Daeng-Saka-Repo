@@ -48,6 +48,7 @@ namespace GamecommMentor.DaengSaka
         private float requestedPitch;
         private bool initialized;
         private bool captured;
+        private bool gamepadOrbit;
         private bool hasArrivalView;
         private bool waitForOrbitRelease;
         private bool dialogueHoldsView;
@@ -102,6 +103,7 @@ namespace GamecommMentor.DaengSaka
         internal bool TryHoldDialogueView()
         {
             if (dialogueHoldsView || !isActiveAndEnabled || !initialized) return false;
+            gamepadOrbit = false;
             ReleaseCursor();
             dialogueHoldsView = true;
             return true;
@@ -123,6 +125,7 @@ namespace GamecommMentor.DaengSaka
         private void OnEnable()
         {
             if (dialogueHoldsView) return;
+            gamepadOrbit = false;
             bool wasInitialized = initialized;
             initialized = false;
             if (!hasArrivalView) return;
@@ -159,6 +162,7 @@ namespace GamecommMentor.DaengSaka
             if (waitForOrbitRelease && !OrbitHeld()) waitForOrbitRelease = false;
             if (!CanRotate || CancelPressed())
             {
+                gamepadOrbit = false;
                 ReleaseCursor();
                 return;
             }
@@ -169,7 +173,8 @@ namespace GamecommMentor.DaengSaka
                     ReleaseCursor();
                     return;
                 }
-                UpdateOrbit(ReadLookDelta());
+                Vector2 mouse = ReadLookDelta();
+                UpdateOrbit(mouse.x * horizontalSensitivity, mouse.y * verticalSensitivity);
             }
             else if (!waitForOrbitRelease && OrbitPressed() && !PointerIsOverUi())
             {
@@ -177,17 +182,34 @@ namespace GamecommMentor.DaengSaka
                 requestedPitch = orbitPitch;
                 previousLock = Cursor.lockState;
                 previousVisible = Cursor.visible;
+                gamepadOrbit = false;
                 captured = true;
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
                 // Ignore accumulated movement on the capture frame, avoiding a sudden jump.
             }
+            else
+            {
+                Vector2 stick = GmGamepadInput.Look;
+                if (stick.sqrMagnitude > 0f || gamepadOrbit)
+                {
+                    if (!gamepadOrbit)
+                    {
+                        requestedYaw = yaw;
+                        requestedPitch = orbitPitch;
+                        gamepadOrbit = true;
+                    }
+                    // The stick sets a rotation rate. Mouse input already contains the frame's displacement.
+                    float seconds = Time.deltaTime;
+                    UpdateOrbit(stick.x * 140f * seconds, stick.y * 90f * seconds);
+                }
+            }
             transform.rotation = OrbitRotation;
         }
 
-        private void UpdateOrbit(Vector2 delta)
+        private void UpdateOrbit(float horizontalDegrees, float verticalDegrees)
         {
-            requestedYaw += delta.x * horizontalSensitivity * (invertHorizontal ? -1f : 1f);
+            requestedYaw += horizontalDegrees * (invertHorizontal ? -1f : 1f);
             float blend = rotationSmoothTime > 0f
                 ? 1f - Mathf.Exp(-Time.deltaTime / rotationSmoothTime) : 1f;
 
@@ -204,7 +226,7 @@ namespace GamecommMentor.DaengSaka
 
             float minPitch = Mathf.Max(10f, pitch - verticalRange);
             float maxPitch = Mathf.Min(60f, pitch + verticalRange);
-            float verticalDelta = delta.y * verticalSensitivity * (invertVertical ? 1f : -1f);
+            float verticalDelta = verticalDegrees * (invertVertical ? 1f : -1f);
             requestedPitch = Mathf.Clamp(requestedPitch + verticalDelta, minPitch, maxPitch);
             orbitPitch = Mathf.Lerp(Mathf.Clamp(orbitPitch, minPitch, maxPitch), requestedPitch, blend);
         }

@@ -23,7 +23,7 @@ MonoBehaviour:
     isBoss: 0
     enemyKind: 2
   - displayName: Manguni
-    maxHp: 35
+    maxHp: 48
     maxMp: 0
     startingMp: 0
     speed: 22

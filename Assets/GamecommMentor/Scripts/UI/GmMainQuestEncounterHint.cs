@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace GamecommMentor.DaengSaka
@@ -7,6 +8,9 @@ namespace GamecommMentor.DaengSaka
     [RequireComponent(typeof(Canvas), typeof(CanvasScaler))]
     public sealed class GmMainQuestEncounterHint : MonoBehaviour
     {
+        private const float TrackedNameOffset = 22f;
+        private const float NoticeTop = 73f;
+        private const float NoticeSpacing = 59f;
         [SerializeField] private GmMainQuestProgress quest;
         [SerializeField] private GmControlGate controls;
         [SerializeField] private GmWorldPortal routePortal;
@@ -23,8 +27,84 @@ namespace GamecommMentor.DaengSaka
         private int shownDistance = -1;
         private Transform displayedTarget;
         private GmQuestJournal journal;
+        private GmNpcGuidance npcGuidance;
+        private GmInteractor legacyPlayer;
         private Text questTitle;
-        private Text journalKeys;
+        private Text mapKey, menuKey;
+        private ShortcutNotice questNotice;
+        private ShortcutNotice itemNotice;
+
+        private sealed class ShortcutNotice
+        {
+            private readonly Text shortcut;
+            private readonly RectTransform panel;
+            private readonly Text arrow;
+            private readonly Text label;
+            private readonly string heading;
+            private readonly string guidance;
+            private string displayedTitle, displayedGuidance;
+
+            internal ShortcutNotice(RectTransform canvas, Font font, Text shortcut, string name, string heading, string guidance)
+            {
+                this.shortcut = shortcut;
+                this.heading = heading;
+                this.guidance = guidance;
+                Image background = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                background.color = new Color(0.08f, 0.10f, 0.12f, 0.96f);
+                background.raycastTarget = false;
+                panel = background.rectTransform;
+                panel.SetParent(canvas, false);
+                panel.anchorMin = panel.anchorMax = panel.pivot = Vector2.one;
+                panel.sizeDelta = new Vector2(320f, 51f);
+                label = CreateLabel("Notice Text", panel, font, TextAnchor.MiddleLeft);
+                RectTransform textRect = label.rectTransform;
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = new Vector2(14f, 3f);
+                textRect.offsetMax = new Vector2(-10f, -3f);
+                label.fontSize = 15;
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 11;
+                label.resizeTextMaxSize = 15;
+                panel.gameObject.SetActive(false);
+
+                arrow = CreateLabel("Notice Arrow", shortcut.rectTransform, font, TextAnchor.MiddleCenter);
+                arrow.text = "↑";
+                arrow.fontSize = 20;
+                arrow.gameObject.AddComponent<Outline>().effectColor = Color.black;
+                arrow.rectTransform.anchorMin = arrow.rectTransform.anchorMax = new Vector2(.5f, 0f);
+                arrow.rectTransform.sizeDelta = new Vector2(25f, 22f);
+                arrow.gameObject.SetActive(false);
+            }
+
+            internal bool Render(bool visible, string title, float elapsed, float top,
+                string shortcutText, string inputGuidance = null)
+            {
+                shortcut.text = shortcutText;
+                shortcut.gameObject.SetActive(visible);
+                bool showNotice = visible && title != null;
+                panel.gameObject.SetActive(showNotice);
+                arrow.gameObject.SetActive(showNotice);
+                if (!showNotice)
+                {
+                    shortcut.color = Color.white;
+                    return false;
+                }
+
+                string help = inputGuidance ?? guidance;
+                if (displayedTitle != title || displayedGuidance != help)
+                {
+                    displayedTitle = title;
+                    displayedGuidance = help;
+                    label.text = heading + " · " + title + "\n" + help;
+                }
+                float pulse = .5f + .5f * Mathf.Sin(elapsed * 6f);
+                panel.anchoredPosition = new Vector2(-24f, -top);
+                shortcut.color = arrow.color = Color.Lerp(new Color(1f, .77f, .35f), Color.white, pulse * .6f);
+                arrow.rectTransform.anchoredPosition = new Vector2(0f, -7f + 3f * pulse);
+                return true;
+            }
+        }
 
         public void Configure(GmMainQuestProgress progress, GmControlGate controlGate, bool showQuestCompletion = false)
         {
@@ -47,6 +127,8 @@ namespace GamecommMentor.DaengSaka
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 39;
             canvasRect = (RectTransform)transform;
+            npcGuidance = new GmNpcGuidance(canvasRect);
+            legacyPlayer = controls != null ? controls.GetComponent<GmInteractor>() : null;
             CanvasScaler scaler = GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1280f, 720f);
@@ -92,14 +174,33 @@ namespace GamecommMentor.DaengSaka
                 titleRect.pivot = new Vector2(0f, 1f);
                 titleRect.anchoredPosition = new Vector2(14f, -6f);
                 titleRect.sizeDelta = new Vector2(400f, 20f);
-                journalKeys = CreateLabel("Journal Shortcuts", canvasRect, font, TextAnchor.MiddleRight);
-                journalKeys.text = "[J] Jurnal     [M] Peta     [I] Tas";
-                journalKeys.gameObject.AddComponent<Outline>().effectColor = Color.black;
-                RectTransform keysRect = journalKeys.rectTransform;
-                keysRect.anchorMin = keysRect.anchorMax = keysRect.pivot = Vector2.one;
-                keysRect.anchoredPosition = new Vector2(-24f, -24f);
-                keysRect.sizeDelta = new Vector2(330f, 32f);
+                const float gap = 8f;
+                const float menuWidth = 110f, bagWidth = 78f, mapWidth = 82f, journalWidth = 89f;
+                float inset = 24f;
+                menuKey = CreateShortcut(font, "Menu Shortcut", "[P] Jeda", inset, menuWidth);
+                inset += menuWidth + gap;
+                Text bagKey = CreateShortcut(font, "Bag Shortcut", "[I] Tas", inset, bagWidth);
+                inset += bagWidth + gap;
+                mapKey = CreateShortcut(font, "Map Shortcut", "[M] Peta", inset, mapWidth);
+                inset += mapWidth + gap;
+                Text journalKey = CreateShortcut(font, "Journal Shortcut", "[J] Jurnal", inset, journalWidth);
+                questNotice = new ShortcutNotice(canvasRect, font, journalKey, "New Quest Notice",
+                    "Quest baru", "[J] Jurnal → Lacak quest");
+                itemNotice = new ShortcutNotice(canvasRect, font, bagKey, "New Item Notice",
+                    "Item baru", "[I] Tas → Cek item");
             }
+        }
+
+        private Text CreateShortcut(Font font, string name, string text, float inset, float width)
+        {
+            Text shortcut = CreateLabel(name, canvasRect, font, TextAnchor.MiddleCenter);
+            shortcut.text = text;
+            shortcut.gameObject.AddComponent<Outline>().effectColor = Color.black;
+            RectTransform rect = shortcut.rectTransform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
+            rect.anchoredPosition = new Vector2(-inset, -24f);
+            rect.sizeDelta = new Vector2(width, 32f);
+            return shortcut;
         }
 
         private void CreateEdgeMarker(Font font)
@@ -133,15 +234,17 @@ namespace GamecommMentor.DaengSaka
 
         private void LateUpdate()
         {
+            bool exploring = controls != null && controls.CanExplore && gameObject.scene == SceneManager.GetActiveScene();
+            Camera camera = viewCamera != null && viewCamera.isActiveAndEnabled ? viewCamera : Camera.main;
             if (journal != null && journal.isActiveAndEnabled)
             {
                 displayedTarget = null;
-                UpdateJournalHint();
+                UpdateJournalHint(exploring, camera);
                 return;
             }
-            if (journalKeys != null)
+            if (mapKey != null)
             {
-                journalKeys.gameObject.SetActive(false);
+                UpdateShortcuts(false);
                 questTitle.text = "";
             }
             GmEnemyEncounter encounter = quest != null && quest.isActiveAndEnabled ? quest.ActiveEncounter : null;
@@ -150,7 +253,8 @@ namespace GamecommMentor.DaengSaka
                 routePortal != null && routePortal.isActiveAndEnabled && routePortal.IsOpen ? routePortal.transform : null;
             bool completed = showQuestCompletion && quest != null && quest.isActiveAndEnabled &&
                 quest.Step == GmMainQuestStep.Selesai;
-            bool visible = (target != null || completed) && controls != null && controls.CanExplore;
+            npcGuidance.Render(exploring ? legacyPlayer : null, camera, target);
+            bool visible = (target != null || completed) && exploring;
             objectivePanel.gameObject.SetActive(visible);
             if (!visible || completed)
             {
@@ -171,14 +275,33 @@ namespace GamecommMentor.DaengSaka
                 markerLabel.text = "▼ " + name;
             }
 
-            PlaceMarker(target);
+            PlaceMarker(target, camera);
         }
 
-        private void UpdateJournalHint()
+        private void UpdateShortcuts(bool visible)
         {
-            bool exploring = controls != null && controls.CanExplore;
-            journalKeys.gameObject.SetActive(exploring);
+            bool pad = GmGamepadInput.UsingGamepad;
+            mapKey.gameObject.SetActive(visible);
+            menuKey.gameObject.SetActive(visible);
+            mapKey.text = pad ? "[LB] Peta" : "[M] Peta";
+            menuKey.text = pad ? "[Menu] Jeda" : "[P] Jeda";
+            bool showQuest = questNotice.Render(visible, journal.NewQuestTitle,
+                GmQuestJournal.QuestNoticeDuration - journal.QuestNoticeRemaining, NoticeTop,
+                pad ? "[Y] Jurnal" : "[J] Jurnal", pad ? "[Y] Jurnal → Lacak quest" : null);
+            GmPartyRun run = GmPartyRun.Current;
+            itemNotice.Render(visible, run.NewItemSummary,
+                GmPartyRun.ItemNoticeDuration - run.ItemNoticeRemaining,
+                showQuest ? NoticeTop + NoticeSpacing : NoticeTop, pad ? "[RB] Tas" : "[I] Tas",
+                pad ? "[RB] Tas → Cek item" : null);
+        }
+
+        private void UpdateJournalHint(bool exploring, Camera camera)
+        {
+            UpdateShortcuts(exploring);
             GmQuestEntry tracked = exploring ? journal.Tracked : null;
+            GmQuestLandmark landmark = default;
+            bool targetFound = tracked != null && journal.TryGetNavigation(tracked.CurrentGoal, out landmark);
+            npcGuidance.Render(exploring ? journal.Interactor : null, camera, targetFound ? landmark.Point : null);
             bool showCompletion = exploring && showQuestCompletion && journal.ShowMainCompletion;
             objectivePanel.gameObject.SetActive(tracked != null || showCompletion);
             if (tracked == null)
@@ -195,25 +318,32 @@ namespace GamecommMentor.DaengSaka
             GmQuestGoal goal = tracked.CurrentGoal;
             questTitle.text = tracked.Title;
             objectiveLabel.text = string.IsNullOrEmpty(goal.Progress) ? goal.Text : goal.Text + "   " + goal.Progress;
-            if (!journal.TryGetNavigation(goal, out GmQuestLandmark landmark))
+            if (!targetFound)
             {
                 HideMarkers();
                 return;
             }
 
             markerLabel.text = "▼ " + landmark.Label;
-            PlaceMarker(landmark.Point);
+            PlaceMarker(landmark.Point, camera);
         }
 
-        private void PlaceMarker(Transform target)
+        private void PlaceMarker(Transform target, Camera camera)
         {
-            Camera camera = viewCamera != null && viewCamera.isActiveAndEnabled ? viewCamera : Camera.main;
             if (camera == null || !camera.isActiveAndEnabled)
             {
                 HideMarkers();
                 return;
             }
             Vector3 position = target.position;
+            if (npcGuidance.TryGetPosition(target, out Vector2 badge))
+            {
+                markerLabel.rectTransform.anchoredPosition = badge + Vector2.up * TrackedNameOffset;
+                markerLabel.gameObject.SetActive(true);
+                edgeMarker.gameObject.SetActive(false);
+                return;
+            }
+
             Vector3 screen = camera.WorldToScreenPoint(position + Vector3.up * 1.65f);
             Rect viewport = camera.pixelRect;
             bool onScreen = screen.z > 0.01f && viewport.Contains((Vector2)screen);
@@ -270,6 +400,15 @@ namespace GamecommMentor.DaengSaka
         {
             markerLabel.gameObject.SetActive(false);
             edgeMarker.gameObject.SetActive(false);
+        }
+
+        private void OnDisable()
+        {
+            if (npcGuidance == null) return;
+            npcGuidance.Render(null, null, null);
+            HideMarkers();
+            objectivePanel.gameObject.SetActive(false);
+            if (mapKey != null) UpdateShortcuts(false);
         }
 
         private static Text CreateLabel(string name, RectTransform parent, Font font, TextAnchor alignment)

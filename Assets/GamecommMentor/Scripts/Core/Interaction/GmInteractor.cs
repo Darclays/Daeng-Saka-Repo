@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace GamecommMentor.DaengSaka
 {
@@ -33,6 +34,15 @@ namespace GamecommMentor.DaengSaka
             gate = GetComponent<GmControlGate>();
             input = GetComponent<GmInteractInput>();
             if (movementCamera == null) movementCamera = Camera.main;
+        }
+
+        private void Start()
+        {
+            GmGamepadInput.ConfigureUi(EventSystem.current);
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                foreach (GmQuestJournal journal in root.GetComponentsInChildren<GmQuestJournal>())
+                    if (journal.isActiveAndEnabled && journal.Interactor == this) return;
+            if (GetComponent<GmExplorationPause>() == null) gameObject.AddComponent<GmExplorationPause>();
         }
 
         private void OnDisable() => CurrentTarget = null;

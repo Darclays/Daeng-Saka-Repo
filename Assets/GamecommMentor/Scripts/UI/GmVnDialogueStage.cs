@@ -28,6 +28,8 @@ namespace GamecommMentor.DaengSaka
         private float clearCaptionAfter = -1f;
         private float panelTime;
         private bool worldFraming;
+        private bool writingLine, padHints;
+        private string speedHint = "", backdropHint = "";
 
         internal GmVnDialogueStage(RectTransform canvas, Font font, Action onAdvance, Action onChangeSpeed,
             Action onChangeBackdrop)
@@ -156,7 +158,8 @@ namespace GamecommMentor.DaengSaka
         internal void SetBackdropMode(bool available, bool dim, string caption)
         {
             backdropButton.gameObject.SetActive(available);
-            backdropCaption.text = caption;
+            backdropHint = caption;
+            UpdateInputHints();
             if (available) backdrop.color = dim ? DimBackdrop : Color.clear;
         }
 
@@ -198,6 +201,12 @@ namespace GamecommMentor.DaengSaka
         internal void Tick(float dt)
         {
             if (!stage.gameObject.activeSelf) return;
+            bool pad = GmGamepadInput.UsingGamepad;
+            if (pad != padHints)
+            {
+                padHints = pad;
+                UpdateInputHints();
+            }
             if (panelTime < PanelEntryTime)
             {
                 panelTime = Mathf.Min(PanelEntryTime, panelTime + dt);
@@ -215,13 +224,28 @@ namespace GamecommMentor.DaengSaka
             }
         }
 
-        internal void SetSpeed(VNTextSpeedMode speed) => speedCaption.text = GmVnReadingSpeed.Caption(speed);
+        internal void SetSpeed(VNTextSpeedMode speed)
+        {
+            speedHint = GmVnReadingSpeed.Caption(speed);
+            UpdateInputHints();
+        }
 
         internal void SetAction(bool writing, bool canContinue)
         {
             advance.gameObject.SetActive(writing || canContinue);
-            actionCaption.text = writing ? "Tampilkan semua   [E / Spasi]" : "Lanjut   [E / Spasi]";
+            writingLine = writing;
+            padHints = GmGamepadInput.UsingGamepad;
+            UpdateInputHints();
             indicator.SetVisible(!writing && canContinue, true);
+        }
+
+        private void UpdateInputHints()
+        {
+            string prompt = writingLine ? "Tampilkan semua" : "Lanjut";
+            string action = prompt + (padHints ? "   [A]" : "   [E / Spasi]");
+            if (actionCaption.text != action) actionCaption.text = action;
+            speedCaption.text = padHints ? speedHint.Replace("[T]", "[LB]") : speedHint;
+            backdropCaption.text = padHints ? backdropHint.Replace("[B]", "[RB]") : backdropHint;
         }
 
         internal void Hide()

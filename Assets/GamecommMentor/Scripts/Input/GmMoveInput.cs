@@ -36,6 +36,8 @@ namespace GamecommMentor.DaengSaka
         {
             if (!isActiveAndEnabled || !Application.isFocused) return Vector2.zero;
 #if ENABLE_INPUT_SYSTEM
+            Vector2 stick = GmGamepadInput.Move;
+            if (stick.sqrMagnitude > 0f) return Vector2.ClampMagnitude(stick, 1f);
             InputAction action = moveAction != null ? moveAction.action : keyboardMove;
             return action != null && action.enabled
                 ? Vector2.ClampMagnitude(action.ReadValue<Vector2>(), 1f) : Vector2.zero;

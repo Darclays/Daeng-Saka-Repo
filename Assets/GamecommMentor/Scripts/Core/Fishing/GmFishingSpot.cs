@@ -102,14 +102,15 @@ namespace GamecommMentor.DaengSaka
             }
             if (!focused || paused || Time.frameCount == openedFrame) return;
 
-            bool action = false, held = false, close = false;
+            bool close = GmGamepadInput.PressedBack();
+            bool action = !close && GmGamepadInput.TakeSubmit();
+            bool held = GmGamepadInput.SubmitHeld;
 #if ENABLE_INPUT_SYSTEM
             Keyboard keys = Keyboard.current;
             if (keys != null)
             {
-                action = keys.spaceKey.wasPressedThisFrame;
-                held = keys.spaceKey.isPressed;
-                close = keys.escapeKey.wasPressedThisFrame;
+                action |= keys.spaceKey.wasPressedThisFrame;
+                held |= keys.spaceKey.isPressed;
             }
             Mouse mouse = Mouse.current;
             if (mouse != null)
@@ -122,8 +123,7 @@ namespace GamecommMentor.DaengSaka
 #elif ENABLE_LEGACY_INPUT_MANAGER
             action = Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0);
             held = Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0);
-            close = Input.GetKeyDown(KeyCode.Escape) ||
-                (Input.GetMouseButtonDown(0) && view.HitExit(Input.mousePosition));
+            close |= Input.GetMouseButtonDown(0) && view.HitExit(Input.mousePosition);
 #endif
             if (close) RequestExit();
             if (stage == Stage.Fishing) Step(action, held, Time.unscaledDeltaTime);

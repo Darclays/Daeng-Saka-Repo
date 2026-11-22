@@ -1,0 +1,52 @@
+{
+  "clips": [
+    {
+      "key": "laWunaGlare",
+      "width": 35,
+      "height": 37,
+      "count": 11,
+      "anchorX": 20,
+      "anchorY": 35
+    },
+    {
+      "key": "glareImpact",
+      "width": 33,
+      "height": 43,
+      "count": 6,
+      "anchorX": 17,
+      "anchorY": 42
+    },
+    {
+      "key": "statusPoison",
+      "width": 42,
+      "height": 21,
+      "count": 10,
+      "anchorX": 21,
+      "anchorY": 20
+    },
+    {
+      "key": "statusStun",
+      "width": 33,
+      "height": 22,
+      "count": 10,
+      "anchorX": 16,
+      "anchorY": 21
+    },
+    {
+      "key": "statusDefenseDown",
+      "width": 24,
+      "height": 24,
+      "count": 1,
+      "anchorX": 12,
+      "anchorY": 24
+    },
+    {
+      "key": "statusFrame",
+      "width": 24,
+      "height": 24,
+      "count": 1,
+      "anchorX": 12,
+      "anchorY": 24
+    }
+  ]
+}

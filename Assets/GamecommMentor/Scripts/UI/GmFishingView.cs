@@ -14,10 +14,11 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform root, line, floatIcon, ripple, reel, bar, fish, fill, result, exit;
         private readonly Image curtain;
         private readonly bool hasRipple;
-        private readonly Text heading, hint, action, progress, contact, bite, catchTitle, catchDetail, quest;
+        private readonly Text heading, hint, action, progress, contact, bite, catchTitle, catchDetail, quest, closeLabel;
         private GmFishingPhase lastPhase;
         private int lastPercent;
         private bool lastContact;
+        private bool gamepadHints;
 
         internal GmFishingView(RectTransform canvas)
         {
@@ -85,7 +86,7 @@ namespace GamecommMentor.DaengSaka
             action.color = Paper;
             exit = Rect("Keluar",controls,.825f,.16f,.98f,.84f);
             Fill(exit, Inset);
-            AddText(font,exit,"Tutup","Keluar  [Esc]",17,.015f,0,.985f,1,TextAnchor.MiddleCenter,true);
+            closeLabel = AddText(font,exit,"Tutup","Keluar  [Esc]",17,.015f,0,.985f,1,TextAnchor.MiddleCenter,true);
             // Independent sibling so the scene can fade before and after the HUD is shown.
             curtain = Fill(Rect("Transisi memancing", canvas, 0f, 0f, 1f, 1f), Color.black);
             curtain.raycastTarget = true;
@@ -111,8 +112,12 @@ namespace GamecommMentor.DaengSaka
         internal void Render(GmFishingRound round, bool questOpen, bool added, bool completed)
         {
             bool changed = round.Phase != lastPhase;
-            if (changed)
+            bool pad = GmGamepadInput.UsingGamepad;
+            if (changed || gamepadHints != pad)
             {
+                gamepadHints = pad;
+                string key = pad ? "[A]" : "[Spasi / Klik]";
+                closeLabel.text = $"Keluar  [{GmGamepadInput.BackLabel}]";
                 lastPhase = round.Phase;
                 reel.gameObject.SetActive(lastPhase == GmFishingPhase.Reeling);
                 result.gameObject.SetActive(lastPhase == GmFishingPhase.Caught);
@@ -122,26 +127,26 @@ namespace GamecommMentor.DaengSaka
                 {
                     case GmFishingPhase.Ready:
                         heading.text = "Spot memancing"; hint.text = round.EarlyPull ? "Kail ditarik kembali." : "Alat pancing dan umpan siap.";
-                        action.text = "Lempar  [Spasi / Klik]"; break;
+                        action.text = "Lempar  " + key; break;
                     case GmFishingPhase.Waiting:
                         heading.text = "Menunggu gigitan"; hint.text = "Tarik saat tanda ! muncul.";
-                        action.text = "Tarik kembali"; break;
+                        action.text = "Tarik kembali  " + key; break;
                     case GmFishingPhase.Bite:
                         heading.text = "Ikan menggigit!"; hint.text = "Tarik sebelum ikan lepas.";
-                        action.text = "Tarik  [Spasi / Klik]"; break;
+                        action.text = "Tarik  " + key; break;
                     case GmFishingPhase.Reeling:
                         heading.text = "Jaga ikan di dalam bar hijau"; hint.text = "Tahan untuk menaikkan bar. Lepas untuk menurunkannya.";
-                        action.text = "Tahan  [Spasi / Klik]"; break;
+                        action.text = "Tahan  " + key; break;
                     case GmFishingPhase.Caught:
                         heading.text = added ? "Tangkapan berhasil" : "Tumpukan ikan penuh";
                         hint.text = "Lempar lagi atau kembali ke desa.";
-                        action.text = "Mancing lagi"; catchTitle.text = round.Species.Item.Name + "  ·  " + round.Species.Rarity;
+                        action.text = "Mancing lagi  " + key; catchTitle.text = round.Species.Item.Name + "  ·  " + round.Species.Rarity;
                         catchDetail.text = !added ? "Tas penuh. Ikan dilepas." : completed ?
                             "Masuk Tas  ·  Memancing di Sorelia selesai" : "Masuk Tas  ·  +1 ikan";
                         break;
                     case GmFishingPhase.Escaped:
                         heading.text = "Ikan lepas"; hint.text = round.MissedBite ? "Gigitannya terlewat." : "Ikan terlalu lama di luar bar.";
-                        action.text = "Coba lagi"; break;
+                        action.text = "Coba lagi  " + key; break;
                 }
             }
             if (round.Phase != GmFishingPhase.Reeling) return;

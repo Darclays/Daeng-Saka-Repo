@@ -50,6 +50,9 @@ namespace GamecommMentor.DaengSaka
         private static int revision;
         private static bool autoTrackMain = true;
         private static string trackedSideId;
+        internal const float QuestNoticeDuration = 10f;
+        private static string newQuestTitle;
+        private static float questNoticeRemaining;
 
         [SerializeField] private GmMainQuestProgress mainQuest;
         [SerializeField] private GmInteractor player;
@@ -64,14 +67,18 @@ namespace GamecommMentor.DaengSaka
         private int lastRevision = -1;
         private GmMainQuestStep lastStep;
         private GmQuestJournalView view;
+        private GmJournalPage? pauseSelection;
 
         internal GmQuestArea Area => area;
         internal GmQuestArea ExitArea => exitArea;
         internal bool ExitOpen => exit != null && exit.isActiveAndEnabled && exit.IsOpen;
         internal Rect MapBounds => mapBoundsXZ;
         internal Texture2D MapArtwork => mapArtwork;
+        internal GmInteractor Interactor => player;
         internal Transform Player => player != null ? player.transform : null;
         internal IReadOnlyList<GmQuestLandmark> Landmarks => landmarks;
+        internal string NewQuestTitle => questNoticeRemaining > 0f ? newQuestTitle : null;
+        internal float QuestNoticeRemaining => questNoticeRemaining;
 
         internal IReadOnlyList<GmQuestEntry> Entries
         {
@@ -95,6 +102,7 @@ namespace GamecommMentor.DaengSaka
 
         internal bool ShowMainCompletion => autoTrackMain && mainQuest != null &&
             mainQuest.Step == GmMainQuestStep.Selesai;
+        internal bool ReturnsToPause => pauseSelection.HasValue;
 
         public void Configure(GmMainQuestProgress progress, GmInteractor interactor, GmQuestArea currentArea,
             GmWorldPortal portal, GmQuestArea destination, Rect bounds, GmQuestLandmark[] areaLandmarks)
@@ -131,6 +139,20 @@ namespace GamecommMentor.DaengSaka
             revision = 0;
             autoTrackMain = true;
             trackedSideId = null;
+            DismissNewQuestNotice();
+        }
+
+        internal static void NotifyNewQuest(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return;
+            newQuestTitle = title;
+            questNoticeRemaining = QuestNoticeDuration;
+        }
+
+        internal static void DismissNewQuestNotice()
+        {
+            newQuestTitle = null;
+            questNoticeRemaining = 0f;
         }
 
         public bool TryStartSideQuest(GmSideQuestDefinition definition)
@@ -139,6 +161,7 @@ namespace GamecommMentor.DaengSaka
                 return false;
             SideRuns.Add(definition.Id, new SideRun(definition));
             revision++;
+            NotifyNewQuest(definition.Title);
             return true;
         }
 
@@ -227,40 +250,90 @@ namespace GamecommMentor.DaengSaka
 
         private void Update()
         {
-            if (player == null || player.gameObject.scene != SceneManager.GetActiveScene())
+            if (player == null || !player.isActiveAndEnabled || player.gameObject.scene != SceneManager.GetActiveScene())
             {
                 Close();
                 return;
             }
 
-            GmJournalPage? requested = null;
-            bool closePressed = false;
+            GmJournalPage? requested = ReadPageShortcut();
+            if (view != null && view.IsOpen)
+            {
+                if (GmGamepadInput.PressedMenu())
+                {
+                    if (view.Page == GmJournalPage.Pause) Close();
+                    else ShowPause();
+                }
+                else if (GmGamepadInput.PressedBack() || requested == view.Page) Back();
+                else if (view.Page == GmJournalPage.Pause)
+                {
+                    GmJournalPage? page = requested ?? WorldShoulderShortcut();
+                    if (page.HasValue) OpenFromPause(page.Value);
+                }
+                else if (requested.HasValue) ShowPage(requested.Value);
+                else if (GmGamepadInput.NextTabPressed) ShowPage((GmJournalPage)(((int)view.Page + 1) % 3));
+                else if (GmGamepadInput.PreviousTabPressed) ShowPage((GmJournalPage)(((int)view.Page + 2) % 3));
+                else if (view.Page == GmJournalPage.Bag || RefreshEntries()) view.Refresh();
+                if (view.IsOpen) view.UpdateInputHints();
+                return;
+            }
+            if (!player.ControlGate.CanExplore) return;
+            if (GmGamepadInput.PressedMenu()) requested = GmJournalPage.Pause;
+            else requested ??= WorldShoulderShortcut();
+            if (!requested.HasValue)
+            {
+                if (questNoticeRemaining > 0f)
+                    questNoticeRemaining = Mathf.Max(0f, questNoticeRemaining - Time.unscaledDeltaTime);
+                GmPartyRun.Current.TickItemNotice(Time.unscaledDeltaTime);
+                return;
+            }
+            view ??= new GmQuestJournalView((RectTransform)transform, this);
+            player.ControlGate.Block(this);
+            if (requested == GmJournalPage.Pause) ShowPause();
+            else ShowPage(requested.Value);
+        }
+
+        private static GmJournalPage? WorldShoulderShortcut() =>
+            GmGamepadInput.PreviousTabPressed ? GmJournalPage.Map :
+            GmGamepadInput.NextTabPressed ? GmJournalPage.Bag : null;
+
+        private static GmJournalPage? ReadPageShortcut()
+        {
+            if (GmGamepadInput.JournalPressed) return GmJournalPage.Journal;
 #if ENABLE_INPUT_SYSTEM
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                if (keyboard.jKey.wasPressedThisFrame) requested = GmJournalPage.Journal;
-                else if (keyboard.mKey.wasPressedThisFrame) requested = GmJournalPage.Map;
-                else if (keyboard.iKey.wasPressedThisFrame) requested = GmJournalPage.Bag;
-                closePressed = keyboard.escapeKey.wasPressedThisFrame;
+                if (keyboard.jKey.wasPressedThisFrame) return GmJournalPage.Journal;
+                if (keyboard.mKey.wasPressedThisFrame) return GmJournalPage.Map;
+                if (keyboard.iKey.wasPressedThisFrame) return GmJournalPage.Bag;
             }
 #elif ENABLE_LEGACY_INPUT_MANAGER
-            if (Input.GetKeyDown(KeyCode.J)) requested = GmJournalPage.Journal;
-            else if (Input.GetKeyDown(KeyCode.M)) requested = GmJournalPage.Map;
-            else if (Input.GetKeyDown(KeyCode.I)) requested = GmJournalPage.Bag;
-            closePressed = Input.GetKeyDown(KeyCode.Escape);
+            if (Input.GetKeyDown(KeyCode.J)) return GmJournalPage.Journal;
+            if (Input.GetKeyDown(KeyCode.M)) return GmJournalPage.Map;
+            if (Input.GetKeyDown(KeyCode.I)) return GmJournalPage.Bag;
 #endif
-            if (view != null && view.IsOpen)
-            {
-                if (closePressed || requested == view.Page) Close();
-                else if (requested.HasValue) ShowPage(requested.Value);
-                else if (view.Page == GmJournalPage.Bag || RefreshEntries()) view.Refresh();
-                return;
-            }
-            if (!requested.HasValue || !player.ControlGate.CanExplore) return;
-            view ??= new GmQuestJournalView((RectTransform)transform, this);
-            player.ControlGate.Block(this);
-            ShowPage(requested.Value);
+            return null;
+        }
+
+        internal void OpenFromPause(GmJournalPage page)
+        {
+            if (view?.IsOpen != true || view.Page != GmJournalPage.Pause) return;
+            pauseSelection = page;
+            ShowPage(page);
+        }
+
+        private void ShowPause()
+        {
+            GmJournalPage? selected = pauseSelection;
+            pauseSelection = null;
+            view.ShowPause(selected);
+        }
+
+        internal void Back()
+        {
+            if (pauseSelection.HasValue) ShowPause();
+            else Close();
         }
 
         private void ShowPage(GmJournalPage page)
@@ -273,6 +346,7 @@ namespace GamecommMentor.DaengSaka
         internal void Close()
         {
             if (view == null || !view.IsOpen) return;
+            pauseSelection = null;
             view.Hide();
             if (player == null) return;
             player.ControlGate.Unblock(this);

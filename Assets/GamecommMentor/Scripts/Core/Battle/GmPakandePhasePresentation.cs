@@ -20,11 +20,15 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private Line[] opening = Array.Empty<Line>();
         [SerializeField] private Line[] afterSummon = Array.Empty<Line>();
         [SerializeField] private Line[] airborne = Array.Empty<Line>();
+        [SerializeField] private Line[] enragedOpening = Array.Empty<Line>();
+        [SerializeField] private Line[] enragedReaction = Array.Empty<Line>();
         [SerializeField] private AudioClip roar;
 
         internal Line[] Opening => opening;
         internal Line[] AfterSummon => afterSummon;
         internal Line[] Airborne => airborne;
+        internal Line[] EnragedOpening => enragedOpening;
+        internal Line[] EnragedReaction => enragedReaction;
         internal AudioClip Roar => roar;
     }
 }
