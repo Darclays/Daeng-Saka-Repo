@@ -19,6 +19,7 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color HpInk = new Color(0.98f, 0.98f, 0.93f);
         private static readonly Color ChargeRing = new Color(0.78f, 0.30f, 0.16f);
         private static readonly Color PoisonNumber = new Color(0.97f, 0.71f, 1f);
+        private static readonly Color EnragedBackdrop = new Color(.86f, .80f, 1f);
 
         private sealed class UnitView
         {
@@ -54,6 +55,7 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform stage;
         private readonly float hitZoom;
         private readonly RawImage background;
+        private readonly Color locationTint;
         private readonly RawImage partyImpact;
         private readonly UnitView[] views;
         private readonly Texture2D ring;
@@ -74,6 +76,7 @@ namespace GamecommMentor.DaengSaka
             arena.gameObject.AddComponent<RectMask2D>();
             background = Texture(GmBattleView.Rect("Arena Backdrop", arena, 0f, 0f, 1f, 1f));
             LocationBackdrop = art.FindLocationBackdrop(originSceneName);
+            locationTint = LocationBackdrop == null ? Color.white : LocationTint(originSceneName);
             background.texture = LocationBackdrop != null ? LocationBackdrop : art.Find("arena")?.Texture;
             if (LocationBackdrop != null)
             {
@@ -85,7 +88,7 @@ namespace GamecommMentor.DaengSaka
                     AddBackdropShade(arena, shade, 0f, .14f, true);
                 }
             }
-            background.color = background.texture != null ? Color.white : new Color(0.69f, 0.75f, 0.78f);
+            background.color = background.texture != null ? locationTint : new Color(0.69f, 0.75f, 0.78f);
             Texture2D contactShadow = LocationBackdrop != null ? art.FindContactShadow() : null;
             hasContactShadows = contactShadow != null;
             stage = GmBattleView.Rect("Battle Framing", arena, 0f, 0f, 1f, 1f);
@@ -185,12 +188,16 @@ namespace GamecommMentor.DaengSaka
         public void Render(GmBattleSession session, int actor, int round, bool focus,
             bool choosingPartyMember, GmBattleMove selection, int bossVisualPhase = 0)
         {
+            int visualPhase = bossVisualPhase > 0 ? bossVisualPhase : session.Boss?.Phase ?? 0;
             art.SetBlur(background, focus && background.texture != null, isBackdrop: true);
-            if (background.texture != null) background.color = focus ? new Color(0.91f, 0.92f, 0.93f) : Color.white;
+            if (background.texture != null)
+            {
+                Color tint = BackdropTint(visualPhase);
+                background.color = focus ? new Color(tint.r * .91f, tint.g * .92f, tint.b * .93f) : tint;
+            }
             for (int i = 0; i < views.Length; i++)
                 if (session.Units[i].IsPresent) views[i].Slot.SetAsLastSibling();
             if (actor >= 0 && session.Units[actor].IsPresent) views[actor].Slot.SetAsLastSibling();
-            int visualPhase = bossVisualPhase > 0 ? bossVisualPhase : session.Boss?.Phase ?? 0;
             for (int i = 0; i < views.Length; i++)
             {
                 UnitView view = views[i];
@@ -332,8 +339,21 @@ namespace GamecommMentor.DaengSaka
         public void DrawBossTransition(int index, int phase, bool wasAirborne, int frame)
         {
             UnitView boss = views[index];
-            GmBattleArt.Draw(boss.Sprite, art.BossTransition(phase, wasAirborne), frame, boss.Scale);
+            GmBattleArt.Clip clip = art.BossTransition(phase, wasAirborne);
+            GmBattleArt.Draw(boss.Sprite, clip, frame, boss.Scale);
+            if (phase == 3 && LocationBackdrop != null && clip != null)
+                background.color = Color.Lerp(locationTint, EnragedBackdrop, frame / (float)Mathf.Max(1, clip.count - 1));
         }
+
+        private Color BackdropTint(int phase) => phase == 3 && LocationBackdrop != null ? EnragedBackdrop : locationTint;
+
+        private static Color LocationTint(string scene) => scene switch
+        {
+            "IbuKota" => new Color(1f, .97f, .89f),
+            "DesaSorelia" => new Color(1f, .98f, .90f),
+            "GoaLembanyung" or "GoaLembayung" => new Color(.91f, .95f, 1f),
+            _ => Color.white
+        };
 
         public void DrawAction(GmBattleSession session, int actorIndex, GmBattleMove move, int[] targets,
             GmBattleHit[] hits, GmBattleActionFrame pose)
