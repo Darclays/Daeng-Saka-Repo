@@ -55,7 +55,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetWorldRun() => worldRun = new QuestRun();
+        internal static void ResetWorldRun() => worldRun = new QuestRun();
 
         private void Awake()
         {

@@ -12,7 +12,7 @@ namespace GamecommMentor.DaengSaka
 
     internal sealed class GmBattleView : IDisposable
     {
-        private enum ControlPanel { None, Pause, Withdraw, Info }
+        private enum ControlPanel { None, Pause, Withdraw, Info, Options }
 
         private const float ScreenAspect = 16f / 9f;
         private const float ArenaBottom = 0.305f;
@@ -82,6 +82,7 @@ namespace GamecommMentor.DaengSaka
         private readonly Button recoverButton;
         private readonly Button[] commands;
         private readonly GmControlDialog controlDialog;
+        private GmOptionsView optionsView;
         private readonly Action retreat;
         private readonly List<Button> navigation = new List<Button>();
         private readonly Dictionary<GameObject, int> statusTargets = new Dictionary<GameObject, int>();
@@ -198,7 +199,7 @@ namespace GamecommMentor.DaengSaka
             resultButton = MakeButton(result, "Kembali ke Eksplorasi", 0.10f, 0.07f, 0.90f, 0.32f, leave);
             resultButton.targetGraphic.color = Focus;
             resultOverlay.SetActive(false);
-            controlDialog = new GmControlDialog(screen, font, BackFromOverlay, ChooseOverlayOption);
+            controlDialog = new GmControlDialog(screen, font, BackFromOverlay, ChooseOverlayOption, OpenOptions);
         }
 
         public void Render(GmBattleSession session, GmBattleMenu menu, GmBattleMove selection, string lastAction,
@@ -413,12 +414,36 @@ namespace GamecommMentor.DaengSaka
         private void ShowPause(bool focusWithdraw = false)
         {
             controlPanel = ControlPanel.Pause;
-            controlDialog.Show("Jeda", "Lanjutkan dari pilihan terakhir.", "Lanjutkan", "Mundur dari battle", focusWithdraw);
+            controlDialog.Show("Jeda", "Lanjutkan dari pilihan terakhir.", "Lanjutkan", "Mundur dari battle",
+                focusWithdraw, third: "Opsi");
+        }
+
+        private void OpenOptions()
+        {
+            if (controlPanel != ControlPanel.Pause) return;
+            controlPanel = ControlPanel.Options;
+            controlDialog.Hide();
+            optionsView ??= new GmOptionsView(screen, BackFromOverlay);
+            optionsView.Show("Jeda battle");
+        }
+
+        public bool UpdateOptionsInput()
+        {
+            if (controlPanel != ControlPanel.Options) return false;
+            optionsView.UpdateInput();
+            return true;
         }
 
         public void BackFromOverlay()
         {
             if (!HasControlDialog) return;
+            if (controlPanel == ControlPanel.Options)
+            {
+                optionsView.Hide();
+                ShowPause();
+                controlDialog.FocusExtra();
+                return;
+            }
             if (controlPanel == ControlPanel.Withdraw)
             {
                 ShowPause(focusWithdraw: true);
@@ -499,6 +524,7 @@ namespace GamecommMentor.DaengSaka
         public void UpdateStatusPresentation(GmBattleSession session)
         {
             stage.AnimateStatuses(session, statusRound);
+            if (controlPanel == ControlPanel.Options) return;
             if (HasControlDialog) controlDialog.RestoreFocus();
             else if (GmGamepadInput.UsingGamepad && navigation.Count > 0) FocusBattle();
             RefreshControlHint();
@@ -566,7 +592,8 @@ namespace GamecommMentor.DaengSaka
         public float PlayBattleSound(AudioClip clip)
         {
             if (clip == null || impactAudio.volume <= 0f) return 0f;
-            impactAudio.PlayOneShot(clip);
+            float gain = GmGameOptions.EffectsGain;
+            if (gain > 0f) impactAudio.PlayOneShot(clip, gain);
             return clip.length;
         }
 
@@ -584,6 +611,7 @@ namespace GamecommMentor.DaengSaka
 
         public void Dispose()
         {
+            optionsView?.Hide();
             if (impactAudio != null) impactAudio.Stop();
             if (screen != null)
             {

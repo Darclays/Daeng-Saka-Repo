@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/GamecommMentor/Scenes_GamecommMentor/MainMenu.unity
+    guid: 0e60fc407fbd0294f9d794a7c19784b9
+  - enabled: 1
     path: Assets/GamecommMentor/Scenes_GamecommMentor/IbuKota.unity
     guid: 7ba504c86f605e94a9b6875d328ff4f3
   - enabled: 1

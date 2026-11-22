@@ -92,6 +92,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (session == null || leaving || view == null) return;
             view.UpdateStatusPresentation(session);
+            if (view.UpdateOptionsInput()) return;
             if (resolving || (!CanAct && !session.IsChoosingPartyMember && !view.HasControlDialog)) return;
             if (GmGamepadInput.PressedMenu()) view.TogglePause();
             else if (GmGamepadInput.PressedBack())

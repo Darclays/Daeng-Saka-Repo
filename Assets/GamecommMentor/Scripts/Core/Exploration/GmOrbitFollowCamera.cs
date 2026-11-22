@@ -176,7 +176,8 @@ namespace GamecommMentor.DaengSaka
                     return;
                 }
                 Vector2 mouse = ReadLookDelta();
-                UpdateOrbit(mouse.x * horizontalSensitivity, mouse.y * verticalSensitivity);
+                float scale = GmGameOptions.CameraScale;
+                UpdateOrbit(mouse.x * horizontalSensitivity * scale, mouse.y * verticalSensitivity * scale);
             }
             else if (!waitForOrbitRelease && OrbitPressed() && !PointerIsOverUi())
             {
@@ -202,7 +203,7 @@ namespace GamecommMentor.DaengSaka
                         gamepadOrbit = true;
                     }
                     // The stick sets a rotation rate. Mouse input already contains the frame's displacement.
-                    float seconds = Time.deltaTime;
+                    float seconds = Time.deltaTime * GmGameOptions.CameraScale;
                     UpdateOrbit(stick.x * 140f * seconds, stick.y * 90f * seconds);
                 }
             }

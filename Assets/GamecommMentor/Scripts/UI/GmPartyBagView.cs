@@ -26,7 +26,7 @@ namespace GamecommMentor.DaengSaka
         public RectTransform Panel { get; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetTab() => showEquipment = false;
+        internal static void ResetTab() => showEquipment = false;
 
         internal GmPartyBagView(RectTransform window, Font font)
         {

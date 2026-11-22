@@ -86,7 +86,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetTransfer() => pendingTransfer = null;
+        internal static void ResetTransfer() => pendingTransfer = null;
 
         private void Awake()
         {

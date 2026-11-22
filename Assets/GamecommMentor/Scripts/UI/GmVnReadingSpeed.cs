@@ -23,9 +23,14 @@ namespace GamecommMentor.DaengSaka
                 VNTextSpeedMode.Fast => VNTextSpeedMode.Instant,
                 _ => VNTextSpeedMode.Slow
             };
-            PlayerPrefs.SetInt(Key, (int)next);
-            PlayerPrefs.Save();
+            Set(next);
             return next;
+        }
+
+        internal static void Set(VNTextSpeedMode speed)
+        {
+            PlayerPrefs.SetInt(Key, (int)speed);
+            PlayerPrefs.Save();
         }
 
         internal static string Caption(VNTextSpeedMode speed) => speed switch

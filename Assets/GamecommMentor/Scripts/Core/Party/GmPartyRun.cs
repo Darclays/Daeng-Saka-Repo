@@ -114,7 +114,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void BeginPlaySession() => Current = new GmPartyRun();
+        internal static void BeginPlaySession() => Current = new GmPartyRun();
 
         private void RecordNewItem(string name, GmBagSection section)
         {

@@ -151,7 +151,7 @@ namespace GamecommMentor.DaengSaka
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetRun()
+        internal static void ResetRun()
         {
             SideRuns.Clear();
             revision = 0;
@@ -398,6 +398,18 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
 
+            if (GmDemoScenes.IsLoading) return;
+            if (view?.IsOpen == true && view.Page == GmJournalPage.Options)
+            {
+                view.UpdateOptionsInput();
+                return;
+            }
+            if (view?.IsOpen == true && view.Page == GmJournalPage.ReturnToTitle)
+            {
+                if (GmGamepadInput.PressedBack() || GmGamepadInput.PressedMenu()) Back();
+                else view.RestoreReturnFocus();
+                return;
+            }
             GmJournalPage? requested = ReadPageShortcut();
             if (view != null && view.IsOpen)
             {
@@ -482,6 +494,8 @@ namespace GamecommMentor.DaengSaka
         {
             if (page == GmJournalPage.Bag) view.ShowBag();
             else if (page == GmJournalPage.Map) OpenMap();
+            else if (page == GmJournalPage.Options) view.ShowOptions();
+            else if (page == GmJournalPage.ReturnToTitle) view.ShowReturnConfirmation();
             else view.ShowJournal();
         }
 

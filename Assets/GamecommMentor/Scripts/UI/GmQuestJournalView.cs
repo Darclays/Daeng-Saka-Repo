@@ -8,7 +8,7 @@ using static GamecommMentor.DaengSaka.GmBattleView;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmJournalPage { Journal, Map, Bag, Pause }
+    internal enum GmJournalPage { Journal, Map, Bag, Pause, Options, ReturnToTitle }
 
     internal sealed class GmQuestJournalView
     {
@@ -24,6 +24,7 @@ namespace GamecommMentor.DaengSaka
         private readonly GmQuestJournal journal;
         private readonly Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         private readonly RectTransform root;
+        private readonly Image shade;
         private readonly RectTransform window, pausePanel;
         private readonly RectTransform journalPanel;
         private readonly GmQuestAreaMapView mapView;
@@ -33,10 +34,12 @@ namespace GamecommMentor.DaengSaka
         private readonly List<(GmQuestEntry entry, Image background, Text label)> rows =
             new List<(GmQuestEntry, Image, Text)>();
         private readonly Button journalTab, mapTab, bagTab, close, activeTab, completeTab, trackAction, mapAction;
-        private readonly Button resume, pauseJournal, pauseMap, pauseBag;
+        private readonly Button resume, pauseJournal, pauseMap, pauseBag, pauseOptions, pauseReturn;
         private readonly Text category, title, description, objectives, trackLabel, tabHint, pauseHint;
         private bool showCompleted;
         private string selectedId, mapQuestId;
+        private GmOptionsView optionsView;
+        private GmControlDialog returnDialog;
 
         internal bool IsOpen => root.gameObject.activeSelf;
         internal GmJournalPage Page { get; private set; }
@@ -46,7 +49,8 @@ namespace GamecommMentor.DaengSaka
         {
             this.journal = journal;
             root = Rect("Quest Menu", canvas, 0f, 0f, 1f, 1f);
-            Fill(root, new Color(0.07f, 0.12f, 0.09f, .82f)).raycastTarget = true;
+            shade = Fill(root, new Color(0.07f, 0.12f, 0.09f, .82f));
+            shade.raycastTarget = true;
             window = Rect("Window", root, .04f, .055f, .96f, .945f);
             Fill(window, Paper);
             RectTransform header = Rect("Header", window, 0f, .865f, 1f, 1f);
@@ -85,31 +89,38 @@ namespace GamecommMentor.DaengSaka
             mapView = new GmQuestAreaMapView(mapPanel, journal, font);
             bagView = new GmPartyBagView(window, font);
 
-            pausePanel = Rect("Jeda", root, .30f, .20f, .70f, .80f);
+            pausePanel = Rect("Jeda", root, .30f, .12f, .70f, .88f);
             Fill(pausePanel, Paper);
             Fill(Rect("Aksen", pausePanel, 0f, .98f, 1f, 1f), Leaf);
-            AddText(font, pausePanel, "Judul jeda", "Jeda", 36, .09f, .795f, .91f, .96f, bold: true);
-            Fill(Rect("Pilihan jeda", pausePanel, .075f, .16f, .925f, .785f), Inset);
-            resume = AddButton(font, pausePanel, "Lanjutkan", .09f, .638f, .91f, .768f, journal.Close, primary: true);
-            pauseJournal = AddButton(font, pausePanel, "Jurnal", .09f, .49f, .91f, .62f,
-                () => journal.OpenFromPause(GmJournalPage.Journal));
-            pauseMap = AddButton(font, pausePanel, "Peta", .09f, .342f, .91f, .472f,
-                () => journal.OpenFromPause(GmJournalPage.Map));
+            AddText(font, pausePanel, "Judul jeda", "Jeda", 36, .09f, .827f, .91f, .97f, bold: true);
+            resume = PauseButton("Lanjutkan", 0, journal.Close, primary: true);
+            pauseJournal = PauseButton("Jurnal", 1, () => journal.OpenFromPause(GmJournalPage.Journal));
+            pauseMap = PauseButton("Peta", 2, () => journal.OpenFromPause(GmJournalPage.Map));
             Caption(pauseMap).supportRichText = true;
-            pauseBag = AddButton(font, pausePanel, "Tas", .09f, .194f, .91f, .324f,
-                () => journal.OpenFromPause(GmJournalPage.Bag));
+            pauseBag = PauseButton("Tas", 3, () => journal.OpenFromPause(GmJournalPage.Bag));
+            pauseOptions = PauseButton("Opsi", 4, () => journal.OpenFromPause(GmJournalPage.Options));
+            pauseReturn = PauseButton("Ke Main Menu", 5, () => journal.OpenFromPause(GmJournalPage.ReturnToTitle));
             GmMenuButton.Link(resume, null, pauseJournal);
             GmMenuButton.Link(pauseJournal, resume, pauseMap);
             GmMenuButton.Link(pauseMap, pauseJournal, pauseBag);
-            GmMenuButton.Link(pauseBag, pauseMap, null);
-            pauseHint = AddText(font, pausePanel, "Pintasan jeda", "", 16, .09f, .044f, .91f, .144f);
+            GmMenuButton.Link(pauseBag, pauseMap, pauseOptions);
+            GmMenuButton.Link(pauseOptions, pauseBag, pauseReturn);
+            GmMenuButton.Link(pauseReturn, pauseOptions, null);
+            pauseHint = AddText(font, pausePanel, "Pintasan jeda", "", 16, .09f, .031f, .91f, .096f);
             pauseHint.color = Muted;
             root.gameObject.SetActive(false);
+        }
+
+        private Button PauseButton(string name, int row, Action action, bool primary = false)
+        {
+            float bottom = .707f - row * .119f;
+            return AddButton(font, pausePanel, name, .09f, bottom, .91f, bottom + .099f, action, primary);
         }
 
         private void SelectPage(GmJournalPage page)
         {
             if (page != GmJournalPage.Bag) LeaveBag();
+            RestoreShade();
             Page = page;
             pausePanel.gameObject.SetActive(false);
             root.gameObject.SetActive(true);
@@ -132,6 +143,7 @@ namespace GamecommMentor.DaengSaka
         internal void ShowPause(GmJournalPage? previous)
         {
             LeaveBag();
+            RestoreShade();
             Page = GmJournalPage.Pause;
             window.gameObject.SetActive(false);
             pausePanel.gameObject.SetActive(true);
@@ -142,10 +154,54 @@ namespace GamecommMentor.DaengSaka
                 GmJournalPage.Journal => pauseJournal,
                 GmJournalPage.Map => pauseMap,
                 GmJournalPage.Bag => pauseBag,
+                GmJournalPage.Options => pauseOptions,
+                GmJournalPage.ReturnToTitle => pauseReturn,
                 _ => resume
             });
             UpdateInputHints();
         }
+
+        internal void ShowOptions()
+        {
+            ShowPauseOverlay(GmJournalPage.Options);
+            optionsView ??= new GmOptionsView(root, journal.Back);
+            optionsView.Show("Jeda");
+        }
+
+        internal void ShowReturnConfirmation()
+        {
+            ShowPauseOverlay(GmJournalPage.ReturnToTitle);
+            returnDialog ??= new GmControlDialog(root, font, journal.Back, ReturnToTitle);
+            returnDialog.Show("Kembali ke Main Menu?", "Sesi demo saat ini akan berakhir.", "Batal", "Ke Main Menu");
+        }
+
+        private void ReturnToTitle()
+        {
+            if (GmDemoScenes.TryReturnToTitle())
+            {
+                returnDialog.Show("Membuka Main Menu…", "", null);
+                return;
+            }
+            returnDialog.Show("Main Menu belum tersedia", "Periksa apakah scene MainMenu ada di daftar build demo.", "Kembali");
+        }
+
+        private void ShowPauseOverlay(GmJournalPage page)
+        {
+            Page = page;
+            shade.enabled = false;
+            pausePanel.gameObject.SetActive(false);
+            window.gameObject.SetActive(false);
+        }
+
+        private void RestoreShade()
+        {
+            optionsView?.Hide();
+            returnDialog?.Hide();
+            shade.enabled = true;
+        }
+
+        internal void UpdateOptionsInput() => optionsView?.UpdateInput();
+        internal void RestoreReturnFocus() => returnDialog?.RestoreFocus();
 
         internal void UpdateInputHints()
         {
@@ -211,6 +267,7 @@ namespace GamecommMentor.DaengSaka
         internal void Hide()
         {
             LeaveBag();
+            RestoreShade();
             EventSystem system = EventSystem.current;
             GameObject selected = system != null ? system.currentSelectedGameObject : null;
             if (selected != null && selected.transform.IsChildOf(root)) system.SetSelectedGameObject(null);

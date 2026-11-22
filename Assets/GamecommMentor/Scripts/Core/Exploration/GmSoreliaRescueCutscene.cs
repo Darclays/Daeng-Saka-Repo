@@ -183,6 +183,7 @@ namespace GamecommMentor.DaengSaka
         private float shotTime;
         private int shotIndex;
         private AudioSource playingCue;
+        private float playingCueVolume;
         private bool cuePlayedInShot;
 
         public void Configure(Camera camera, GmOrbitFollowCamera followCamera, Collider floor,
@@ -322,9 +323,11 @@ namespace GamecommMentor.DaengSaka
             AudioSource cue = shot.AudioAt(shotTime);
             if (!cuePlayedInShot && cue != null)
             {
-                if (playingCue != null) playingCue.Stop();
+                StopCue();
                 playingCue = cue;
-                playingCue.Play();
+                playingCueVolume = cue.volume;
+                cue.volume = playingCueVolume * GmGameOptions.EffectsGain;
+                cue.Play();
                 cuePlayedInShot = true;
             }
             if (shotIndex == 0) SetFade(1f - shotTime / FadeSeconds);
@@ -376,8 +379,7 @@ namespace GamecommMentor.DaengSaka
             IsHoldingFinalShot = false;
             Completed = completed;
             HideCast();
-            if (playingCue != null) playingCue.Stop();
-            playingCue = null;
+            StopCue();
             if (overlay != null) overlay.SetActive(false);
             for (int i = 0; i < explorationSprites.Length; i++)
                 if (explorationSprites[i] != null) explorationSprites[i].enabled = rendererStates[i];
@@ -392,6 +394,14 @@ namespace GamecommMentor.DaengSaka
             if (gate != null) gate.Unblock(this);
             gate = null;
             interactor = null;
+        }
+
+        private void StopCue()
+        {
+            if (playingCue == null) return;
+            playingCue.Stop();
+            playingCue.volume = playingCueVolume;
+            playingCue = null;
         }
 
         private static float Ease(float t) => t * t * (3f - 2f * t);

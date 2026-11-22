@@ -22,7 +22,7 @@ namespace GamecommMentor.DaengSaka
                 source.spatialBlend = 0f;
                 source.volume = .8f;
             }
-            source.PlayOneShot(clip);
+            if (GmGameOptions.EffectsGain > 0f) source.PlayOneShot(clip, GmGameOptions.EffectsGain);
         }
     }
 }

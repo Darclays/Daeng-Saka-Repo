@@ -10,15 +10,7 @@ namespace GamecommMentor.DaengSaka.Editor
     internal static class GmWindowsBaselineBuild
     {
         private const string Menu = "GamecommMentor/Daeng Saka/Build/Windows Baseline";
-        private const string SceneFolder = "Assets/GamecommMentor/Scenes_GamecommMentor/";
         private const BuildTarget Target = BuildTarget.StandaloneWindows64;
-        private static readonly string[] Scenes =
-        {
-            SceneFolder + "IbuKota.unity",
-            SceneFolder + "DesaSorelia.unity",
-            SceneFolder + "GoaLembanyung.unity",
-            SceneFolder + "Battle_Encounter_Test.unity"
-        };
 
         [MenuItem(Menu, true)]
         private static bool CanBuild()
@@ -42,7 +34,10 @@ namespace GamecommMentor.DaengSaka.Editor
             string project = Directory.GetParent(Application.dataPath).FullName;
             try
             {
-                foreach (string scene in Scenes)
+                if (!GmMainMenuSetup.HasTitleScene)
+                    throw new IOException("Jalankan GamecommMentor > Daeng Saka > Set Up Main Menu sebelum build.");
+                string[] scenes = GmMainMenuSetup.ScenePaths(includeTitle: true);
+                foreach (string scene in scenes)
                     CheckScene(project, scene);
 
                 string root = Path.Combine(project, "Builds", "WindowsBaseline");
@@ -57,13 +52,13 @@ namespace GamecommMentor.DaengSaka.Editor
 
                 Directory.CreateDirectory(directory);
                 string player = Path.Combine(directory, "DaengSaka.exe");
-                Debug.Log("[Daeng Saka] Memulai build Windows dari Ibu Kota. Tujuan: " + player);
+                Debug.Log("[Daeng Saka] Memulai build Windows dari Main Menu. Tujuan: " + player);
                 BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(new BuildPlayerOptions
                 {
                     target = Target,
                     targetGroup = BuildTargetGroup.Standalone,
                     subtarget = (int)StandaloneBuildSubtarget.Player,
-                    scenes = Scenes,
+                    scenes = scenes,
                     locationPathName = player,
                     options = BuildOptions.ShowBuiltPlayer
                 });

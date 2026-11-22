@@ -508,15 +508,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 throw new InvalidOperationException($"Gameplay setup sudah ada di luar '{WorldRoot}' pada {scene.path}.");
         }
 
-        private static void RegisterScenes()
-        {
-            string[] required = { Capital, Village, Cave, Battle };
-            EditorBuildSettingsScene[] remaining = EditorBuildSettings.scenes
-                .Where(scene => !required.Contains(scene.path)).ToArray();
-            EditorBuildSettings.scenes = required.Select(path => new EditorBuildSettingsScene(path, true))
-                .Concat(remaining).ToArray();
-            AssetDatabase.SaveAssets();
-        }
+        private static void RegisterScenes() => GmMainMenuSetup.RegisterScenes(GmMainMenuSetup.HasTitleScene);
 
         private static GameObject GetRoot(Scene scene, string name) =>
             scene.GetRootGameObjects().SingleOrDefault(root => root.name == name) ?? CreateObject(scene, name);
