@@ -71,7 +71,10 @@ namespace GamecommMentor.DaengSaka
         public const string Merchant = "merchant";
         public const string Blacksmith = "blacksmith";
         public const string CastleGuard = "castle-guard";
+        public const string Herbalist = "herbalist";
+        public const string CityFamily = "city-family";
         public const string Exit = "exit";
+        public const string Return = "return";
         public const string Encounter = "encounter";
         public const string Pakande = "pakande";
         public const string FishingSpot = "fishing-spot";
@@ -89,6 +92,13 @@ namespace GamecommMentor.DaengSaka
             new GmQuestGoal("Minta Daeng Aco memeriksa pedang", GmQuestArea.Kerajaan, Guide),
             new GmQuestGoal("Antarkan pedang ke Pak Yusuf", GmQuestArea.Kerajaan, CastleGuard),
             new GmQuestGoal("Ambil upah dari Penempa Besi", GmQuestArea.Kerajaan, Blacksmith));
+
+        public const int HerbalDeliveryReward = 25;
+        public static readonly GmSideQuestDefinition HerbalDelivery = new GmSideQuestDefinition(
+            "side.delivery.herbal", "Jamu untuk Si Kecil",
+            "Ambil jamu pesanan Pak Yusuf dan antarkan ke ibu dan anak di permukiman.",
+            new GmQuestGoal("Ambil pesanan Pak Yusuf di Tukang Jamu", GmQuestArea.Kerajaan, Herbalist),
+            new GmQuestGoal("Antarkan jamu ke ibu dan anak", GmQuestArea.Kerajaan, CityFamily));
 
         private sealed class Chapter
         {

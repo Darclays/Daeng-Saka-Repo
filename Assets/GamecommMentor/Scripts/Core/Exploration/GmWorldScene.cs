@@ -10,6 +10,7 @@ namespace GamecommMentor.DaengSaka
     {
         public const string DefaultEntry = "Start";
         public const string CaveReturnEntry = "FromGoaLembayung";
+        public const string VillageReturnEntry = "FromDesaSorelia";
         private const float DefaultArrivalPitch = 18f;
 
         [Serializable]
@@ -64,6 +65,24 @@ namespace GamecommMentor.DaengSaka
                     configured[i].cameraPitch = old.cameraPitch;
             }
             entries = configured;
+        }
+
+        public void SetEntry(Entry entry)
+        {
+            entries ??= Array.Empty<Entry>();
+            int index = Array.FindIndex(entries, current => current.id == entry.id);
+            if (index < 0)
+            {
+                index = entries.Length;
+                Array.Resize(ref entries, index + 1);
+            }
+            else
+            {
+                Entry old = entries[index];
+                if (entry.cameraLookAt == null) entry.cameraLookAt = old.cameraLookAt;
+                if (entry.cameraPitch <= 0f) entry.cameraPitch = old.cameraPitch;
+            }
+            entries[index] = entry;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

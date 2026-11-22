@@ -83,28 +83,28 @@ namespace GamecommMentor.DaengSaka.Editor
 
         public void Place(Transform target, Vector3 near, Vector3 forward, params Vector3[] avoid)
         {
-            Vector3 feet = FindGroundedPosition(target.name, near, avoid);
+            Vector3 feet = FindGroundedPosition(target, near, avoid);
             target.SetPositionAndRotation(feet, Quaternion.LookRotation(forward, Vector3.up));
             PrefabUtility.RecordPrefabInstancePropertyModifications(target);
         }
 
-        private Vector3 FindGroundedPosition(string label, Vector3 near, Vector3[] avoid)
+        private Vector3 FindGroundedPosition(Transform target, Vector3 near, Vector3[] avoid)
         {
             Physics.SyncTransforms();
-            if (TryPosition(near, avoid, out Vector3 feet)) return feet;
+            if (TryPosition(target, near, avoid, out Vector3 feet)) return feet;
             for (float radius = 0.75f; radius <= 6f; radius += 0.75f)
             {
                 for (int i = 0; i < 12; i++)
                 {
                     float angle = i * Mathf.PI / 6f;
                     Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                    if (TryPosition(near + offset, avoid, out feet)) return feet;
+                    if (TryPosition(target, near + offset, avoid, out feet)) return feet;
                 }
             }
-            throw new InvalidOperationException($"Tidak ada titik yang bisa dipijak untuk '{label}' di sekitar {near} ({scene.name}).");
+            throw new InvalidOperationException($"Tidak ada titik yang bisa dipijak untuk '{target.name}' di sekitar {near} ({scene.name}).");
         }
 
-        private bool TryPosition(Vector3 sample, Vector3[] avoid, out Vector3 feet)
+        private bool TryPosition(Transform target, Vector3 sample, Vector3[] avoid, out Vector3 feet)
         {
             feet = default;
             foreach (Vector3 reserved in avoid)
@@ -122,7 +122,8 @@ namespace GamecommMentor.DaengSaka.Editor
             Vector3 bottom = feet + Vector3.up * clearanceRadius;
             Vector3 top = feet + Vector3.up * (clearanceHeight - clearanceRadius);
             return !Physics.OverlapCapsule(bottom, top, clearanceRadius, Physics.DefaultRaycastLayers,
-                QueryTriggerInteraction.Ignore).Any(c => c.gameObject.scene == scene && !floors.Contains(c));
+                QueryTriggerInteraction.Ignore).Any(c => c.gameObject.scene == scene && !floors.Contains(c) &&
+                    !c.transform.IsChildOf(target));
         }
     }
 }

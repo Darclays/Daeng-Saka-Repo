@@ -265,14 +265,20 @@ namespace GamecommMentor.DaengSaka.Editor
                 layout.Place(portalPoint, layout.PortalGuide.position - inward * inset, isCave ? inward : -inward, start.position);
             }
             GmWorldPortal portal = GetOrAdd<GmWorldPortal>(portalPoint.gameObject);
-            BoxCollider trigger = Require<BoxCollider>(portalPoint.gameObject);
-            trigger.isTrigger = true;
-            trigger.size = new Vector3(1.45f, 1.6f, 1.05f);
-            trigger.center = Vector3.up * 0.8f;
+            if (portal.GetComponent<GmWorldBorder>() == null)
+            {
+                BoxCollider trigger = Require<BoxCollider>(portalPoint.gameObject);
+                trigger.isTrigger = true;
+                trigger.size = new Vector3(1.45f, 1.6f, 1.05f);
+                trigger.center = Vector3.up * 0.8f;
+            }
 
             var entry = new GmWorldScene.Entry(GmWorldScene.DefaultEntry, start);
             GmWorldScene.Entry[] entries = { entry };
-            if (isVillage)
+            Transform fromVillage = isCapital ? world.transform.Find("Spawn - Dari Sorelia") : null;
+            if (fromVillage != null)
+                entries = new[] { entry, new GmWorldScene.Entry(GmWorldScene.VillageReturnEntry, fromVillage) };
+            else if (isVillage)
             {
                 Transform fromCave = GetObject(world.transform, "Spawn - Dari Goa", out bool newReturn).transform;
                 if (newReturn)

@@ -139,7 +139,7 @@ namespace GamecommMentor.DaengSaka
         {
             bool playerPin = landmark.Id == PlayerId;
             bool questPin = landmark.Id == trackedLandmark;
-            string glyph = playerPin ? "▲" : questPin ? "◆" : landmark.Id == GmQuestCatalog.Exit ? "↗" : "●";
+            string glyph = playerPin ? "▲" : questPin ? "◆" : GmQuestJournal.IsRouteLandmark(landmark.Id) ? "↗" : "●";
             Vector2 normalized = GmQuestMapArtwork.Project(bounds, landmark.Point.position, out bool outside);
             var location = new Location { Landmark = landmark, Outside = outside };
             if (!outside)
@@ -176,7 +176,7 @@ namespace GamecommMentor.DaengSaka
                 if (location.Landmark.Id != id) continue;
                 GmQuestLandmark landmark = location.Landmark;
                 locationTitle.text = landmark.Label;
-                locationText.text = landmark.Id == GmQuestCatalog.Exit && !journal.ExitOpen
+                locationText.text = GmQuestJournal.IsRouteLandmark(landmark.Id) && !journal.IsRouteOpen(landmark.Id)
                     ? "Portal terkunci. Lanjutkan quest utama untuk membukanya."
                     : location.Outside ? "Lokasi ini berada di luar cakupan peta rute." : landmark.Description;
                 if (location.Mark != null) location.Mark.rectTransform.SetAsLastSibling();
@@ -196,9 +196,10 @@ namespace GamecommMentor.DaengSaka
                 bool tracked = key == trackedLandmark;
                 SetSelected(location.Row, selected);
                 if (location.Mark == null) continue;
+                bool portal = GmQuestJournal.IsRouteLandmark(key);
                 location.Mark.color = key == PlayerId ? PlayerPin : tracked ? QuestPin :
-                    key == GmQuestCatalog.Exit ? PortalPin : selected ? LeafLight : Paper;
-                location.Icon.color = key == PlayerId || (key == GmQuestCatalog.Exit && !tracked) ? Paper : Ink;
+                    portal ? PortalPin : selected ? LeafLight : Paper;
+                location.Icon.color = key == PlayerId || (portal && !tracked) ? Paper : Ink;
             }
         }
 

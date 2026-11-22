@@ -11,6 +11,7 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform overlay;
         private readonly Text title, detail, primaryLabel, secondaryLabel;
         private readonly Button primary, secondary;
+        private Button defaultFocus;
 
         internal bool IsOpen => overlay.gameObject.activeSelf;
 
@@ -41,10 +42,11 @@ namespace GamecommMentor.DaengSaka
             GmMenuButton.Link(secondary, primary, null);
             overlay.SetAsLastSibling();
             overlay.gameObject.SetActive(true);
-            GmMenuButton.Focus(focusSecond && second != null ? secondary : primary);
+            defaultFocus = focusSecond && second != null ? secondary : primary;
+            GmMenuButton.Focus(defaultFocus);
         }
 
-        internal void RestoreFocus() => GmMenuButton.FocusWithin(overlay, primary);
+        internal void RestoreFocus() => GmMenuButton.FocusWithin(overlay, defaultFocus);
         internal void Hide() => overlay.gameObject.SetActive(false);
     }
 }

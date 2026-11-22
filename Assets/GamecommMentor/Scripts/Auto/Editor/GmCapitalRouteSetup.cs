@@ -85,8 +85,11 @@ namespace GamecommMentor.DaengSaka.Editor
                 Vector3 inward = layout.IntoLevel;
                 Undo.RecordObject(start, UndoName);
                 layout.Place(start, StartPosition(layout), inward);
-                Undo.RecordObject(portal, UndoName);
-                layout.Place(portal, layout.PortalGuide.position - inward * ExitInset, -inward, start.position);
+                if (portal.GetComponent<GmWorldBorder>() == null)
+                {
+                    Undo.RecordObject(portal, UndoName);
+                    layout.Place(portal, layout.PortalGuide.position - inward * ExitInset, -inward, start.position);
+                }
                 Undo.RecordObject(player, UndoName);
                 player.SetPositionAndRotation(start.position, start.rotation * Quaternion.Euler(0f, 180f, 0f));
                 PrefabUtility.RecordPrefabInstancePropertyModifications(player);

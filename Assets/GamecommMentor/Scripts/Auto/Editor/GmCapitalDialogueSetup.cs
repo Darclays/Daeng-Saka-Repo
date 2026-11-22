@@ -43,7 +43,7 @@ namespace GamecommMentor.DaengSaka.Editor
             }
         }
 
-        private static void InstallInScene(Scene scene)
+        internal static void InstallInScene(Scene scene)
         {
             Transform world = RequireRoot(scene, "Daeng Saka - World Gameplay");
             Transform residents = RequireChild(world, "Warga Ibu Kota");
@@ -52,10 +52,13 @@ namespace GamecommMentor.DaengSaka.Editor
             Transform smith = RequireChild(world, "Penempa Besi");
             Transform merchant = RequireChild(world, "Merchant");
             Transform guard = RequireChild(residents, "Penjaga Kerajaan 1");
+            Transform herbalist = RequireChild(residents, "Tukang Jamu");
+            Transform mother = RequireChild(residents, "Warga Ibu");
             var sequence = Require<GmPixelCrushersMainQuestDialogue>(flow);
             var journal = Require<GmQuestJournal>(RequireChild(world, "Quest Encounter Hint"));
             var bridge = Require<GmPixelCrushersDialogueBridge>(manager);
-            var database = bridge.AdditionalDatabase ?? Require<DialogueSystemController>(manager).initialDatabase;
+            var database = bridge.AdditionalDatabase;
+            if (database == null) database = Require<DialogueSystemController>(manager).initialDatabase;
             if (database == null) throw new InvalidOperationException("Dialogue Manager perlu Dialogue Database.");
 
             var catalog = LoadProfile<GmVnDialogueCatalog>("DaftarDialogVN");
@@ -65,7 +68,7 @@ namespace GamecommMentor.DaengSaka.Editor
             var acoProfile = LoadProfile<VNActorVisualProfile>("Pua_Profil");
             var jamuProfile = LoadProfile<VNActorVisualProfile>("TukangJamu_Dialog_Profil");
             Transform aco = FindOrPlaceAco(scene, world, residents, smith, merchant);
-            BindDeliveryRoute(world, flow, aco, smith, merchant, guard, bridge, sequence, journal);
+            BindDeliveryRoute(world, flow, aco, smith, merchant, guard, herbalist, mother, bridge, sequence, journal);
             var template = Template.FromDefault();
             var kept = new List<string>();
             using var catalogData = new SerializedObject(catalog);
@@ -103,7 +106,13 @@ namespace GamecommMentor.DaengSaka.Editor
                 string terminal = talk.title == GmCapitalDeliveryDialogue.AcoGreeting ? null : GmCapitalDeliveryDialogue.CompletionEntry;
                 databaseChanged |= GmMainQuestDialogueData.AddConversation(database, template, talk.title, terminal,
                     talk.partner, talk.lines);
-                Register(entries, talk.title, talk.title == GmCapitalDeliveryDialogue.DeliveryTitle ? guardProfile : demoProfile);
+                var profile = talk.title switch
+                {
+                    GmCapitalDeliveryDialogue.DeliveryTitle or GmCapitalDeliveryDialogue.HerbalOfferTitle => guardProfile,
+                    GmCapitalDeliveryDialogue.HerbalPickupTitle or GmCapitalDeliveryDialogue.HerbalDropoffTitle => capitalProfile,
+                    _ => demoProfile
+                };
+                Register(entries, talk.title, profile);
             }
 
             BindPortrait(aco, acoProfile);
@@ -116,7 +125,7 @@ namespace GamecommMentor.DaengSaka.Editor
             }
             if (kept.Count > 0) Debug.LogWarning("[Daeng Saka] Periksa penempatan atau dialog kustom berikut. " +
                 string.Join(", ", kept));
-            Debug.Log($"[Daeng Saka 1E.37B] Daeng Aco dan Titipan Penempa Besi siap. {bound} dialog warga terhubung. Simpan scene IbuKota.");
+            Debug.Log($"[Daeng Saka] Daeng Aco dan dua quest kota siap. {bound} dialog warga terhubung. Simpan scene IbuKota.");
         }
 
         private static Transform FindOrPlaceAco(Scene scene, Transform world, Transform residents,
@@ -137,12 +146,12 @@ namespace GamecommMentor.DaengSaka.Editor
         }
 
         private static void BindDeliveryRoute(Transform world, Transform flow, Transform aco, Transform smith,
-            Transform merchant, Transform guard, GmPixelCrushersDialogueBridge bridge,
+            Transform merchant, Transform guard, Transform herbalist, Transform mother, GmPixelCrushersDialogueBridge bridge,
             GmPixelCrushersMainQuestDialogue sequence, GmQuestJournal journal)
         {
-            var delivery = flow.GetComponent<GmCapitalDeliveryDialogue>() ?? Undo.AddComponent<GmCapitalDeliveryDialogue>(flow.gameObject);
+            var delivery = GetOrAdd<GmCapitalDeliveryDialogue>(flow);
             Undo.RecordObject(delivery, UndoName);
-            delivery.Configure(journal, bridge, smith, aco, guard);
+            delivery.Configure(journal, bridge, smith, aco, guard, herbalist, mother);
 
             var acoTalk = GetDeliveryInteraction(aco);
             acoTalk.SetPresentation(GmCapitalDialogueData.Aco, "Bicara");
@@ -152,7 +161,7 @@ namespace GamecommMentor.DaengSaka.Editor
             acoTalk.SetCityDelivery(delivery);
             PrefabUtility.RecordPrefabInstancePropertyModifications(acoTalk);
 
-            var acoActor = aco.GetComponent<DialogueActor>() ?? Undo.AddComponent<DialogueActor>(aco.gameObject);
+            var acoActor = GetOrAdd<DialogueActor>(aco);
             Undo.RecordObject(acoActor, UndoName);
             acoActor.actor = GmCapitalDialogueData.Aco;
             PrefabUtility.RecordPrefabInstancePropertyModifications(acoActor);
@@ -162,9 +171,12 @@ namespace GamecommMentor.DaengSaka.Editor
             smithTalk.SetCityDelivery(delivery);
             PrefabUtility.RecordPrefabInstancePropertyModifications(smithTalk);
 
-            var guardTalk = GetDeliveryInteraction(guard);
-            guardTalk.SetCityDelivery(delivery);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(guardTalk);
+            foreach (Transform actor in new[] { guard, herbalist, mother })
+            {
+                var talk = GetDeliveryInteraction(actor);
+                talk.SetCityDelivery(delivery);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(talk);
+            }
 
             Undo.RecordObject(sequence, UndoName);
             sequence.UseAssignedSpeakersOnly();
@@ -178,6 +190,10 @@ namespace GamecommMentor.DaengSaka.Editor
                 "Penjaga di kaki tangga istana.", guard));
             journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.Blacksmith, "Penempa Besi",
                 "Perlengkapan untuk perjalanan.", smith));
+            journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.Herbalist, "Tukang Jamu",
+                "Kedai di dekat tangga istana.", herbalist));
+            journal.SetLandmark(new GmQuestLandmark(GmQuestCatalog.CityFamily, "Ibu dan Anak",
+                "Warga di depan rumah putih.", mother));
 
             Transform oldGuide = world.Find(GmCapitalNpcSetup.PlaceholderGuide);
             if (oldGuide != null && oldGuide.gameObject.activeSelf)
@@ -190,11 +206,11 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static GmPixelCrushersConversation GetDeliveryInteraction(Transform npc)
         {
-            var talk = npc.GetComponent<GmPixelCrushersConversation>();
+            npc.TryGetComponent(out GmPixelCrushersConversation talk);
             if (npc.GetComponentInChildren<Collider>(true) == null ||
                 npc.GetComponents<GmInteractable>().Any(other => other != talk))
                 throw new InvalidOperationException($"'{npc.name}' perlu satu interaksi dialog dan collider untuk Titipan Penempa.");
-            talk ??= Undo.AddComponent<GmPixelCrushersConversation>(npc.gameObject);
+            if (talk == null) talk = AddComponent<GmPixelCrushersConversation>(npc);
             Undo.RecordObject(talk, UndoName);
             return talk;
         }
@@ -208,18 +224,18 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static bool TryBind(Transform npc, string title, string actorName, GmPixelCrushersDialogueBridge bridge)
         {
-            GmPixelCrushersConversation talk = npc.GetComponent<GmPixelCrushersConversation>();
+            npc.TryGetComponent(out GmPixelCrushersConversation talk);
             if (npc.GetComponents<GmInteractable>().Any(other => other != talk) ||
                 (talk != null && !string.IsNullOrEmpty(talk.ConversationTitle) && talk.ConversationTitle != title))
                 return false;
 
-            talk ??= Undo.AddComponent<GmPixelCrushersConversation>(npc.gameObject);
+            if (talk == null) talk = AddComponent<GmPixelCrushersConversation>(npc);
             Undo.RecordObject(talk, UndoName);
             talk.SetPresentation(actorName, "Bicara");
             talk.ConfigureAmbientDialogue(title, bridge, null, default);
             PrefabUtility.RecordPrefabInstancePropertyModifications(talk);
 
-            var actor = npc.GetComponent<DialogueActor>() ?? Undo.AddComponent<DialogueActor>(npc.gameObject);
+            var actor = GetOrAdd<DialogueActor>(npc);
             if (string.IsNullOrWhiteSpace(actor.actor))
             {
                 Undo.RecordObject(actor, UndoName);
@@ -243,7 +259,10 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static void BindPortrait(Transform npc, VNActorVisualProfile profile)
         {
-            Sprite sprite = npc != null ? npc.GetComponentInChildren<SpriteRenderer>(true)?.sprite : null;
+            if (npc == null) return;
+            var renderer = npc.GetComponentInChildren<SpriteRenderer>(true);
+            if (renderer == null) return;
+            Sprite sprite = renderer.sprite;
             if (sprite == null) return;
             using var data = new SerializedObject(profile);
             SerializedProperty portrait = data.FindProperty("defaultPortraitSprite");

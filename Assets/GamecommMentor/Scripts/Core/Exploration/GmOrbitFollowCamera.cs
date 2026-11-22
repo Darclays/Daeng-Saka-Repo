@@ -100,6 +100,8 @@ namespace GamecommMentor.DaengSaka
 
         public void SetIgnoredRoots(Transform[] roots) => ignoredRoots = roots ?? new Transform[0];
 
+        public void IncludeObstructionLayers(int layers) => obstructionLayers = obstructionLayers.value | layers;
+
         internal bool TryHoldDialogueView()
         {
             if (dialogueHoldsView || !isActiveAndEnabled || !initialized) return false;
@@ -324,6 +326,7 @@ namespace GamecommMentor.DaengSaka
         private bool Ignore(Collider collider)
         {
             if (collider == null) return true;
+            if (collider.GetComponentInParent<GmWorldBorder>() != null) return true;
             Transform hit = collider.transform;
             if (target != null && hit.IsChildOf(target)) return true;
             if (ignoredRoots != null)

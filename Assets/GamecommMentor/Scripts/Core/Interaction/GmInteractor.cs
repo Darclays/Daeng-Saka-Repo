@@ -87,7 +87,7 @@ namespace GamecommMentor.DaengSaka
             {
                 GmInteractable candidate = overlaps[i].GetComponentInParent<GmInteractable>();
                 if (candidate == null || !considered.Add(candidate) || !IsAvailable(candidate)) continue;
-                Vector3 delta = Vector3.ProjectOnPlane(candidate.FocusPosition - origin, Vector3.up);
+                Vector3 delta = Vector3.ProjectOnPlane(InteractionPoint(candidate, origin) - origin, Vector3.up);
                 float score = delta.sqrMagnitude;
                 if (score > bestScore + 0.0001f) continue;
                 if (Mathf.Abs(score - bestScore) <= 0.0001f && CurrentTarget == previous) continue;
@@ -100,7 +100,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (target == null || !target.CanInteract(this)) return false;
             Vector3 origin = transform.position + Vector3.up * 0.8f;
-            Vector3 delta = target.FocusPosition - origin;
+            Vector3 delta = InteractionPoint(target, origin) - origin;
             Vector3 planar = Vector3.ProjectOnPlane(delta, Vector3.up);
             var shopReach = target.GetComponent<GmShopInteractionReach>();
             bool atShop = shopReach != null && shopReach.Contains(origin);
@@ -121,5 +121,8 @@ namespace GamecommMentor.DaengSaka
             }
             return true;
         }
+
+        private static Vector3 InteractionPoint(GmInteractable target, Vector3 origin) =>
+            target is GmWorldPortal portal ? portal.InteractionPoint(origin) : target.FocusPosition;
     }
 }

@@ -58,6 +58,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmInteractor player;
         [SerializeField] private GmQuestArea area;
         [SerializeField] private GmWorldPortal exit;
+        [SerializeField] private GmWorldPortal returnPortal;
         [SerializeField] private GmQuestArea exitArea;
         [SerializeField] private Rect mapBoundsXZ;
         [SerializeField] private Texture2D mapArtwork;
@@ -71,7 +72,7 @@ namespace GamecommMentor.DaengSaka
 
         internal GmQuestArea Area => area;
         internal GmQuestArea ExitArea => exitArea;
-        internal bool ExitOpen => exit != null && exit.isActiveAndEnabled && exit.IsOpen;
+        internal bool ExitOpen => IsRouteOpen(GmQuestCatalog.Exit);
         internal Rect MapBounds => mapBoundsXZ;
         internal Texture2D MapArtwork => mapArtwork;
         internal GmInteractor Interactor => player;
@@ -118,6 +119,20 @@ namespace GamecommMentor.DaengSaka
         }
 
         public void SetLandmark(GmQuestLandmark landmark) => SetAreaLandmarks(mapBoundsXZ, landmark);
+
+        public void SetTravelPortal(GmWorldPortal portal, GmQuestArea destination, bool returning = false)
+        {
+            if (returning) returnPortal = portal;
+            else
+            {
+                exit = portal;
+                exitArea = destination;
+            }
+            string name = GmQuestCatalog.AreaName(destination);
+            string id = returning ? GmQuestCatalog.Return : GmQuestCatalog.Exit;
+            SetLandmark(new GmQuestLandmark(id, "Ke " + name, "Temui garis batas untuk pergi ke " + name + ".",
+                portal.transform));
+        }
 
         public void SetAreaLandmarks(Rect bounds, params GmQuestLandmark[] updatedLandmarks)
         {
@@ -240,12 +255,24 @@ namespace GamecommMentor.DaengSaka
                     !Array.Exists(landmarks, point => point.Id == goal.Landmark) &&
                     TryGetLandmark(GmQuestCatalog.Guide, out landmark);
             }
-            bool leadsToGoal = goal.Area == exitArea ||
-                (area == GmQuestArea.Kerajaan && goal.Area == GmQuestArea.GoaLembayung);
-            if (leadsToGoal && ExitOpen)
-                return TryGetLandmark(GmQuestCatalog.Exit, out landmark);
+            string route = null;
+            if (area == GmQuestArea.DesaSorelia && goal.Area == GmQuestArea.Kerajaan)
+                route = GmQuestCatalog.Return;
+            else if (goal.Area == exitArea || (exitArea == GmQuestArea.DesaSorelia &&
+                ((area == GmQuestArea.Kerajaan && goal.Area == GmQuestArea.GoaLembayung) ||
+                 (area == GmQuestArea.GoaLembayung && goal.Area == GmQuestArea.Kerajaan))))
+                route = GmQuestCatalog.Exit;
+            if (route != null && IsRouteOpen(route)) return TryGetLandmark(route, out landmark);
             landmark = default;
             return false;
+        }
+
+        internal static bool IsRouteLandmark(string id) => id == GmQuestCatalog.Exit || id == GmQuestCatalog.Return;
+
+        internal bool IsRouteOpen(string id)
+        {
+            GmWorldPortal portal = id == GmQuestCatalog.Return ? returnPortal : exit;
+            return portal != null && portal.isActiveAndEnabled && portal.IsOpen;
         }
 
         private void Update()

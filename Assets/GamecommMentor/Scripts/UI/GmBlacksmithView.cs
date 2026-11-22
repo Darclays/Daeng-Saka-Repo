@@ -15,18 +15,21 @@ namespace GamecommMentor.DaengSaka
         private static readonly Color Warning = new Color32(142, 59, 36, 255);
         private readonly Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         private readonly List<(Entry entry, Button button, Text badge)> rows = new List<(Entry, Button, Text)>();
-        private readonly RectTransform root, list, detail, confirm, confirmActions;
+        private readonly RectTransform root, panel, list, detail, confirm, confirmActions;
         private readonly CanvasGroup controls;
-        private readonly Button buyTab, enchantTab, deliveryButton, close, commit;
+        private readonly Button buyTab, enchantTab, close, commit;
         private readonly Text balance, freeOffer, title, wielder, power, attacks, projected, status, commitLabel, empty;
         private readonly Text confirmTitle, confirmPrice, confirmBalance;
         private readonly Image icon;
         private readonly Action<Entry> select;
         private readonly Action back;
+        private readonly GmControlDialog serviceChoice;
         private Button selectedRow, confirmCancel;
 
+        internal bool IsChoosingService => serviceChoice.IsOpen;
+
         internal GmBlacksmithView(Action<bool> changeTab, Action<Entry> select, Action request, Action back,
-            Action delivery)
+            Action openShop, Action delivery)
         {
             this.select = select;
             this.back = back;
@@ -42,7 +45,7 @@ namespace GamecommMentor.DaengSaka
             root = (RectTransform)canvasObject.transform;
             Fill(root, new Color(.04f, .08f, .065f, .76f)).raycastTarget = true;
 
-            var panel = Rect("Layanan penempa", root, .075f, .075f, .925f, .925f);
+            panel = Rect("Layanan penempa", root, .075f, .075f, .925f, .925f);
             Fill(panel, Paper);
             controls = panel.gameObject.AddComponent<CanvasGroup>();
             var header = Rect("Kepala toko", panel, 0f, .844f, 1f, 1f);
@@ -54,9 +57,8 @@ namespace GamecommMentor.DaengSaka
 
             buyTab = AddButton(font, panel, "Senjata", .035f, .727f, .19f, .815f, () => changeTab(false));
             enchantTab = AddButton(font, panel, "Enchant", .20f, .727f, .355f, .815f, () => changeTab(true));
-            deliveryButton = AddButton(font, panel, "Titipan Penempa", .365f, .727f, .56f, .815f, delivery);
             freeOffer = AddText(font, panel, "Jatah enchant", "Enchant pertama gratis untuk satu senjata",
-                17, .575f, .727f, .965f, .815f, TextAnchor.MiddleRight);
+                17, .454f, .727f, .965f, .815f, TextAnchor.MiddleRight);
             freeOffer.color = Leaf;
             list = CreateScrollContent(Rect("Senjata", panel, .035f, .053f, .43f, .695f), out _);
             var card = Rect("Rincian", panel, .454f, .053f, .965f, .695f);
@@ -84,16 +86,27 @@ namespace GamecommMentor.DaengSaka
             confirmPrice = AddText(font, sheet, "Biaya", "", 20, .08f, .52f, .92f, .65f);
             confirmBalance = AddText(font, sheet, "Saldo akhir", "", 20, .08f, .37f, .92f, .50f, bold: true);
             confirmActions = Rect("Tindakan konfirmasi", sheet, .08f, .082f, .92f, .304f);
+            serviceChoice = new GmControlDialog(root, font, openShop, delivery);
             root.gameObject.SetActive(false);
         }
 
-        internal void Show()
+        internal void ShowShop()
         {
+            serviceChoice.Hide();
             HideConfirmation();
             root.gameObject.SetActive(true);
+            panel.gameObject.SetActive(true);
         }
 
-        internal void ShowDelivery(bool available) => deliveryButton.gameObject.SetActive(available);
+        internal void ChooseService(bool payment)
+        {
+            root.gameObject.SetActive(true);
+            panel.gameObject.SetActive(false);
+            HideConfirmation();
+            string status = payment ? "Upah siap diambil" : "Quest tersedia";
+            serviceChoice.Show("Penempa Besi", $"{status}\n{GmQuestCatalog.CityDelivery.Title}",
+                "Buka toko", payment ? "Ambil upah" : "Lihat quest", focusSecond: true);
+        }
 
         internal void ShowEntries(IReadOnlyList<Entry> entries, bool enchanting)
         {
@@ -182,6 +195,11 @@ namespace GamecommMentor.DaengSaka
 
         internal void UpdateInputHints()
         {
+            if (IsChoosingService)
+            {
+                serviceChoice.RestoreFocus();
+                return;
+            }
             bool pad = GmGamepadInput.UsingGamepad;
             string key = GmGamepadInput.BackLabel;
             Caption(close).text = $"Tutup [{key}]";
@@ -198,6 +216,7 @@ namespace GamecommMentor.DaengSaka
             EventSystem events = EventSystem.current;
             GameObject focused = events != null ? events.currentSelectedGameObject : null;
             if (focused != null && focused.transform.IsChildOf(root)) events.SetSelectedGameObject(null);
+            serviceChoice.Hide();
             root.gameObject.SetActive(false);
         }
 

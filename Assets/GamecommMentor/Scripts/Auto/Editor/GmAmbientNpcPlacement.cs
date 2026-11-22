@@ -118,7 +118,13 @@ namespace GamecommMentor.DaengSaka.Editor
             throw new InvalidOperationException($"'{owner.name}' memerlukan {typeof(T).Name}.");
         }
 
-        private T AddComponent<T>(Transform owner) where T : Component
+        internal static T GetOrAdd<T>(Transform owner) where T : Component
+        {
+            if (owner.TryGetComponent(out T component)) return component;
+            return AddComponent<T>(owner);
+        }
+
+        internal static T AddComponent<T>(Transform owner) where T : Component
         {
             T component = Undo.AddComponent<T>(owner.gameObject);
             if (component == null)

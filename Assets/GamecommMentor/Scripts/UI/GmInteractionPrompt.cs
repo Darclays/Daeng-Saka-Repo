@@ -9,7 +9,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmInteractor interactor;
         [SerializeField] private GameObject panel;
         [SerializeField] private Text label;
-        private GmInteractable shownTarget;
+        private string shownPrompt;
         private bool shownGamepad;
 
         public void SetInteractor(GmInteractor playerInteractor) => interactor = playerInteractor;
@@ -30,12 +30,12 @@ namespace GamecommMentor.DaengSaka
                 ? interactor.CurrentTarget : null;
             if (panel != null && panel.activeSelf != (target != null)) panel.SetActive(target != null);
             bool pad = GmGamepadInput.UsingGamepad;
-            if (target == shownTarget && shownGamepad == pad) return;
-            shownTarget = target;
+            string prompt = target != null ? target.Prompt : string.Empty;
+            if (prompt == shownPrompt && shownGamepad == pad) return;
+            shownPrompt = prompt;
             shownGamepad = pad;
             if (label != null)
             {
-                string prompt = target != null ? target.Prompt : string.Empty;
                 label.text = pad ? prompt.Replace("[E]", "[A]") : prompt;
             }
         }

@@ -60,6 +60,7 @@ namespace GamecommMentor.DaengSaka
         private bool CanUseCounter => isActiveAndEnabled && player != null && player.isActiveAndEnabled &&
             player.gameObject.scene == gameObject.scene && gameObject.scene == SceneManager.GetActiveScene() &&
             sequence != null && sequence.OffersBlacksmithTo(transform) && run == GmPartyRun.Current;
+        private bool HasDelivery => delivery != null && delivery.CanStartAt(transform);
 
         internal bool TryOpen(GmPixelCrushersMainQuestDialogue dialogue, GmInteractor requester,
             GmCapitalDeliveryDialogue cityDelivery = null)
@@ -74,17 +75,24 @@ namespace GamecommMentor.DaengSaka
             delivery = cityDelivery;
             player.ControlGate.Block(this);
             player.SuppressInteraction();
-            view ??= new GmBlacksmithView(ChangeTab, Select, Request, BackOrClose, TalkAboutDelivery);
+            view ??= new GmBlacksmithView(ChangeTab, Select, Request, BackOrClose, OpenShop, TalkAboutDelivery);
+            if (HasDelivery) view.ChooseService(delivery.SmithHasPayment);
+            else OpenShop();
+            return true;
+        }
+
+        private void OpenShop()
+        {
+            if (!CanUseCounter) return;
             enchanting = false;
             notice = null;
-            view.Show();
+            view.ShowShop();
             RebuildEntries();
-            return true;
         }
 
         private void TalkAboutDelivery()
         {
-            if (!CanUseCounter || pending != null || delivery == null || !delivery.CanStartAt(transform)) return;
+            if (!CanUseCounter || !view.IsChoosingService || !HasDelivery) return;
             var quest = delivery;
             var dialogue = sequence;
             var requester = player;
@@ -94,7 +102,7 @@ namespace GamecommMentor.DaengSaka
 
         private void ChangeTab(bool enchant)
         {
-            if (pending != null || !CanUseCounter || enchanting == enchant) return;
+            if (pending != null || !CanUseCounter || view.IsChoosingService || enchanting == enchant) return;
             enchanting = enchant;
             selected = null;
             notice = null;
@@ -132,7 +140,7 @@ namespace GamecommMentor.DaengSaka
 
         private void Select(Entry entry)
         {
-            if (pending != null || !CanUseCounter || !entries.Contains(entry)) return;
+            if (pending != null || !CanUseCounter || view.IsChoosingService || !entries.Contains(entry)) return;
             selected = entry;
             notice = null;
             Render();
@@ -171,7 +179,6 @@ namespace GamecommMentor.DaengSaka
             shownRevision = run.Equipment.Revision;
             shownPrice = Price(selected);
             view.ShowSelection(selected, shownBalance, enchanting && run.FreeEnchantAvailable, Badge);
-            view.ShowDelivery(delivery != null && delivery.CanStartAt(transform));
             if (selected == null) return;
 
             var member = Wielder(selected);
@@ -197,7 +204,7 @@ namespace GamecommMentor.DaengSaka
 
         private void Request()
         {
-            if (!CanUseCounter || pending != null || selected == null) return;
+            if (!CanUseCounter || view.IsChoosingService || pending != null || selected == null) return;
             int price = Price(selected);
             if (BlockReason(selected, price) != null)
             {
@@ -243,9 +250,15 @@ namespace GamecommMentor.DaengSaka
 
         private void BackOrClose()
         {
-            if (pending == null || !CanUseCounter)
+            if (!CanUseCounter || view.IsChoosingService)
             {
                 Close();
+                return;
+            }
+            if (pending == null)
+            {
+                if (HasDelivery) view.ChooseService(delivery.SmithHasPayment);
+                else Close();
                 return;
             }
             pending = null;
@@ -262,7 +275,7 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
             if (GmGamepadInput.PressedBack()) BackOrClose();
-            else if (pending == null)
+            else if (pending == null && !view.IsChoosingService)
             {
                 if (enchanting && GmGamepadInput.PreviousTabPressed) ChangeTab(false);
                 else if (!enchanting && GmGamepadInput.NextTabPressed) ChangeTab(true);

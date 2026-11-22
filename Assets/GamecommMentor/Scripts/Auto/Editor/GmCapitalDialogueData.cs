@@ -78,6 +78,29 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 (Aco, "Sudah cek perbekalan kalian, Nak? Kalau sudah siap, hati-hati di jalan ke Sorelia, ya."),
                 (Saka, "Iya, Mangge. Kami akan berhati-hati.")
+            }),
+            (GmCapitalDeliveryDialogue.HerbalOfferTitle, Yusuf, new[]
+            {
+                (Yusuf, "Tuan Putri, boleh minta tolong sebentar? Anak di dekat rumah putih tadi mengeluh pusing."),
+                (Daung, "Oh, yang mau ke kedai jamu sama ibunya? Mereka sudah pulang, Pak?"),
+                (Yusuf, "Iya. Saya sudah pesan sebotol buat dia. Tolong ambil di Tukang Jamu, lalu antar ke rumah mereka. Saya masih berjaga di sini."),
+                (Pacca, "Baik, Pak. Yang ini lebih ringan dari pedang, kan?"),
+                (Saka, "Ayo. Kalau mampir sekarang, jamunya mungkin masih hangat.")
+            }),
+            (GmCapitalDeliveryDialogue.HerbalPickupTitle, Jamu, new[]
+            {
+                (Saka, "Bu, kami mau ambil jamu yang dipesan Pak Yusuf."),
+                (Jamu, "Oh, yang botol kecil ini? Baru saja ibu buat. Titip juga kantong dari Pak Yusuf, ya. Katanya buat upah yang mengantar."),
+                (Pacca, "Wah, baunya sampai sini..."),
+                (Daung, "Jangan dibuka, Pacca. Ibunya menunggu.")
+            }),
+            (GmCapitalDeliveryDialogue.HerbalDropoffTitle, Mother, new[]
+            {
+                (Daung, "Bu, ini jamu dari Pak Yusuf buat si kecil."),
+                (Mother, "Wah, terima kasih, Nak. Ibu tadi baru sampai rumah dan dia masih pusing."),
+                (Child, "Kalau aku sudah baikan, Kak Saka mau main lagi?"),
+                (Saka, "Kalau sudah baikan, baru boleh lari-lari. Istirahat dulu, ya."),
+                (Mother, "Iya, nanti ibu temani. Sampaikan terima kasih ibu ke Pak Yusuf kalau ketemu lagi, ya.")
             })
         };
 

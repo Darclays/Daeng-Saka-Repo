@@ -12,26 +12,33 @@ namespace GamecommMentor.DaengSaka
         public const string InspectionTitle = Prefix + "Periksa Pedang";
         public const string DeliveryTitle = Prefix + "Pedang Pak Yusuf";
         public const string PaymentTitle = Prefix + "Upah";
+        public const string HerbalOfferTitle = "DaengSaka/Side Quest/Jamu untuk Si Kecil/Titipan Pak Yusuf";
+        public const string HerbalPickupTitle = "DaengSaka/Side Quest/Jamu untuk Si Kecil/Ambil Jamu";
+        public const string HerbalDropoffTitle = "DaengSaka/Side Quest/Jamu untuk Si Kecil/Antar Jamu";
         public const string AcoGreeting = "DaengSaka/Dialog Ibu Kota/Daeng Aco";
         public const string CompletionEntry = "DaengSaka City Delivery Complete";
 
-        private const int Unavailable = -2, Offer = -1, Inspect = 0, Deliver = 1, Payment = 2;
+        private enum Stop { None, OfferSword, InspectSword, DeliverSword, SwordPayment, OfferJamu, PickUpJamu, DeliverJamu }
+
         [SerializeField] private GmQuestJournal journal;
         [SerializeField] private GmPixelCrushersDialogueBridge bridge;
         [SerializeField] private Transform blacksmith, aco, guard;
+        [SerializeField] private Transform herbalist, mother;
         private GmMainQuestProgress mainQuest;
         private DialogueSystemController controller;
         private Transform speaker;
-        private int started = Unavailable;
+        private Stop started;
 
         public void Configure(GmQuestJournal questJournal, GmPixelCrushersDialogueBridge dialogueBridge,
-            Transform smith, Transform guide, Transform castleGuard)
+            Transform smith, Transform guide, Transform castleGuard, Transform jamu = null, Transform family = null)
         {
             journal = questJournal;
             bridge = dialogueBridge;
             blacksmith = smith;
             aco = guide;
             guard = castleGuard;
+            herbalist = jamu;
+            mother = family;
         }
 
         private void OnEnable()
@@ -53,38 +60,52 @@ namespace GamecommMentor.DaengSaka
             ClearDialogue();
         }
 
-        private int StepAt(Transform npc)
+        private Stop StepAt(Transform npc)
         {
             if (npc == null || !isActiveAndEnabled || journal == null || !journal.isActiveAndEnabled ||
                 bridge == null || !bridge.isActiveAndEnabled || controller == null || !controller.isActiveAndEnabled ||
                 mainQuest == null || !mainQuest.isActiveAndEnabled ||
-                !mainQuest.HasCompleted(GmMainQuestStep.KunjungiPenempaBesi)) return Unavailable;
+                !mainQuest.HasCompleted(GmMainQuestStep.KunjungiPenempaBesi)) return Stop.None;
 
-            return journal.CompletedSideSteps(GmQuestCatalog.CityDelivery.Id) switch
+            int swordStep = journal.CompletedSideSteps(GmQuestCatalog.CityDelivery.Id);
+            return swordStep switch
             {
-                Offer when npc == blacksmith => Offer,
-                Inspect when npc == aco => Inspect,
-                Deliver when npc == guard => Deliver,
-                Payment when npc == blacksmith => Payment,
-                _ => Unavailable
+                -1 when npc == blacksmith => Stop.OfferSword,
+                 0 when npc == aco => Stop.InspectSword,
+                 1 when npc == guard => Stop.DeliverSword,
+                 2 when npc == blacksmith => Stop.SwordPayment,
+                 >= 2 => HerbalStopAt(npc),
+                 _ => Stop.None
             };
         }
 
-        private static string TitleAt(int step) => step switch
+        private Stop HerbalStopAt(Transform npc) => journal.CompletedSideSteps(GmQuestCatalog.HerbalDelivery.Id) switch
         {
-            Offer => OfferTitle,
-            Inspect => InspectionTitle,
-            Deliver => DeliveryTitle,
-            Payment => PaymentTitle,
+            -1 when npc == guard && herbalist != null && mother != null => Stop.OfferJamu,
+             0 when npc == herbalist => Stop.PickUpJamu,
+             1 when npc == mother => Stop.DeliverJamu,
+             _ => Stop.None
+        };
+
+        private static string TitleAt(Stop stop) => stop switch
+        {
+            Stop.OfferSword => OfferTitle,
+            Stop.InspectSword => InspectionTitle,
+            Stop.DeliverSword => DeliveryTitle,
+            Stop.SwordPayment => PaymentTitle,
+            Stop.OfferJamu => HerbalOfferTitle,
+            Stop.PickUpJamu => HerbalPickupTitle,
+            Stop.DeliverJamu => HerbalDropoffTitle,
             _ => null
         };
 
-        internal bool CanStartAt(Transform npc) => StepAt(npc) != Unavailable;
+        internal bool CanStartAt(Transform npc) => StepAt(npc) != Stop.None;
+        internal bool SmithHasPayment => StepAt(blacksmith) == Stop.SwordPayment;
 
         internal bool TryStartAt(Transform npc, GmInteractor requester)
         {
-            int step = StepAt(npc);
-            if (step == Unavailable || !bridge.TryStartFramedDialogue(TitleAt(step), requester, npc)) return false;
+            Stop step = StepAt(npc);
+            if (step == Stop.None || !bridge.TryStartFramedDialogue(TitleAt(step), requester, npc)) return false;
             speaker = npc;
             started = step;
             return true;
@@ -95,25 +116,52 @@ namespace GamecommMentor.DaengSaka
         private void ClearDialogue()
         {
             speaker = null;
-            started = Unavailable;
+            started = Stop.None;
         }
 
         private void OnLinePrepared(Subtitle subtitle)
         {
             DialogueEntry entry = subtitle?.dialogueEntry;
-            if (entry == null || entry.Title != CompletionEntry || started == Unavailable ||
+            if (entry == null || entry.Title != CompletionEntry || started == Stop.None ||
                 StepAt(speaker) != started) return;
             string title = TitleAt(started);
             if (controller.lastConversationStarted != title ||
                 controller.masterDatabase?.GetConversation(title)?.id != entry.conversationID) return;
 
-            var quest = GmQuestCatalog.CityDelivery;
-            int step = started;
+            Stop finished = started;
             ClearDialogue();
-            if (step == Offer)
-                journal.TryStartSideQuest(quest);
-            else if (step != Payment || GmPartyRun.Current.Wallet.TryGrantOnce(quest.Id, GmQuestCatalog.CityDeliveryReward))
-                journal.TryCompleteSideStep(quest.Id, step);
+            var sword = GmQuestCatalog.CityDelivery;
+            var jamu = GmQuestCatalog.HerbalDelivery;
+            switch (finished)
+            {
+                case Stop.OfferSword:
+                    journal.TryStartSideQuest(sword);
+                    break;
+                case Stop.InspectSword:
+                    journal.TryCompleteSideStep(sword.Id, 0);
+                    break;
+                case Stop.DeliverSword:
+                    journal.TryCompleteSideStep(sword.Id, 1);
+                    break;
+                case Stop.SwordPayment:
+                    CompleteWithPayment(sword.Id, 2, GmQuestCatalog.CityDeliveryReward);
+                    break;
+                case Stop.OfferJamu:
+                    journal.TryStartSideQuest(jamu);
+                    break;
+                case Stop.PickUpJamu:
+                    journal.TryCompleteSideStep(jamu.Id, 0);
+                    break;
+                case Stop.DeliverJamu:
+                    CompleteWithPayment(jamu.Id, 1, GmQuestCatalog.HerbalDeliveryReward);
+                    break;
+            }
+        }
+
+        private void CompleteWithPayment(string questId, int step, int amount)
+        {
+            if (GmPartyRun.Current.Wallet.TryGrantOnce(questId, amount))
+                journal.TryCompleteSideStep(questId, step);
         }
     }
 }
