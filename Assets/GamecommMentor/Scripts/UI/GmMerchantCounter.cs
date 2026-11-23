@@ -64,6 +64,7 @@ namespace GamecommMentor.DaengSaka
             notice = null;
             if (HasServices) OpenServices();
             else OpenShop();
+            GmGameplayAudio.Ui(GmUiSound.Open);
             return true;
         }
 
@@ -198,6 +199,7 @@ namespace GamecommMentor.DaengSaka
                 Close();
                 return;
             }
+            GmGameplayAudio.Ui(GmUiSound.Back);
             if (page == Page.Confirm)
             {
                 pending = null;

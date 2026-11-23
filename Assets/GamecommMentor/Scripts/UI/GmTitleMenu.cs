@@ -204,8 +204,12 @@ namespace GamecommMentor.DaengSaka
 
         private void PlayMusic()
         {
-            if (music == null) return;
-            gameObject.AddComponent<AudioListener>();
+            bool hasListener = false;
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                foreach (AudioListener listener in root.GetComponentsInChildren<AudioListener>())
+                    if (listener.isActiveAndEnabled) hasListener = true;
+            if (!hasListener) gameObject.AddComponent<AudioListener>();
+            if (GmDemoSoundtrack.HasTitleMusic || music == null) return;
             var source = gameObject.AddComponent<AudioSource>();
             source.clip = music;
             source.playOnAwake = false;
@@ -246,6 +250,7 @@ namespace GamecommMentor.DaengSaka
 
         private void BackToTitle(Button focus)
         {
+            GmGameplayAudio.Ui(GmUiSound.Back);
             optionsView.Hide();
             exitDialog.Hide();
             SetMenuInput(true);

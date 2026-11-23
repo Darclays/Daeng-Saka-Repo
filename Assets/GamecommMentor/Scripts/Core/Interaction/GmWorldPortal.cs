@@ -35,8 +35,12 @@ namespace GamecommMentor.DaengSaka
             lockedMessage = lockedPrompt;
         }
 
-        public override bool TryInteract(GmInteractor requester) =>
-            CanInteract(requester) && IsOpen && worldScene != null &&
-            worldScene.TryTravel(destinationScene, destinationEntry, requester, this);
+        public override bool TryInteract(GmInteractor requester)
+        {
+            if (!CanInteract(requester) || !IsOpen || worldScene == null ||
+                !worldScene.TryTravel(destinationScene, destinationEntry, requester, this)) return false;
+            GmGameplayAudio.World("Portal");
+            return true;
+        }
     }
 }

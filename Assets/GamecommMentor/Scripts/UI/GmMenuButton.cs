@@ -14,6 +14,21 @@ namespace GamecommMentor.DaengSaka
             if (IsActive() && IsInteractable() && GmGamepadInput.MaySubmitUi()) base.OnSubmit(eventData);
         }
 
+        public override void OnMove(AxisEventData eventData)
+        {
+            GameObject before = EventSystem.current?.currentSelectedGameObject;
+            base.OnMove(eventData);
+            if (IsActive() && IsInteractable() && EventSystem.current?.currentSelectedGameObject != before)
+                GmGameplayAudio.Ui(GmUiSound.Move);
+        }
+
+        public override void OnPointerEnter(PointerEventData eventData)
+        {
+            base.OnPointerEnter(eventData);
+            if (IsActive() && IsInteractable() && !GmGamepadInput.UsingGamepad)
+                GmGameplayAudio.Ui(GmUiSound.Move);
+        }
+
         public override void OnSelect(BaseEventData eventData)
         {
             base.OnSelect(eventData);

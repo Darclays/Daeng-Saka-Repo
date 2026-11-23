@@ -150,7 +150,12 @@ namespace GamecommMentor.DaengSaka
                     nameBackground.raycastTarget = true;
                     var events = name.gameObject.AddComponent<EventTrigger>();
                     var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
-                    entry.callback.AddListener(_ => { if (button.interactable) select(index); });
+                    entry.callback.AddListener(_ =>
+                    {
+                        if (!button.IsInteractable()) return;
+                        select(index);
+                        GmGameplayAudio.Ui(GmUiSound.Confirm);
+                    });
                     events.triggers.Add(entry);
                     statusFocus(name.gameObject, index);
                 }

@@ -119,6 +119,8 @@ namespace GamecommMentor.DaengSaka
 
         private void SelectPage(GmJournalPage page)
         {
+            if (!IsOpen) GmGameplayAudio.Ui(GmUiSound.Open);
+            else if (Page != page) GmGameplayAudio.Ui(GmUiSound.Tab);
             if (page != GmJournalPage.Bag) LeaveBag();
             RestoreShade();
             Page = page;
@@ -142,6 +144,7 @@ namespace GamecommMentor.DaengSaka
 
         internal void ShowPause(GmJournalPage? previous)
         {
+            if (!IsOpen || Page != GmJournalPage.Pause) GmGameplayAudio.Ui(GmUiSound.Open);
             LeaveBag();
             RestoreShade();
             Page = GmJournalPage.Pause;

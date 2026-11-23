@@ -7,22 +7,22 @@ namespace GamecommMentor.DaengSaka
         public const int AirbornePoisonTurns = 2;
         private static readonly GmBattleMove Summon = new GmBattleMove(
             "Panggil Poppo", GmBattleTarget.Self, GmBattleEffect.Summon, 0,
-            animation: "pakandeSummon", enemyOnly: true);
+            animation: "pakandeSummon", enemyOnly: true, audioKey: "SummonPoppo");
         private static readonly GmBattleMove Rally = new GmBattleMove(
             "Perkuat Poppo", GmBattleTarget.AllAllies, GmBattleEffect.Buff, 0,
             buff: GmBattleBuff.Attack, buffPercent: 25, buffRounds: 1,
-            animation: "pakandeSummon", impact: "grimoireImpact", enemyOnly: true);
+            animation: "pakandeSummon", impact: "grimoireImpact", enemyOnly: true, audioKey: "RallyPoppo");
         private static readonly GmBattleMove Weaken = new GmBattleMove(
             "Kutukan Pakande", GmBattleTarget.AllEnemies, GmBattleEffect.Buff, 0,
             buff: GmBattleBuff.Weaken, buffPercent: 20, buffRounds: 2, impact: "pakandeCurse",
-            enemyOnly: true, freeAction: true);
+            enemyOnly: true, freeAction: true, audioKey: "Curse");
         private static readonly GmBattleMove Fury = new GmBattleMove(
             "Amarah Pakande", GmBattleTarget.Self, GmBattleEffect.Buff, 0,
             buff: GmBattleBuff.Attack, buffPercent: 20, buffRounds: 2,
-            animation: "pakandeCharge", impact: "legacyImpact", enemyOnly: true, freeAction: true);
+            animation: "pakandeCharge", impact: "legacyImpact", enemyOnly: true, freeAction: true, audioKey: "Fury");
         private static readonly GmBattleMove Charge = new GmBattleMove(
             "Charge Greater Shadow", GmBattleTarget.Self, GmBattleEffect.Charge, 0,
-            animation: "pakandeCharge", enemyOnly: true);
+            animation: "pakandeCharge", enemyOnly: true, audioKey: "ChargeGreaterShadow");
 
         private readonly GmBossBattleProfile profile;
         private readonly GmBattleUnit[] units;
@@ -43,16 +43,18 @@ namespace GamecommMentor.DaengSaka
             Index = index;
             bolt = new GmBattleMove("Bola Bayangan", GmBattleTarget.Enemy, GmBattleEffect.Damage, profile.BoltDamage,
                 animation: "pakandeBolt", impact: "pakandeBoltImpact", enemyOnly: true,
-                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage);
+                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage, audioKey: "ShadowBolt");
             magicCharge = new GmBattleMove("Magic Charge", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.WaveDamage,
                 cooldown: 2, animation: "pakandeBolt", impact: "pakandeMagicImpact", enemyOnly: true,
-                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage);
+                poisonTurns: AirbornePoisonTurns, poisonDamage: profile.AirbornePoisonDamage, audioKey: "MagicCharge");
             shadow = new GmBattleMove("Serangan Bayangan", GmBattleTarget.Enemy, GmBattleEffect.Damage, profile.ShadowDamage,
-                animation: "pakandeCharge", impact: "pakandeBoltImpact", enemyOnly: true);
+                animation: "pakandeCharge", impact: "pakandeBoltImpact", enemyOnly: true, audioKey: "ShadowStrike");
             fireRain = new GmBattleMove("Hujan Api", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.FireRainDamage,
-                cooldown: 3, animation: "pakandeFireRain", impact: "pakandeFireImpact", impactScale: 0.82f, enemyOnly: true);
+                cooldown: 3, animation: "pakandeFireRain", impact: "pakandeFireImpact", impactScale: 0.82f, enemyOnly: true,
+                audioKey: "FireRain");
             greaterShadow = new GmBattleMove("Greater Shadow", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, profile.GreaterShadowDamage,
-                cooldown: 4, animation: "pakandeShadow", impact: "pakandeShadowImpact", impactScale: 0.54f, enemyOnly: true);
+                cooldown: 4, animation: "pakandeShadow", impact: "pakandeShadowImpact", impactScale: 0.54f, enemyOnly: true,
+                audioKey: "GreaterShadow");
             DespawnMinions();
         }
 

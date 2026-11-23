@@ -15,65 +15,71 @@ namespace GamecommMentor.DaengSaka
             "Basic Attack", GmBattleTarget.Enemy, GmBattleEffect.Damage, 0);
         public static readonly GmBattleMove GBite = new GmBattleMove(
             "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 1,
-            animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true, poisonTurns: 2, poisonDamage: 4);
+            animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true, poisonTurns: 2, poisonDamage: 4, audioKey: "GBite");
         public static readonly GmBattleMove HammerSweep = new GmBattleMove(
             "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 24, cooldown: 1,
-            buff: GmBattleBuff.Defense, buffPercent: -20, buffRounds: 2, animation: "babiRusaHammerSweep", enemyOnly: true);
+            buff: GmBattleBuff.Defense, buffPercent: -20, buffRounds: 2, animation: "babiRusaHammerSweep", enemyOnly: true,
+            audioKey: "HammerSweep");
         public static readonly GmBattleMove Uppercut = new GmBattleMove(
             "Uppercut", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 0, cooldown: 2,
-            animation: "manguniUppercut", enemyOnly: true);
+            animation: "manguniUppercut", enemyOnly: true, audioKey: "Uppercut");
         public static readonly GmBattleMove TailSweep = new GmBattleMove(
             "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 20, cooldown: 1,
-            animation: "laWunaTailSweep", enemyOnly: true);
+            animation: "laWunaTailSweep", enemyOnly: true, audioKey: "TailSweep");
         public static readonly GmBattleMove Glare = new GmBattleMove(
             "Glare", GmBattleTarget.Enemy, GmBattleEffect.Poison, 7, cooldown: 2,
-            animation: "laWunaGlare", impact: "glareImpact", impactScale: 0.75f, enemyOnly: true, poisonTurns: 2);
+            animation: "laWunaGlare", impact: "glareImpact", impactScale: 0.75f, enemyOnly: true, poisonTurns: 2, audioKey: "Glare");
         public static readonly GmBattleMove CaneStrike = new GmBattleMove(
             "Cane Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 22, cooldown: 3,
-            animation: "pakandeCane", impact: "shieldImpact", impactScale: 0.72f, enemyOnly: true);
+            animation: "pakandeCane", impact: "shieldImpact", impactScale: 0.72f, enemyOnly: true, audioKey: "CaneStrike");
         public static readonly GmBattleMove TideResonance = new GmBattleMove(
             "Tide Resonance", GmBattleTarget.Enemy, GmBattleEffect.Damage, 36, 7, 3,
-            animation: "tideCast", impact: "tideImpact");
+            animation: "tideCast", impact: "tideImpact", audioKey: "TideResonance");
         public static readonly GmBattleMove SharkBite = new GmBattleMove(
             "Shark Bite", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 18, 6, 2,
-            animation: "sakaSkill", impact: "sharkImpact");
+            animation: "sakaSkill", impact: "sharkImpact", audioKey: "SharkBite");
         public static readonly GmBattleMove LegacyOfBarani = new GmBattleMove(
             "Legacy of Barani", GmBattleTarget.Self, GmBattleEffect.Buff, 0, 4, 3,
-            buff: GmBattleBuff.Attack, buffPercent: 35, buffRounds: 3, animation: "legacyCast", impact: "legacyImpact");
+            buff: GmBattleBuff.Attack, buffPercent: 35, buffRounds: 3, animation: "legacyCast", impact: "legacyImpact",
+            audioKey: "LegacyOfBarani");
         public static readonly GmBattleMove ShieldSwing = new GmBattleMove(
             "Shield Swing", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 12, 5, 2,
-            bossStunChance: 50, animation: "paccaSkill", impact: "shieldImpact");
+            bossStunChance: 50, animation: "paccaSkill", impact: "shieldImpact", audioKey: "ShieldSwing");
         public static readonly GmBattleMove BattleAura = new GmBattleMove(
             "Battle Aura", GmBattleTarget.AllAllies, GmBattleEffect.Buff, 0, 5, 3,
             buff: GmBattleBuff.Defense, buffPercent: 30, buffRounds: 3, animation: "auraCast", impact: "shieldImpact",
-            cleanse: GmBattleCleanse.DefenseDown);
+            cleanse: GmBattleCleanse.DefenseDown, audioKey: "BattleAura");
         public static readonly GmBattleMove DominionStrike = new GmBattleMove(
             "Dominion Strike", GmBattleTarget.Enemy, GmBattleEffect.Damage, 26, 5, 5,
-            buff: GmBattleBuff.Defense, buffPercent: -25, buffRounds: 2, animation: "dominionCast", impact: "dominionImpact");
+            buff: GmBattleBuff.Defense, buffPercent: -25, buffRounds: 2, animation: "dominionCast", impact: "dominionImpact",
+            audioKey: "DominionStrike");
         public static readonly GmBattleMove RayOfHealing = new GmBattleMove(
             "Ray of Healing", GmBattleTarget.Ally, GmBattleEffect.Heal, 40, 5,
-            animation: "daungSkill", impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative);
+            animation: "daungSkill", impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative, audioKey: "RayOfHealing");
         public static readonly GmBattleMove GrimoireInvocation = new GmBattleMove(
             "Grimoire Invocation", GmBattleTarget.AllAllies, GmBattleEffect.Buff, 0, 6, 5,
-            buff: GmBattleBuff.Attack, buffPercent: 30, buffRounds: 3, animation: "grimoireCast", impact: "grimoireImpact");
+            buff: GmBattleBuff.Attack, buffPercent: 30, buffRounds: 3, animation: "grimoireCast", impact: "grimoireImpact",
+            audioKey: "GrimoireInvocation");
         public static readonly GmBattleMove SanctuaryBloom = new GmBattleMove(
             "Sanctuary Bloom", GmBattleTarget.AllAllies, GmBattleEffect.HealPercent, 50, 12, 5,
-            animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f, cleanse: GmBattleCleanse.AllNegative);
+            animation: "sanctuaryCast", impact: "sanctuaryImpact", impactScale: 0.43f, cleanse: GmBattleCleanse.AllNegative,
+            audioKey: "SanctuaryBloom");
         public static readonly GmBattleMove HpItem = new GmBattleMove(
             GmItemDefinition.HpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.HpPotion.HpRecovery,
-            item: GmItemDefinition.HpPotion, impact: "healingImpact");
+            item: GmItemDefinition.HpPotion, impact: "healingImpact", audioKey: "PotionHp");
         public static readonly GmBattleMove MpItem = new GmBattleMove(
             GmItemDefinition.MpPotion.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, GmItemDefinition.MpPotion.MpRecovery,
-            item: GmItemDefinition.MpPotion);
+            item: GmItemDefinition.MpPotion, audioKey: "PotionMp");
         public static readonly GmBattleMove GrilledWader = new GmBattleMove(
             GmItemDefinition.GrilledWader.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.GrilledWader.HpRecovery,
-            item: GmItemDefinition.GrilledWader, impact: "healingImpact");
+            item: GmItemDefinition.GrilledWader, impact: "healingImpact", audioKey: "FoodWader");
         public static readonly GmBattleMove GrilledNila = new GmBattleMove(
             GmItemDefinition.GrilledNila.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, GmItemDefinition.GrilledNila.MpRecovery,
-            item: GmItemDefinition.GrilledNila);
+            item: GmItemDefinition.GrilledNila, audioKey: "FoodNila");
         public static readonly GmBattleMove GrilledGabus = new GmBattleMove(
             GmItemDefinition.GrilledGabus.Name, GmBattleTarget.AllAllies, GmBattleEffect.RestoreVitals, 0,
-            item: GmItemDefinition.GrilledGabus, impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative);
+            item: GmItemDefinition.GrilledGabus, impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative,
+            audioKey: "FoodGabus");
         public static IReadOnlyList<GmBattleMove> Items { get; } =
             Array.AsReadOnly(new[] { HpItem, MpItem, GrilledWader, GrilledNila, GrilledGabus });
 
@@ -86,7 +92,7 @@ namespace GamecommMentor.DaengSaka
             GmBattleBuff buff = GmBattleBuff.None, int buffPercent = 0, int buffRounds = 0, int bossStunChance = 100,
             string animation = null, string impact = null, float impactScale = 0.94f,
             bool enemyOnly = false, bool freeAction = false, int poisonTurns = 0,
-            GmBattleCleanse cleanse = GmBattleCleanse.None, int poisonDamage = 0)
+            GmBattleCleanse cleanse = GmBattleCleanse.None, int poisonDamage = 0, string audioKey = null)
         {
             Name = name;
             Target = target;
@@ -101,6 +107,7 @@ namespace GamecommMentor.DaengSaka
             BossStunChance = bossStunChance;
             AnimationKey = animation;
             ImpactKey = impact;
+            AudioKey = audioKey;
             ImpactScale = impactScale;
             IsEnemyMove = enemyOnly;
             IsFreeAction = freeAction;
@@ -127,6 +134,7 @@ namespace GamecommMentor.DaengSaka
         public int BossStunChance { get; }
         public string AnimationKey { get; }
         public string ImpactKey { get; }
+        internal string AudioKey { get; }
         public float ImpactScale { get; }
         public bool IsEnemyMove { get; }
         public bool IsFreeAction { get; }

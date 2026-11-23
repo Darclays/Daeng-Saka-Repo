@@ -32,6 +32,7 @@ namespace GamecommMentor.DaengSaka
         private readonly QuestRun localRun = new QuestRun();
 
         private QuestRun Run => shareAcrossWorldScenes ? worldRun : localRun;
+        internal static GmMainQuestStep WorldStep => worldRun.Step;
         public GmMainQuestStep Step => Run.Step;
         public GmEnemyEncounter PakandeEncounter => pakandeEncounter;
         private GmEnemyEncounter CaveEncounter => caveFinaleGuard != null ? caveFinaleGuard : caveEncounter;

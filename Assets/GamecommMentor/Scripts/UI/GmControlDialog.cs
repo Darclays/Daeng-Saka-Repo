@@ -39,6 +39,7 @@ namespace GamecommMentor.DaengSaka
         internal void Show(string heading, string copy, string first, string second = null, bool focusSecond = false,
             string third = null)
         {
+            if (!IsOpen) GmGameplayAudio.Ui(GmUiSound.Open);
             title.text = heading;
             detail.text = copy;
             primaryLabel.text = first ?? "";

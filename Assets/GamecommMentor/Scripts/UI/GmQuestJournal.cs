@@ -165,6 +165,7 @@ namespace GamecommMentor.DaengSaka
             if (string.IsNullOrWhiteSpace(title)) return;
             newQuestTitle = title;
             questNoticeRemaining = QuestNoticeDuration;
+            GmGameplayAudio.World("QuestNew");
         }
 
         internal static void DismissNewQuestNotice()
@@ -191,10 +192,14 @@ namespace GamecommMentor.DaengSaka
                 return false;
 
             run.CompletedSteps++;
-            if (run.CompletedSteps == run.Definition.Goals.Count && trackedSideId == questId)
+            if (run.CompletedSteps == run.Definition.Goals.Count)
             {
-                trackedSideId = null;
-                autoTrackMain = true;
+                if (trackedSideId == questId)
+                {
+                    trackedSideId = null;
+                    autoTrackMain = true;
+                }
+                GmGameplayAudio.World("QuestComplete");
             }
             revision++;
             return true;
@@ -422,7 +427,7 @@ namespace GamecommMentor.DaengSaka
             {
                 if (GmGamepadInput.PressedMenu())
                 {
-                    if (view.Page == GmJournalPage.Pause) Close();
+                    if (view.Page == GmJournalPage.Pause) Back();
                     else ShowPause();
                 }
                 else if (GmGamepadInput.PressedBack() || requested == view.Page) Back();
@@ -493,6 +498,8 @@ namespace GamecommMentor.DaengSaka
 
         internal void Back()
         {
+            if (view?.IsOpen != true) return;
+            GmGameplayAudio.Ui(GmUiSound.Back);
             if (pauseSelection.HasValue) ShowPause();
             else Close();
         }

@@ -111,6 +111,7 @@ namespace GamecommMentor.DaengSaka
         public override void Start() { }
         public override void Open()
         {
+            if (!isOpen) GmGameplayAudio.Ui(GmUiSound.Open);
             ClearLine();
             speed = GmVnReadingSpeed.Load();
             stage.SetSpeed(speed);
@@ -245,11 +246,13 @@ namespace GamecommMentor.DaengSaka
             if (reveal.IsWriting)
             {
                 acceptedFrame = Time.frameCount;
+                GmGameplayAudio.Ui(GmUiSound.Dialogue);
                 CompleteLineText();
                 return;
             }
             if (!canContinue || Time.frameCount == completedFrame) return;
             acceptedFrame = Time.frameCount;
+            GmGameplayAudio.Ui(GmUiSound.Dialogue);
             SetContinue(current, false);
             owner.conversationView.OnConversationContinue(this);
         }
@@ -258,6 +261,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!AcceptsInput) return;
             acceptedFrame = Time.frameCount;
+            GmGameplayAudio.Ui(GmUiSound.Tab);
             speed = GmVnReadingSpeed.Cycle(speed);
             stage.SetSpeed(speed);
             if (speed == VNTextSpeedMode.Instant && reveal.IsWriting) CompleteLineText();
@@ -272,6 +276,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!HasBackdropOptions || !AcceptsInput) return;
             acceptedFrame = Time.frameCount;
+            GmGameplayAudio.Ui(GmUiSound.Tab);
             backdropMode = EffectiveBackdrop switch
             {
                 BackdropMode.Clear => BackdropMode.Dim,
@@ -320,7 +325,9 @@ namespace GamecommMentor.DaengSaka
         private void OnStockResponse(object sender, SelectedResponseEventArgs args)
         {
             var view = owner != null ? owner.conversationView : null;
-            if (showingResponses && view != null && view.dialogueUI == this) view.SelectResponse(args);
+            if (!showingResponses || view == null || view.dialogueUI != this) return;
+            GmGameplayAudio.Ui(GmUiSound.Confirm);
+            view.SelectResponse(args);
         }
 
         public override void HideResponses()

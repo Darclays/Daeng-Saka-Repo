@@ -39,6 +39,7 @@ namespace GamecommMentor.DaengSaka
         private bool resolving;
         private bool leaving;
         private bool enhancedImpact;
+        private bool playedResultCue;
         private int shownBossPhase;
         private string lastAction;
 
@@ -78,6 +79,7 @@ namespace GamecommMentor.DaengSaka
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
                     () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
                     PickMove, Back, ConfirmMove, ExitBattle, RecoverAndExitBattle, ToggleImpactMode);
+                if (session.IsActive) view.PlayBattleCue("Enter");
                 Refresh();
                 if (session.IsOpeningEnemyPhase) StartCoroutine(PlayAutomaticTurns());
             }
@@ -116,6 +118,7 @@ namespace GamecommMentor.DaengSaka
             resolving = false;
             leaving = false;
             shownBossPhase = 0;
+            playedResultCue = false;
             lastAction = null;
         }
 
@@ -206,6 +209,7 @@ namespace GamecommMentor.DaengSaka
             }
             selection = null;
             view.RestoreFocusAfterBack(previous, menu, actor, selectedOption);
+            GmGameplayAudio.Ui(GmUiSound.Back);
             Refresh();
         }
 
@@ -242,6 +246,7 @@ namespace GamecommMentor.DaengSaka
             GmBattleUnit unit = session.Units[index];
             lastAction = $"{GmBattleView.ShortName(unit)} · Racun −{damage} HP";
             if (!unit.IsAlive) lastAction += " · KO";
+            view.PlayBattleCue("PoisonTick");
             Refresh(index, round);
             const float duration = 0.42f;
             double start = Time.unscaledTimeAsDouble;
@@ -277,6 +282,9 @@ namespace GamecommMentor.DaengSaka
             Refresh();
 
             GmBattleImpactCue cue = GmBattleImpactCue.For(move, actor.Character);
+            string soundKey = GmBattleAudio.KeyFor(move, actor);
+            AudioClip prepSound = move.IsItem ? null : GmBattleAudio.MoveClip(soundKey, contact: false);
+            AudioClip contactSound = GmBattleAudio.MoveClip(soundKey, contact: true);
             int count = view.FrameCount(move, actor, cue);
             int impact = cue != null ? cue.Contact : Mathf.Max(1, count / 2);
             float step = Mathf.Clamp(animationFrameTime, 0.035f, 0.15f);
@@ -285,6 +293,7 @@ namespace GamecommMentor.DaengSaka
                 if (move == GmBattleMove.BasicAttack) step *= 0.70f;
                 count = Mathf.Max(count, impact + Mathf.CeilToInt(0.30f / step));
             }
+            int preparation = cue?.Windup ?? Mathf.Max(0, impact - Mathf.CeilToInt(.29f / step));
             bool enhanced = cue != null && enhancedImpact;
             var wait = new WaitForSecondsRealtime(step);
             GmBattleHit[] hits = null;
@@ -292,7 +301,7 @@ namespace GamecommMentor.DaengSaka
             double frameStarted = Time.unscaledTimeAsDouble;
             for (int frame = 0; frame < count; frame++)
             {
-                if (cue != null && frame == cue.Windup) view.PlayImpactSound("swing");
+                if (frame == preparation) view.PlayMoveSound(prepSound, cue != null ? "swing" : null);
                 if (frame == impact)
                 {
                     if (!session.TryUse(move, targetIndex, out hits))
@@ -303,8 +312,8 @@ namespace GamecommMentor.DaengSaka
                     }
                     lastAction = FormatAction(actor, move, hits, round);
                     Refresh(actorIndex, round);
-                    if (move.IsItem) view.PlayImpactSound("itemUse");
-                    else if (cue != null) view.PlayImpactSound(cue.Sound);
+                    if (contactSound != null && move.IsDamaging && move.TargetsAll) GmDemoSoundtrack.EmphasizeImpact();
+                    view.PlayMoveSound(contactSound, move.IsItem ? "itemUse" : cue?.Sound);
                     hitAt = Time.unscaledTimeAsDouble;
                 }
 
@@ -342,11 +351,13 @@ namespace GamecommMentor.DaengSaka
             if (guard)
             {
                 if (!session.TryGuard()) return;
+                view.PlayBattleCue("Guard");
                 lastAction = $"{actor} · Guard · −{GmBattleSession.GuardReductionPercent}% damage selama fase musuh";
             }
             else
             {
                 if (!session.TryRest(out int recovered)) return;
+                view.PlayBattleCue("Recharge");
                 lastAction = recovered > 0 ? $"{actor} · Recharge MP · +{recovered} MP" : $"{actor} · Recharge MP · MP penuh";
             }
             menu = GmBattleMenu.Command;
@@ -384,6 +395,7 @@ namespace GamecommMentor.DaengSaka
                 if (session.TrySkipStunnedTurn())
                 {
                     resolving = true;
+                    view.PlayBattleCue("Stun");
                     lastAction = charged ? "Pakande terkena Stun · Greater Shadow batal"
                         : $"{GmBattleView.ShortName(actor)} melewatkan giliran · Stun";
                     Refresh(actorIndex, round);
@@ -418,6 +430,7 @@ namespace GamecommMentor.DaengSaka
                 Refresh();
                 yield return new WaitForSecondsRealtime(0.7f);
                 if (session == null || leaving || !session.TryStartNextWave()) yield break;
+                view.PlayBattleCue("Reinforcement");
                 lastAction = $"{encounter.Reinforcement.DisplayName} memasuki battle";
             }
             resolving = false;
@@ -441,6 +454,7 @@ namespace GamecommMentor.DaengSaka
                     : session.Boss.BasicAttackReduction > 0 ? "Pakande terbang. Gunakan skill yang memberi damage."
                     : $"Nenek Pakande memasuki Fase {phase}";
                 Refresh(bossVisualPhase: previousVisual);
+                if (phase == 2) view.PlayBattleCue("Airborne");
                 float hold = phase == 3 && pakandePresentation != null
                     ? view.PlayBattleSound(pakandePresentation.Roar) : 0f;
                 yield return PlayBossTransition(phase, hold);
@@ -537,6 +551,11 @@ namespace GamecommMentor.DaengSaka
 
         private void Refresh(int actorIndex = -1, int round = -1, int bossVisualPhase = 0)
         {
+            if (!resolving && !playedResultCue && session.Phase is GmBattlePhase.Victory or GmBattlePhase.Defeat)
+            {
+                playedResultCue = true;
+                view.PlayBattleCue(session.Phase == GmBattlePhase.Victory ? "Victory" : "Defeat");
+            }
             view.Render(session, menu, selection, lastAction, resolving,
                 actorIndex >= 0 ? actorIndex : session.ActorIndex,
                 round >= 0 ? round : session.RoundNumber, enhancedImpact, bossVisualPhase);

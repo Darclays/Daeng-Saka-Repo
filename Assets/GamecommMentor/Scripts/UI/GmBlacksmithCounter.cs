@@ -78,6 +78,7 @@ namespace GamecommMentor.DaengSaka
             view ??= new GmBlacksmithView(ChangeTab, Select, Request, BackOrClose, OpenShop, TalkAboutDelivery);
             if (HasDelivery) view.ChooseService(delivery.SmithHasPayment);
             else OpenShop();
+            GmGameplayAudio.Ui(GmUiSound.Open);
             return true;
         }
 
@@ -250,6 +251,7 @@ namespace GamecommMentor.DaengSaka
 
         private void BackOrClose()
         {
+            if (CanUseCounter) GmGameplayAudio.Ui(GmUiSound.Back);
             if (!CanUseCounter || view.IsChoosingService)
             {
                 Close();

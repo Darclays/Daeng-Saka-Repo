@@ -86,12 +86,13 @@ namespace GamecommMentor.DaengSaka
             hint = Label(font, panel, "Petunjuk", "", 16, .046f, .035f, .58f, .137f, TextAnchor.MiddleLeft);
             applied = Label(font, panel, "Status tampilan", "", 14, .51f, .158f, .94f, .192f, TextAnchor.MiddleRight);
             apply = Button(panel, "Terapkan", .605f, .044f, .773f, .122f, ApplyDisplay, primary: true);
-            back = Button(panel, "Kembali", .79f, .044f, .954f, .122f, onBack);
+            back = Button(panel, "Kembali", .79f, .044f, .954f, .122f, GoBack);
             root.gameObject.SetActive(false);
         }
 
         internal void Show(string origin)
         {
+            GmGameplayAudio.Ui(GmUiSound.Open);
             context.text = origin;
             applied.text = "";
             readingSavedValues = true;
@@ -125,7 +126,7 @@ namespace GamecommMentor.DaengSaka
             if (!IsOpen) return;
             if (GmGamepadInput.PressedBack() || GmGamepadInput.PressedMenu())
             {
-                onBack();
+                GoBack();
                 return;
             }
 
@@ -156,6 +157,7 @@ namespace GamecommMentor.DaengSaka
 
         private void SelectTab(int index)
         {
+            if (selectedTab != index) GmGameplayAudio.Ui(GmUiSound.Tab);
             selectedTab = index;
             for (int i = 0; i < tabs.Length; i++)
             {
@@ -216,7 +218,9 @@ namespace GamecommMentor.DaengSaka
             slider.onValueChanged.AddListener(amount =>
             {
                 value.text = $"{(int)amount}%";
-                if (!readingSavedValues) change((int)amount);
+                if (readingSavedValues) return;
+                change((int)amount);
+                GmGameplayAudio.Ui(GmUiSound.Adjust);
             });
             value.text = $"{(int)slider.value}%";
             return slider;
@@ -235,7 +239,9 @@ namespace GamecommMentor.DaengSaka
             {
                 value.text = caption((int)amount);
                 if (applied != null) applied.text = "";
-                if (!readingSavedValues) change?.Invoke((int)amount);
+                if (readingSavedValues) return;
+                change?.Invoke((int)amount);
+                GmGameplayAudio.Ui(GmUiSound.Adjust);
             });
             AddStep(-1, 0f, .14f);
             AddStep(1, .86f, 1f);
@@ -295,6 +301,12 @@ namespace GamecommMentor.DaengSaka
             colors.highlightedColor = colors.selectedColor;
             slider.colors = colors;
             return slider;
+        }
+
+        private void GoBack()
+        {
+            GmGameplayAudio.Ui(GmUiSound.Back);
+            onBack();
         }
 
         private Button Button(RectTransform parent, string text, float left, float bottom, float right, float top,

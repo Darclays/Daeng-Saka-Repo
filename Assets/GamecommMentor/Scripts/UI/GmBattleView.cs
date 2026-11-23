@@ -438,6 +438,7 @@ namespace GamecommMentor.DaengSaka
         public void BackFromOverlay()
         {
             if (!HasControlDialog) return;
+            GmGameplayAudio.Ui(GmUiSound.Back);
             if (controlPanel == ControlPanel.Options)
             {
                 optionsView.Hide();
@@ -576,6 +577,14 @@ namespace GamecommMentor.DaengSaka
         public void ClearAction() => stage.ClearAction();
 
         public void DrawPoisonTick(int index, int damage, float progress) => stage.DrawPoisonTick(index, damage, progress);
+
+        internal void PlayMoveSound(AudioClip clip, string fallback = null)
+        {
+            if (clip != null) PlayBattleSound(clip);
+            else if (fallback != null) PlayImpactSound(fallback);
+        }
+
+        internal void PlayBattleCue(string cue) => PlayBattleSound(GmGameplayAudio.Load(GmBattleAudio.Folder + cue));
 
         public void PlayImpactSound(string cue)
         {
@@ -892,7 +901,12 @@ namespace GamecommMentor.DaengSaka
             colors.pressedColor = new Color(0.73f, 0.82f, 0.77f);
             colors.disabledColor = new Color(0.94f, 0.95f, 0.96f);
             button.colors = colors;
-            button.onClick.AddListener(() => action());
+            button.onClick.AddListener(() =>
+            {
+                bool interactive = button.IsActive() && button.IsInteractable();
+                action();
+                if (interactive) GmGameplayAudio.Ui(GmUiSound.Confirm);
+            });
             return button;
         }
 

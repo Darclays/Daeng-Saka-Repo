@@ -40,8 +40,10 @@ namespace GamecommMentor.DaengSaka
                     float dt = Time.unscaledDeltaTime;
                     stage.Tick(dt);
                     bool focused = Application.isFocused;
-                    bool advance = advanceClicked;
-                    bool changeSpeed = speedClicked;
+                    bool advanceFromButton = advanceClicked;
+                    bool speedFromButton = speedClicked;
+                    bool advance = advanceFromButton;
+                    bool changeSpeed = speedFromButton;
                     advanceClicked = speedClicked = false;
                     if (focused && wasFocused)
                     {
@@ -58,11 +60,13 @@ namespace GamecommMentor.DaengSaka
 #endif
                         if (changeSpeed)
                         {
+                            if (!speedFromButton) GmGameplayAudio.Ui(GmUiSound.Tab);
                             speed = GmVnReadingSpeed.Cycle(speed);
                             stage.SetSpeed(speed);
                         }
                         else if (advance)
                         {
+                            if (!advanceFromButton) GmGameplayAudio.Ui(GmUiSound.Dialogue);
                             if (!reveal.IsWriting) break;
                             reveal.Complete();
                             stage.RefreshText();

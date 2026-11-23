@@ -294,6 +294,7 @@ namespace GamecommMentor.DaengSaka
             }
             if (SkipPressed())
             {
+                GmGameplayAudio.Ui(GmUiSound.Back);
                 WasSkipped = true;
                 Finish(completed: true);
                 return;

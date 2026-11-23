@@ -191,6 +191,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!stockPage.gameObject.activeInHierarchy) return;
             bool cooked = GmPartyRun.Current.Inventory.TryCook(dish);
+            if (cooked) GmGameplayAudio.Ui(GmUiSound.Cook);
             RenderItems(cooked ? dish : null);
         }
     }
