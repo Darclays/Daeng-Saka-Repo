@@ -11,11 +11,15 @@ namespace GamecommMentor.DaengSaka
     public sealed class GmEncounterFlow : MonoBehaviour
     {
         private enum Phase { Exploring, Loading, Battle, Returning }
-        private const float JoinRadius = 4f;
-        private const float ReturnSpaceRadius = 6f;
+        private const int GroupLimit = 3;
+        private const float JoinRadius = 5f;
+        private const float JoinHeight = 1.6f;
+        private const float ReturnSpaceRadius = 7f;
 
         [SerializeField] private string battleScenePath;
         private readonly List<GameObject> suspendedRoots = new List<GameObject>();
+        private readonly List<GmEnemyEncounter> joinedEncounters = new List<GmEnemyEncounter>(GroupLimit - 1);
+        private readonly RaycastHit[] groupSightHits = new RaycastHit[16];
         private Phase phase;
         private Scene explorationScene;
         private Scene battleScene;
@@ -29,7 +33,6 @@ namespace GamecommMentor.DaengSaka
         public string BattleScenePath => battleScenePath;
         public GmEnemyEncounter CurrentEncounter { get; private set; }
         public GmSakaMotor CurrentPlayer { get; private set; }
-        internal GmEnemyEncounter Reinforcement { get; private set; }
         internal string OriginSceneName => explorationScene.IsValid() ? explorationScene.name : null;
 
         public event Action<GmSakaMotor, GmEnemyEncounter> VictoryReturned;
@@ -70,7 +73,7 @@ namespace GamecommMentor.DaengSaka
             loadingPath = battleScenePath;
             CurrentPlayer = hero;
             CurrentEncounter = enemy;
-            Reinforcement = FindReinforcement(hero, enemy, quest);
+            GatherGroup(hero, enemy, quest);
             gate = playerGate;
             gate.Block(this);
             try
@@ -93,22 +96,40 @@ namespace GamecommMentor.DaengSaka
             return true;
         }
 
-        private GmEnemyEncounter FindReinforcement(GmSakaMotor hero, GmEnemyEncounter lead, GmMainQuestProgress quest)
+        private void GatherGroup(GmSakaMotor hero, GmEnemyEncounter lead, GmMainQuestProgress quest)
         {
-            if (!lead.IsFollowing(hero) || (quest != null && quest.IsScriptedEncounter(lead))) return null;
-            GmEnemyEncounter nearest = null;
-            float distanceLimit = JoinRadius * JoinRadius;
+            joinedEncounters.Clear();
+            var body = hero.GetComponent<CharacterController>();
+            if (!lead.CanJoinGroup(body) || (quest != null && quest.IsScriptedEncounter(lead))) return;
+            int slots = GroupLimit - lead.Roster.Enemies.Length;
+            if (slots <= 0) return;
+
+            var candidates = new List<(GmEnemyEncounter enemy, float distance)>();
             foreach (GmEnemyEncounter enemy in SceneEncounters(explorationScene))
             {
-                if (enemy == lead || !enemy.isActiveAndEnabled || enemy.IsDefeated || !enemy.UsesFlow(this) ||
-                    (quest != null && quest.IsScriptedEncounter(enemy))) continue;
-                float distance = (enemy.transform.position - hero.transform.position).sqrMagnitude;
-                if (distance > distanceLimit || (distance == distanceLimit && nearest != null) ||
-                    !enemy.IsFollowing(hero)) continue;
-                nearest = enemy;
-                distanceLimit = distance;
+                if (enemy == lead || !enemy.UsesFlow(this) || !enemy.CanJoinGroup(body) ||
+                    enemy.Roster.Enemies.Length != 1 || (quest != null && quest.IsScriptedEncounter(enemy))) continue;
+                Vector3 separation = enemy.transform.position - lead.transform.position;
+                float distance = Vector3.ProjectOnPlane(separation, Vector3.up).sqrMagnitude;
+                if (distance > JoinRadius * JoinRadius || Mathf.Abs(separation.y) > JoinHeight ||
+                    !GmCavePatrol.HasClearSight(enemy.transform, lead.transform, groupSightHits) ||
+                    !GmCavePatrol.HasClearSight(enemy.transform, hero.transform, groupSightHits)) continue;
+                candidates.Add((enemy, distance));
             }
-            return nearest;
+            candidates.Sort((a, b) => a.distance != b.distance ? a.distance.CompareTo(b.distance) :
+                string.CompareOrdinal(a.enemy.EncounterId, b.enemy.EncounterId));
+            for (int index = 0; index < Math.Min(slots, candidates.Count); index++)
+                joinedEncounters.Add(candidates[index].enemy);
+        }
+
+        internal GmBattleStats[] WithNearbyEnemies(GmBattleStats[] leadRoster)
+        {
+            if (joinedEncounters.Count == 0) return leadRoster;
+            var combined = new GmBattleStats[leadRoster.Length + joinedEncounters.Count];
+            Array.Copy(leadRoster, combined, leadRoster.Length);
+            for (int index = 0; index < joinedEncounters.Count; index++)
+                combined[leadRoster.Length + index] = joinedEncounters[index].Roster.Enemies[0];
+            return combined;
         }
 
         private static IEnumerable<GmEnemyEncounter> SceneEncounters(Scene scene)
@@ -182,29 +203,20 @@ namespace GamecommMentor.DaengSaka
             if (explorationScene.IsValid() && explorationScene.isLoaded)
             {
                 SceneManager.SetActiveScene(explorationScene);
-                GameObject defeatedRoot = null;
-                GameObject defeatedReinforcementRoot = null;
                 if (CurrentEncounter != null)
                 {
-                    if (outcome == GmEncounterOutcome.Victory)
-                    {
-                        defeatedRoot = CurrentEncounter.gameObject;
-                        CurrentEncounter.MarkDefeated();
-                    }
+                    if (outcome == GmEncounterOutcome.Victory) Defeat(CurrentEncounter);
                     else CurrentEncounter.SuppressUntilSeparated(CurrentPlayer);
                 }
-                if (Reinforcement != null)
+                foreach (var enemy in joinedEncounters)
                 {
-                    if (outcome == GmEncounterOutcome.Victory)
-                    {
-                        defeatedReinforcementRoot = Reinforcement.gameObject;
-                        Reinforcement.MarkDefeated();
-                    }
-                    else Reinforcement.GiveSpaceOnReturn(CurrentPlayer);
+                    if (enemy == null) continue;
+                    if (outcome == GmEncounterOutcome.Victory) Defeat(enemy);
+                    else enemy.GiveSpaceOnReturn(CurrentPlayer);
                 }
                 GiveSpaceAroundPlayer();
                 foreach (GameObject root in suspendedRoots)
-                    if (root != null && root != defeatedRoot && root != defeatedReinforcementRoot) root.SetActive(true);
+                    if (root != null) root.SetActive(true);
             }
             suspendedRoots.Clear();
 
@@ -238,6 +250,12 @@ namespace GamecommMentor.DaengSaka
             pendingUnload.completed += OnBattleUnloaded;
         }
 
+        private void Defeat(GmEnemyEncounter enemy)
+        {
+            suspendedRoots.Remove(enemy.gameObject);
+            enemy.MarkDefeated();
+        }
+
         private void OnBattleUnloaded(AsyncOperation operation)
         {
             if (operation == pendingUnload) FinishReturn();
@@ -267,7 +285,7 @@ namespace GamecommMentor.DaengSaka
             loadingPath = null;
             CurrentPlayer = null;
             CurrentEncounter = null;
-            Reinforcement = null;
+            joinedEncounters.Clear();
             suspendedRoots.Clear();
             phase = Phase.Exploring;
 

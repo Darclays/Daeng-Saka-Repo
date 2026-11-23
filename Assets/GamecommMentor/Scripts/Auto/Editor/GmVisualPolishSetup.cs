@@ -54,12 +54,12 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static readonly Look CaveLook = new Look
         {
-            Sky = "#97B0C5", Equator = "#6E8B9C", Ground = "#61556D",
-            Horizon = "#3C505D", Sun = "#D6E5FF", SunIntensity = .63f, Reflection = .52f,
-            FogDistances = new Vector2(13f, 69f), Exposure = .15f, Contrast = 9f, Saturation = 5f,
-            Temperature = -5f, Bloom = .27f, Vignette = .18f,
-            Shadows = new Vector4(.91f, 1.02f, 1.14f, .055f), Midtones = new Vector4(.98f, 1.01f, 1.04f, .025f),
-            Highlights = new Vector4(1.065f, 1.015f, .94f, 0f)
+            Sky = "#8CA1B7", Equator = "#677C92", Ground = "#5B526B",
+            Horizon = "#394151", Sun = "#DDE9FB", SunIntensity = .56f, Reflection = .47f,
+            FogDistances = new Vector2(17f, 75f), Exposure = .16f, Contrast = 12f, Saturation = 5f,
+            Temperature = -3f, Bloom = .23f, Vignette = .10f,
+            Shadows = new Vector4(.97f, .99f, 1.09f, .038f), Midtones = new Vector4(.99f, 1f, 1.025f, .015f),
+            Highlights = new Vector4(1.04f, 1.008f, .968f, 0f)
         };
 
         [MenuItem(Menu, true)]
@@ -122,7 +122,7 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 Village => "Siang Tropis.asset",
                 Capital => "Siang Biru.asset",
-                _ => "Petualangan Hangat.asset"
+                _ => "Lembayung - Lorong dan Ruang Dalam.asset"
             };
             Volume volume = SetVolume(root, "Pewarnaan area", volumeLayer, 20f,
                 GetProfile(folder + profileName, profile => ConfigureLook(profile, look)));

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GamecommMentor.DaengSaka
 {
@@ -82,6 +83,10 @@ namespace GamecommMentor.DaengSaka
             audioKey: "FoodGabus");
         public static IReadOnlyList<GmBattleMove> Items { get; } =
             Array.AsReadOnly(new[] { HpItem, MpItem, GrilledWader, GrilledNila, GrilledGabus });
+        internal static IReadOnlyList<GmBattleMove> Potions { get; } =
+            Array.AsReadOnly(Items.Where(move => !move.IsFood).ToArray());
+        internal static IReadOnlyList<GmBattleMove> Food { get; } =
+            Array.AsReadOnly(Items.Where(move => move.IsFood).ToArray());
 
         private static readonly IReadOnlyList<GmBattleMove> SakaSkills = Array.AsReadOnly(new[] { TideResonance, SharkBite, LegacyOfBarani });
         private static readonly IReadOnlyList<GmBattleMove> PaccaSkills = Array.AsReadOnly(new[] { ShieldSwing, BattleAura, DominionStrike });
@@ -127,6 +132,7 @@ namespace GamecommMentor.DaengSaka
         public int Cooldown { get; }
         public GmItemDefinition Item { get; }
         public bool IsItem => Item != null;
+        internal bool IsFood => Item?.Ingredient != null;
         public GmBattleBuff Buff { get; }
         public int BuffPercent { get; }
         public int BuffRounds { get; }

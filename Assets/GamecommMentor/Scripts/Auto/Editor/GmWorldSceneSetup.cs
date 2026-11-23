@@ -31,7 +31,7 @@ namespace GamecommMentor.DaengSaka.Editor
         private const string CaveEntrance = "PortalPoint_StartRespawnGoaLembayung";
         private const string CaveGuardName = "Musuh Goa";
         private const string PakandeName = "Nenek Pakande";
-        private const string CaveGuideName = "Pemandu Goa (Uji)";
+        private const string CaveGuideName = GmVisualPolishSetup.CaveTestGuide;
         private const string QuestHintName = "Quest Encounter Hint";
 
         private static readonly GmMainQuestStep[] CaveDialogueSteps =
@@ -151,7 +151,7 @@ namespace GamecommMentor.DaengSaka.Editor
             var gate = Require<GmControlGate>(hero);
             var camera = Require<Camera>(RequireChild(parent, "Saka - Orbit Camera"));
             GameObject manager = RequireChild(parent, "Dialogue Manager");
-            var guide = Require<GmPixelCrushersConversation>(RequireChild(parent, CaveGuideName));
+            var guide = Require<GmPixelCrushersConversation>(CaveGuide(parent));
             Vector3 start = RequireChild(parent, "Spawn - Start").transform.position;
             Vector3 portal = RequireChild(parent, "Portal").transform.position;
             var flow = Require<GmEncounterFlow>(encounterObject);
@@ -179,7 +179,7 @@ namespace GamecommMentor.DaengSaka.Editor
             var guard = Require<GmEnemyEncounter>(RequireChild(world.transform, CaveGuardName));
             var boss = Require<GmEnemyEncounter>(RequireChild(world.transform, PakandeName));
             var hint = Require<GmMainQuestEncounterHint>(RequireChild(world.transform, QuestHintName));
-            var guide = Require<GmPixelCrushersConversation>(RequireChild(world.transform, CaveGuideName));
+            var guide = Require<GmPixelCrushersConversation>(CaveGuide(world.transform));
             var gate = Require<GmControlGate>(RequireChild(world.transform, "Saka"));
             var bridge = Require<GmPixelCrushersDialogueBridge>(RequireChild(world.transform, "Dialogue Manager"));
             var quest = Require<GmMainQuestProgress>(encounter);
@@ -219,6 +219,9 @@ namespace GamecommMentor.DaengSaka.Editor
                     throw new InvalidOperationException($"Referensi {field} pada {owner.name} belum terpasang.");
             }
         }
+
+        private static GameObject CaveGuide(Transform parent) =>
+            parent.Find(GmVisualPolishSetup.CaveMeetingPoint)?.gameObject ?? RequireChild(parent, CaveGuideName);
 
         private static GmPixelCrushersMainQuestDialogue.StepDialogue[] PrepareDialogueDatabase()
         {
@@ -392,6 +395,14 @@ namespace GamecommMentor.DaengSaka.Editor
                     : CaveDialogueSteps;
             var sequence = GetOrAdd<GmPixelCrushersMainQuestDialogue>(encounterObject);
             sequence.Configure(bridge, dialogues.Where(dialogue => localSteps.Contains(dialogue.step)).ToArray(), caveGuard);
+            Transform meetingPoint = !isCapital && !isVillage ? parent.Find(GmVisualPolishSetup.CaveMeetingPoint) : null;
+            if (meetingPoint != null)
+            {
+                var checkpoint = Require<GmPixelCrushersConversation>(meetingPoint.gameObject);
+                checkpoint.SetMainQuestDialogue(sequence);
+                Persist(checkpoint);
+                return;
+            }
             string guideName = isCapital ? "Pemandu Kerajaan (Uji)" : isVillage ? "Nelayan (Uji)" : CaveGuideName;
             GameObject guide = GetPrefab(parent, guideName, isVillage ? assets.fisherman : assets.merchant, out bool created);
             if (created)

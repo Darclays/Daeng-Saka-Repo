@@ -12,8 +12,10 @@ namespace GamecommMentor.DaengSaka
 
         private const float FootLift = .035f;
         private const float MoveRadius = .29f;
-        private const float DetectionRadius = 3.8f;
-        private const float PursuitRadius = 5.2f;
+        private const float DetectionRadius = 4.85f;
+        private const float PursuitRadius = 6.4f;
+        private const float PatrolSpeed = 1.55f;
+        private const float ChaseWalkRatio = .98f;
         private const float AlertSeconds = .65f;
         private const float ReturnGrace = 3.0f;
         private const float PauseSeconds = .75f;
@@ -56,7 +58,6 @@ namespace GamecommMentor.DaengSaka
             quest.Step == GmMainQuestStep.SelidikiGua;
 
         private bool HasPlacedFloor => usePlacedRoute && placementReady && placedFloor != null;
-        private bool UsesStationaryFallback => usePlacedRoute && placementReady && placedFloor == null;
         private bool CanPatrol => isActiveAndEnabled && body != null && (usePlacedRoute ? HasPlacedFloor :
             DrivesMouthVisual && home != null && farPoint != null && terrain != null);
         private Vector3 HomePosition => usePlacedRoute ? placedHome : home.position;
@@ -65,8 +66,9 @@ namespace GamecommMentor.DaengSaka
         internal bool IsFollowing(GmSakaMotor hero) => hero == player && CanPatrol &&
             (mode == Mode.Alert || mode == Mode.Chase) && CanSeePlayer(PursuitRadius, requireFacing: false);
 
-        internal bool CanStartContact(GmSakaMotor hero) =>
-            UsesStationaryFallback || (mode == Mode.Chase && IsFollowing(hero));
+        internal bool CanStartContact(GmSakaMotor hero) => usePlacedRoute
+            ? placementReady && HasClearSight(transform, hero.transform, sightHits)
+            : mode == Mode.Chase && IsFollowing(hero);
 
         internal void RequireNewApproach(Vector3 contactPosition) => previousContact = contactPosition;
 
@@ -81,6 +83,7 @@ namespace GamecommMentor.DaengSaka
         {
             if (!usePlacedRoute) return;
             placementReady = true;
+            SetContact(true);
             if (player == null)
                 foreach (GameObject root in gameObject.scene.GetRootGameObjects())
                 {
@@ -93,11 +96,10 @@ namespace GamecommMentor.DaengSaka
             if (playerGate == null || placedFloor == null || !TryGroundOn(placedFloor, body.position, out placedHome))
             {
                 placedFloor = null;
-                SetContact(true);
                 return;
             }
 
-            placedDestination = placedHome + Flat(transform.forward).normalized * Mathf.Max(.5f, patrolDistance);
+            placedDestination = FindPlacedDestination();
             body.position = placedHome;
             if (visual == null) return;
             visualOffset = visual.localPosition;
@@ -120,12 +122,27 @@ namespace GamecommMentor.DaengSaka
             return floor;
         }
 
+        private Vector3 FindPlacedDestination()
+        {
+            Vector3 route = Flat(transform.forward).normalized * Mathf.Max(.5f, patrolDistance);
+            int samples = Mathf.CeilToInt(route.magnitude / .18f);
+            Vector3 last = placedHome;
+            for (int index = 1; index <= samples; index++)
+            {
+                Vector3 next = placedHome + route * (index / (float)samples);
+                next.y = last.y;
+                if (!TryGroundOn(placedFloor, next, out Vector3 feet) || Mathf.Abs(feet.y - last.y) > .32f) break;
+                last = feet;
+            }
+            return last;
+        }
+
         private void OnEnable()
         {
             mode = Mode.Return;
             graceUntil = Time.time + ReturnGrace;
             SetWarning(false);
-            SetContact(UsesStationaryFallback);
+            SetContact(usePlacedRoute && placementReady);
         }
 
         private void OnDisable()
@@ -169,7 +186,7 @@ namespace GamecommMentor.DaengSaka
                 previousContact = null;
             if (mode == Mode.Return)
             {
-                if (MoveToward(HomePosition, 1.22f) && Flat(HomePosition - body.position).sqrMagnitude < .04f)
+                if (MoveToward(HomePosition, PatrolSpeed) && Flat(HomePosition - body.position).sqrMagnitude < .04f)
                 {
                     mode = Mode.Patrol;
                     towardFar = true;
@@ -191,7 +208,7 @@ namespace GamecommMentor.DaengSaka
 
                 if (now < resumeAfter) return;
                 Vector3 target = towardFar ? Destination : HomePosition;
-                if (!MoveToward(target, 1.22f) || Flat(target - body.position).sqrMagnitude < .04f)
+                if (!MoveToward(target, PatrolSpeed) || Flat(target - body.position).sqrMagnitude < .04f)
                 {
                     towardFar = !towardFar;
                     resumeAfter = now + PauseSeconds;
@@ -214,7 +231,7 @@ namespace GamecommMentor.DaengSaka
                 SetContact(true);
             }
 
-            if (Flat(towardPlayer).sqrMagnitude > .29f && !MoveToward(player.transform.position, 2.45f))
+            if (Flat(towardPlayer).sqrMagnitude > .29f && !MoveToward(player.transform.position, player.WalkSpeed * ChaseWalkRatio))
                 ReturnToRoute();
         }
 
@@ -233,15 +250,20 @@ namespace GamecommMentor.DaengSaka
             if (requireFacing && flat.sqrMagnitude > .36f && Vector3.Dot(transform.forward, flat.normalized) < .42f)
                 return false;
 
-            Vector3 from = body.position + Vector3.up * .84f;
-            Vector3 delta = playerPosition + Vector3.up * .84f - from;
-            int count = Physics.RaycastNonAlloc(from, delta.normalized, sightHits, delta.magnitude,
+            return HasClearSight(transform, player.transform, sightHits);
+        }
+
+        internal static bool HasClearSight(Transform observer, Transform target, RaycastHit[] hits)
+        {
+            Vector3 from = observer.position + Vector3.up * .84f;
+            Vector3 delta = target.position + Vector3.up * .84f - from;
+            int count = Physics.RaycastNonAlloc(from, delta.normalized, hits, delta.magnitude,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            if (count == sightHits.Length) return false;
+            if (count == hits.Length) return false;
             for (int i = 0; i < count; i++)
             {
-                Transform hit = sightHits[i].collider.transform;
-                if (!hit.IsChildOf(transform) && !hit.IsChildOf(player.transform)) return false;
+                Transform hit = hits[i].collider.transform;
+                if (!hit.IsChildOf(observer) && !hit.IsChildOf(target)) return false;
             }
             return true;
         }
@@ -318,7 +340,7 @@ namespace GamecommMentor.DaengSaka
             mode = Mode.Return;
             graceUntil = Time.time + ReturnGrace;
             SetWarning(false);
-            SetContact(false);
+            SetContact(usePlacedRoute && placementReady);
         }
 
         private void Face(Vector3 direction)

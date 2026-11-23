@@ -45,6 +45,7 @@ namespace GamecommMentor.DaengSaka
         public Vector2 Facing { get; private set; } = Vector2.down;
         public Vector3 WorldFacing { get; private set; } = Vector3.back;
         public bool IsMoving { get; private set; }
+        internal float WalkSpeed => moveSpeed;
         internal float WalkPlaybackSpeed { get; private set; } = 1f;
 
         public void SetCamera(Camera viewCamera) => movementCamera = viewCamera;

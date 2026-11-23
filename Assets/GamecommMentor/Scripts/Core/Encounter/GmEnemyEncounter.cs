@@ -27,11 +27,13 @@ namespace GamecommMentor.DaengSaka
         public GmBossBattleProfile BossBattleProfile => bossBattleProfile;
         public bool UsePoppoBattle => usePoppoBattle;
         internal GmEncounterRoster Roster => roster;
-        internal bool SupportsWaves => BossBattleProfile == null && roster != null &&
-            roster.HasEnemies && roster.Enemies.Length == 1 && patrol != null && patrol.isActiveAndEnabled;
         internal bool IsPlacedOrPatrolling => findSceneFlow || patrol != null;
 
-        internal bool IsFollowing(GmSakaMotor hero) => SupportsWaves && patrol.IsFollowing(hero);
+        internal bool CanJoinGroup(CharacterController player) =>
+            isActiveAndEnabled && !IsDefeated && BossBattleProfile == null && !UsePoppoBattle &&
+            IsPlacedOrPatrolling && Roster != null && Roster.HasEnemies &&
+            Time.time >= canStartAt && (suppressedPlayer == null || suppressedPlayer != player);
+
         internal bool UsesFlow(GmEncounterFlow encounterFlow) => flow == encounterFlow;
 
         public void SetRoster(GmEncounterRoster value) => roster = value;

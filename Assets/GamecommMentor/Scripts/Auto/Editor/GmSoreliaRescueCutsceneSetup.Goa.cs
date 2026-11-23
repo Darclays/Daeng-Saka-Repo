@@ -72,7 +72,7 @@ namespace GamecommMentor.DaengSaka.Editor
 
             Transform hero = RequireChild(world, "Saka");
             Transform arrival = RequireChild(world, "Spawn - Start");
-            Transform guide = RequireChild(world, "Pemandu Goa (Uji)");
+            Transform guide = world.Find(GmVisualPolishSetup.CaveTestGuide);
             var orbit = Require<GmOrbitFollowCamera>(cameraObject);
             var hud = Require<Canvas>(RequireChild(world, "Quest Encounter Hint"));
             var quest = Require<GmMainQuestProgress>(RequireRoot(scene, "Daeng Saka - Encounter Flow"));
@@ -89,7 +89,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 for (int i = 0; i < 4; i++) shots[i] = director.Shots[i];
             }
             Transform overlay = MakeOverlay(root, out Image fade, out Text caption);
-            SpriteRenderer[] hidden = new[] { hero, guide }
+            SpriteRenderer[] hidden = new[] { hero, guide }.Where(actor => actor != null)
                 .SelectMany(actor => actor.GetComponentsInChildren<SpriteRenderer>(true)).Distinct().ToArray();
             Undo.RecordObject(director, GoaCutsceneUndo);
             director.Configure(camera, orbit, terrain, hud, overlay.gameObject, fade, caption,

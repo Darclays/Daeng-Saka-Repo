@@ -140,7 +140,7 @@ namespace GamecommMentor.DaengSaka
                 (GmMainQuestStep.TemuiKeluargaNelayan, new GmQuestGoal("Temui keluarga Nelayan", GmQuestArea.DesaSorelia, Guide)),
                 (GmMainQuestStep.SelamatkanKeluargaNelayan, new GmQuestGoal("Selamatkan keluarga Nelayan", GmQuestArea.DesaSorelia, Encounter)),
                 (GmMainQuestStep.BicaraDenganNelayan, new GmQuestGoal("Bicara dengan Nelayan", GmQuestArea.DesaSorelia, Guide)),
-                (GmMainQuestStep.MasukGuaLembayung, new GmQuestGoal("Masuk ke Goa Lembayung", GmQuestArea.GoaLembayung, Guide))),
+                (GmMainQuestStep.MasukGuaLembayung, new GmQuestGoal("Periksa Titik Kumpul", GmQuestArea.GoaLembayung, Guide))),
             new Chapter("main.cave", "Selidiki Goa Lembayung",
                 "Selidiki goa dan hadapi Nenek Pakande.",
                 (GmMainQuestStep.SelidikiGua, new GmQuestGoal("Kalahkan Musuh Goa", GmQuestArea.GoaLembayung, Encounter)),

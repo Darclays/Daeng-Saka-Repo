@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmBattleMenu { Command, Skill, Item, Rest, Target }
+    internal enum GmBattleMenu { Command, Skill, Item, Food, Rest, Target }
 
     internal sealed class GmBattleView : IDisposable
     {
@@ -70,9 +70,11 @@ namespace GamecommMentor.DaengSaka
         private readonly Button attackButton;
         private readonly Button skillButton;
         private readonly Button itemButton;
+        private readonly Button foodButton;
         private readonly Button restButton;
         private readonly Button backButton;
-        private readonly Button[] options = new Button[Math.Max(3, GmBattleMove.Items.Count)];
+        private readonly Button[] options = new Button[Math.Max(3,
+            Math.Max(GmBattleMove.Potions.Count + 1, GmBattleMove.Food.Count))];
         private readonly Button confirmButton;
         private readonly Button impactModeButton;
         private readonly Button leaveButton;
@@ -98,7 +100,7 @@ namespace GamecommMentor.DaengSaka
         public bool HasControlDialog => controlPanel != ControlPanel.None;
 
         public GmBattleView(Transform parent, GmBattleSession session, string originSceneName, float hitZoom, float impactSfxVolume,
-            Action<int> select, Action attack, Action skill, Action item, Action rest, Action<int> pickMove,
+            Action<int> select, Action attack, Action skill, Action item, Action food, Action rest, Action<int> pickMove,
             Action back, Action confirm, Action leave, Action recoverAndLeave, Action toggleImpactMode)
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -171,14 +173,19 @@ namespace GamecommMentor.DaengSaka
             attackButton = MakeButton(panel, "Attack", 0.026f, 0.23f, 0.250f, 0.61f, attack);
             skillButton = MakeButton(panel, "Skill", 0.267f, 0.23f, 0.491f, 0.61f, skill);
             itemButton = MakeButton(panel, "Item", 0.509f, 0.23f, 0.733f, 0.61f, item);
-            restButton = MakeButton(panel, "Rest", 0.750f, 0.23f, 0.974f, 0.61f, rest);
+            restButton = MakeButton(panel, "Defensif", 0.750f, 0.23f, 0.974f, 0.61f, rest);
+            Text defenseLabel = ButtonLabel(restButton);
+            defenseLabel.rectTransform.anchorMin = new Vector2(.045f, .42f);
+            defenseLabel.rectTransform.anchorMax = new Vector2(.955f, .98f);
+            Label(font, (RectTransform)restButton.transform, "Ringkasan Defensif", "Guard · Isi MP", 14,
+                .045f, .03f, .955f, .45f);
             commands = new[] { attackButton, skillButton, itemButton, restButton };
             backButton = MakeButton(panel, "Kembali", 0.759f, 0.72f, 0.974f, 0.96f, back, 16);
+            foodButton = MakeOption(panel, GmBattleMove.Potions.Count, "Food ›", food);
             for (int i = 0; i < options.Length; i++)
             {
                 int index = i;
-                options[i] = MakeButton(panel, "", 0f, 0f, 0f, 0f,
-                    () => pickMove(index), 17, TextAnchor.MiddleLeft);
+                options[i] = MakeOption(panel, i, "", () => pickMove(index));
             }
             hint = Label(font, panel, "Target Prompt", "", 17, 0.026f, 0.39f, 0.974f, 0.68f, TextAnchor.MiddleLeft);
             hint.color = Muted;
@@ -251,6 +258,7 @@ namespace GamecommMentor.DaengSaka
             SetButton(backButton, partyTurn, true);
             if (partyTurn) ButtonLabel(backButton).text = submenu ? "Kembali" : "Ganti karakter";
             bool moves = submenu && !choosing;
+            SetButton(foodButton, moves && menu == GmBattleMenu.Item, true);
             if (moves) RenderOptions(session, menu);
             else foreach (Button option in options) SetButton(option, false, false);
             SetButton(confirmButton, confirm, true);
@@ -287,8 +295,13 @@ namespace GamecommMentor.DaengSaka
                 hint.text = "Pilih lewat sprite atau kartu HP/MP.";
             }
             else if (resolving) actionTitle.text = "Aksi berlangsung";
-            else if (moves) actionTitle.text = menu == GmBattleMenu.Item
-                ? "Item · 1 per karakter tiap ronde" : menu.ToString();
+            else if (moves) actionTitle.text = menu switch
+            {
+                GmBattleMenu.Item => "Item · 1 per karakter tiap ronde",
+                GmBattleMenu.Food => "Food · Berbagi jatah dengan ramuan",
+                GmBattleMenu.Rest => "Defensif · Pilih satu aksi",
+                _ => menu.ToString()
+            };
             else if (partyTurn || finished) actionTitle.text = "Aksi";
             else if (actor != null && actor.IsStunned) actionTitle.text = "Terkena Stun";
             else actionTitle.text = "Musuh bertindak";
@@ -330,6 +343,7 @@ namespace GamecommMentor.DaengSaka
             else if (moves)
             {
                 foreach (Button option in options) AddNavigation(option);
+                AddNavigation(foodButton);
             }
             else if (showCommands)
             {
@@ -366,7 +380,9 @@ namespace GamecommMentor.DaengSaka
         {
             if (previous == GmBattleMenu.Command)
                 nextFocus = actor >= 0 && actor < party.Length ? party[actor].Button : null;
-            else if (current == GmBattleMenu.Skill || current == GmBattleMenu.Item)
+            else if (previous == GmBattleMenu.Food)
+                nextFocus = foodButton;
+            else if (current is GmBattleMenu.Skill or GmBattleMenu.Item or GmBattleMenu.Food)
                 nextFocus = option >= 0 && option < options.Length ? options[option] : null;
             else
                 nextFocus = previous switch
@@ -711,29 +727,23 @@ namespace GamecommMentor.DaengSaka
 
         private void RenderOptions(GmBattleSession session, GmBattleMenu menu)
         {
-            bool items = menu == GmBattleMenu.Item;
-            const float rowStep = .21f;
-            for (int i = 0; i < options.Length; i++)
-            {
-                int row = items ? i / 2 : i;
-                bool half = items && row * 2 + 1 < GmBattleMove.Items.Count;
-                bool right = half && i % 2 == 1;
-                float top = .665f - rowStep * row;
-                var rect = (RectTransform)options[i].transform.parent;
-                rect.anchorMin = new Vector2(right ? .508f : .026f, top - rowStep + .02f);
-                rect.anchorMax = new Vector2(half && !right ? .492f : .974f, top);
-            }
             switch (menu)
             {
                 case GmBattleMenu.Skill:
                 case GmBattleMenu.Item:
-                    var moves = menu == GmBattleMenu.Item ? GmBattleMove.Items : session.Actor.Skills;
+                case GmBattleMenu.Food:
+                    var moves = menu switch
+                    {
+                        GmBattleMenu.Item => GmBattleMove.Potions,
+                        GmBattleMenu.Food => GmBattleMove.Food,
+                        _ => session.Actor.Skills
+                    };
                     for (int i = 0; i < options.Length; i++)
                         RenderMove(options[i], i < moves.Count ? moves[i] : null, session);
                     break;
                 case GmBattleMenu.Rest:
                     int amount = session.RechargeAmount;
-                    ButtonLabel(options[0]).text = amount > 0 ? $"Recharge MP  ·  +{amount} MP" : "Recharge MP  ·  MP penuh";
+                    ButtonLabel(options[0]).text = amount > 0 ? $"Isi MP  ·  +{amount} MP" : "Isi MP  ·  MP penuh";
                     ButtonLabel(options[1]).text = $"Guard  ·  −{GmBattleSession.GuardReductionPercent}% damage selama fase musuh";
                     SetButton(options[0], true, true);
                     SetButton(options[1], true, true);
@@ -869,6 +879,13 @@ namespace GamecommMentor.DaengSaka
             if (!unit.IsAlive) return name + " · KO";
             if (unit.IsParty && !acting && unit.LastActedRound == round) return name + " · Selesai";
             return unit.IsStunned ? name + " · Stun" : name;
+        }
+
+        private Button MakeOption(RectTransform parent, int row, string text, Action action)
+        {
+            float rowStep = .63f / options.Length;
+            float top = .665f - rowStep * row;
+            return MakeButton(parent, text, .026f, top - rowStep + .02f, .974f, top, action, 17, TextAnchor.MiddleLeft);
         }
 
         private Button MakeButton(RectTransform parent, string text, float left, float bottom, float right, float top,

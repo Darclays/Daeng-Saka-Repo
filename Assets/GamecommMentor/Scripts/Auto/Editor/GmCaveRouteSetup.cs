@@ -48,7 +48,8 @@ namespace GamecommMentor.DaengSaka.Editor
             Transform flow = RequireRoot(scene, "Daeng Saka - Encounter Flow");
             var progress = Require<GmMainQuestProgress>(flow);
             var dialogue = Require<GmPixelCrushersMainQuestDialogue>(flow);
-            Transform guide = RequireChild(world, "Pemandu Goa (Uji)");
+            Transform guide = world.Find(GmVisualPolishSetup.CaveMeetingPoint) ??
+                RequireChild(world, GmVisualPolishSetup.CaveTestGuide);
             Transform guard = RequireChild(world, "Musuh Goa");
             Transform boss = RequireChild(world, "Nenek Pakande");
             var encounter = Require<GmEnemyEncounter>(boss);

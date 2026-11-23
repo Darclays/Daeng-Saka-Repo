@@ -68,8 +68,7 @@ namespace GamecommMentor.DaengSaka
                 GmEnemyEncounter source = encounter.Encounter;
                 GmBattleStats[] roster = source.Roster != null && source.Roster.HasEnemies
                     ? source.Roster.Enemies : source.UsePoppoBattle ? PoppoEnemies : enemies;
-                session = new GmBattleSession(party, roster, restMp, source.BossBattleProfile,
-                    reinforcements: encounter.Reinforcement?.Roster?.Enemies);
+                session = new GmBattleSession(party, encounter.WithNearbyEnemies(roster), restMp, source.BossBattleProfile);
                 if (session.Boss != null)
                     pakandePresentation = Resources.Load<GmPakandePhasePresentation>(GmPakandePhasePresentation.ResourcePath);
                 enhancedImpact = useEnhancedImpact;
@@ -77,7 +76,7 @@ namespace GamecommMentor.DaengSaka
                 view = new GmBattleView(battleCanvas.transform, session, encounter.OriginSceneName,
                     hitZoom, impactSfxVolume, SelectUnit,
                     () => OpenMenu(GmBattleMenu.Target), () => OpenMenu(GmBattleMenu.Skill),
-                    () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Rest),
+                    () => OpenMenu(GmBattleMenu.Item), () => OpenMenu(GmBattleMenu.Food), () => OpenMenu(GmBattleMenu.Rest),
                     PickMove, Back, ConfirmMove, ExitBattle, RecoverAndExitBattle, ToggleImpactMode);
                 if (session.IsActive) view.PlayBattleCue("Enter");
                 Refresh();
@@ -152,7 +151,8 @@ namespace GamecommMentor.DaengSaka
 
         private void OpenMenu(GmBattleMenu next)
         {
-            if (!CanAct || menu != GmBattleMenu.Command) return;
+            GmBattleMenu parent = next == GmBattleMenu.Food ? GmBattleMenu.Item : GmBattleMenu.Command;
+            if (!CanAct || menu != parent) return;
             selectedOption = -1;
             if (next == GmBattleMenu.Target)
             {
@@ -171,7 +171,13 @@ namespace GamecommMentor.DaengSaka
             {
                 case GmBattleMenu.Skill:
                 case GmBattleMenu.Item:
-                    var moves = menu == GmBattleMenu.Item ? GmBattleMove.Items : session.Actor.Skills;
+                case GmBattleMenu.Food:
+                    var moves = menu switch
+                    {
+                        GmBattleMenu.Item => GmBattleMove.Potions,
+                        GmBattleMenu.Food => GmBattleMove.Food,
+                        _ => session.Actor.Skills
+                    };
                     if (index >= moves.Count) return;
                     move = moves[index];
                     break;
@@ -201,7 +207,11 @@ namespace GamecommMentor.DaengSaka
                     break;
                 case GmBattleMenu.Target:
                     if (selection == GmBattleMove.BasicAttack) menu = GmBattleMenu.Command;
+                    else if (selection.IsFood) menu = GmBattleMenu.Food;
                     else menu = selection.IsItem ? GmBattleMenu.Item : GmBattleMenu.Skill;
+                    break;
+                case GmBattleMenu.Food:
+                    menu = GmBattleMenu.Item;
                     break;
                 default:
                     menu = GmBattleMenu.Command;
@@ -358,7 +368,7 @@ namespace GamecommMentor.DaengSaka
             {
                 if (!session.TryRest(out int recovered)) return;
                 view.PlayBattleCue("Recharge");
-                lastAction = recovered > 0 ? $"{actor} · Recharge MP · +{recovered} MP" : $"{actor} · Recharge MP · MP penuh";
+                lastAction = recovered > 0 ? $"{actor} · Isi MP · +{recovered} MP" : $"{actor} · Isi MP · MP penuh";
             }
             menu = GmBattleMenu.Command;
             StartCoroutine(PlayAutomaticTurns());
@@ -423,16 +433,6 @@ namespace GamecommMentor.DaengSaka
                     yield return view.PlayBossDialogue(pakandePresentation.AfterSummon);
             }
             if (session == null || leaving) yield break;
-            if (session.Phase == GmBattlePhase.BetweenWaves)
-            {
-                resolving = true;
-                lastAction = "Gelombang pertama selesai. Musuh berikutnya mendekat.";
-                Refresh();
-                yield return new WaitForSecondsRealtime(0.7f);
-                if (session == null || leaving || !session.TryStartNextWave()) yield break;
-                view.PlayBattleCue("Reinforcement");
-                lastAction = $"{encounter.Reinforcement.DisplayName} memasuki battle";
-            }
             resolving = false;
             Refresh();
         }
