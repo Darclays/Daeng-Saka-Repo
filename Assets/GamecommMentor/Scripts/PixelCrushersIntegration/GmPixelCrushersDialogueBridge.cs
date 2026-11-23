@@ -102,6 +102,8 @@ namespace GamecommMentor.DaengSaka
 
         public bool TryStartCutscene(string title, GmInteractor requester) => TryStart(title, requester, null, true);
 
+        internal void PlayDemoEnding() => GmDemoEnding.Play(player);
+
         internal bool TryStartFramedDialogue(string title, GmInteractor requester, Transform partner) =>
             partner != null && TryStart(title, requester, null, true, partner);
 

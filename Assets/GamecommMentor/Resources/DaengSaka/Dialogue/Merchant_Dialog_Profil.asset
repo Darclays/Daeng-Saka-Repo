@@ -15,7 +15,8 @@ MonoBehaviour:
   actorKey: merchant
   pixelActorId: 0
   pixelActorName: Merchant
-  aliases: []
+  aliases:
+  - Pedagang
   displayNameOverride: Merchant
   isProtagonist: 0
   hasStageVisual: 1

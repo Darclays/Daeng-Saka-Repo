@@ -56,6 +56,11 @@ namespace GamecommMentor.DaengSaka
             input = GetComponent<GmMoveInput>();
             gate = GetComponent<GmControlGate>();
             if (movementCamera == null) movementCamera = Camera.main;
+            RefreshArrivalFacing();
+        }
+
+        internal void RefreshArrivalFacing()
+        {
             WorldFacing = Vector3.ProjectOnPlane(transform.TransformDirection(initialLocalFacing), Vector3.up);
             WorldFacing = WorldFacing.sqrMagnitude > 0.0001f ? WorldFacing.normalized : Vector3.back;
             Facing = GmCardinalFacing.FromWorld(WorldFacing, movementCamera, Facing, 0f);

@@ -35,7 +35,7 @@ namespace GamecommMentor.DaengSaka
             if (targetGraphic == null || !IsInteractable()) return;
             if (marker == null) MakeMarker();
             marker.gameObject.SetActive(true);
-            if (GmGamepadInput.UsingGamepad) RevealInScrollView();
+            if (GmGamepadInput.UsingGamepad) RevealInScrollView(GetComponentInParent<ScrollRect>(), targetGraphic.rectTransform);
         }
 
         public override void OnDeselect(BaseEventData eventData)
@@ -55,15 +55,14 @@ namespace GamecommMentor.DaengSaka
             if (marker != null) marker.gameObject.SetActive(false);
         }
 
-        private void RevealInScrollView()
+        internal static void RevealInScrollView(ScrollRect scroll, RectTransform rect)
         {
-            ScrollRect scroll = GetComponentInParent<ScrollRect>();
             if (scroll == null || !scroll.vertical || scroll.viewport == null || scroll.content == null) return;
             Canvas.ForceUpdateCanvases();
             Rect bounds = scroll.viewport.rect;
             float travel = scroll.content.rect.height - bounds.height;
             if (travel <= 0f) return;
-            Bounds item = RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport, transform);
+            Bounds item = RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport, rect);
             float below = item.min.y - bounds.yMin;
             float above = item.max.y - bounds.yMax;
             if (below < 0f || above > 0f)

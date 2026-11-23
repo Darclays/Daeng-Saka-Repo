@@ -14,6 +14,9 @@ namespace GamecommMentor.DaengSaka
 
         public bool CanExplore => isActiveAndEnabled && !blockControls && owners.Count == 0;
 
+        internal bool IsBlockedOnlyBy(Object owner) =>
+            isActiveAndEnabled && !blockControls && owner != null && owners.Count == 1 && owners.Contains(owner);
+
         public void Block(Object owner)
         {
             if (owner != null) owners.Add(owner);

@@ -38,7 +38,7 @@ namespace GamecommMentor.DaengSaka
         internal static GmVnDialogueUI ForConversation(string title, DialogueSystemController controller,
             ref GmVnDialogueUI cached)
         {
-            var settings = GmVnDialogueCatalog.Resolve(title);
+            var settings = GmVnDialogueCatalog.PresentationFor(title, controller.masterDatabase);
             if (settings == null || !settings.Enabled) return null;
             if (cached != null && controller.dialogueUI == cached)
             {

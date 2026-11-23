@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static GamecommMentor.DaengSaka.GmBattleView;
 using static GamecommMentor.DaengSaka.GmQuestJournalView;
@@ -13,6 +14,10 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform stockPage;
         private readonly GmPartyEquipmentView equipmentView;
         private readonly RectTransform items;
+        private readonly ScrollRect stockScroll;
+        private readonly Text scrollHint;
+        private readonly StockRow[] stockRows = new StockRow[GmItemDefinition.All.Count];
+        private readonly RectTransform emptyStock;
         private readonly RectTransform members;
         private readonly Button recover;
         private readonly Recipe[] recipes = new Recipe[GmItemDefinition.FishRecipes.Count];
@@ -27,6 +32,13 @@ namespace GamecommMentor.DaengSaka
             internal GmItemDefinition Dish;
             internal Text Stock;
             internal Button Cook;
+        }
+
+        private sealed class StockRow
+        {
+            internal GmItemDefinition Item;
+            internal RectTransform Root;
+            internal Text Quantity;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -46,8 +58,31 @@ namespace GamecommMentor.DaengSaka
             equipmentView = new GmPartyEquipmentView(content, font);
             RectTransform stock = Rect("Isi Tas", stockPage, 0f, 0f, .46f, 1f);
             Fill(stock, Inset);
-            AddText(font, stock, "Title", "Isi tas", 26, .055f, .835f, .95f, .98f, bold: true);
-            items = CreateScrollContent(Rect("Item List", stock, .035f, .464f, .965f, .81f), out _);
+            AddText(font, stock, "Title", "Isi tas", 26, .055f, .835f, .53f, .98f, bold: true);
+            scrollHint = AddText(font, stock, "Kontrol gulir bekal", "", 15, .47f, .845f, .965f, .98f, TextAnchor.MiddleRight);
+            scrollHint.color = Muted;
+            items = CreateScrollContent(Rect("Item List", stock, .035f, .464f, .943f, .81f), out stockScroll);
+            var track = Rect("Bilah gulir bekal", stock, .952f, .464f, .971f, .81f);
+            Fill(track, Paper).raycastTarget = true;
+            RectTransform handle = Rect("Pegangan gulir", track, 0f, 0f, 1f, 1f);
+            var bar = track.gameObject.AddComponent<Scrollbar>();
+            bar.direction = Scrollbar.Direction.BottomToTop;
+            bar.handleRect = handle;
+            bar.targetGraphic = Fill(handle, Leaf);
+            bar.navigation = new Navigation { mode = Navigation.Mode.None };
+            stockScroll.verticalScrollbar = bar;
+            stockScroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            for (int i = 0; i < stockRows.Length; i++)
+            {
+                GmItemDefinition item = GmItemDefinition.All[i];
+                RectTransform row = Row(items, item.Name, 48f);
+                AddText(font, row, "Name", item.Name, 19, .05f, 0f, .69f, 1f, bold: true);
+                Text quantity = AddText(font, row, "Quantity", "", 19, .69f, 0f, .95f, 1f, TextAnchor.MiddleRight);
+                stockRows[i] = new StockRow { Item = item, Root = row, Quantity = quantity };
+                row.gameObject.SetActive(false);
+            }
+            emptyStock = Row(items, "Empty", 48f);
+            AddText(font, emptyStock, "Empty Label", "Tas kosong", 18, .05f, 0f, .95f, 1f);
 
             RectTransform recipePanel = Rect("Resep", stock, .035f, .027f, .965f, .438f);
             Fill(recipePanel, Paper);
@@ -125,8 +160,29 @@ namespace GamecommMentor.DaengSaka
         {
             RenderWallet();
             RenderBadges();
-            if (showEquipment) equipmentView.RefreshIfChanged();
-            else if (lastInventoryRevision != GmPartyRun.Current.Inventory.Revision) RenderItems();
+            if (showEquipment)
+            {
+                equipmentView.RefreshIfChanged();
+                return;
+            }
+            if (lastInventoryRevision != GmPartyRun.Current.Inventory.Revision) RenderItems();
+            UpdateStockScroll();
+        }
+
+        private void UpdateStockScroll()
+        {
+            float travel = items.rect.height - stockScroll.viewport.rect.height;
+            bool pad = GmGamepadInput.UsingGamepad;
+            string hint = pad ? "Gulir [Stick Kanan]" : "Gulir dengan roda mouse";
+            if (travel <= .5f) hint = "";
+            if (scrollHint.text != hint) scrollHint.text = hint;
+            if (!pad || travel <= .5f) return;
+
+            float scrollInput = GmGamepadInput.Look.y;
+            if (Mathf.Abs(scrollInput) < .2f) return;
+            stockScroll.StopMovement();
+            stockScroll.verticalNormalizedPosition = Mathf.Clamp01(stockScroll.verticalNormalizedPosition +
+                scrollInput * 360f * Time.unscaledDeltaTime / travel);
         }
 
         private void RenderBadges()
@@ -148,30 +204,43 @@ namespace GamecommMentor.DaengSaka
         {
             GmPartyInventory bag = GmPartyRun.Current.Inventory;
             lastInventoryRevision = bag.Revision;
-            ClearChildren(items);
             bool any = false;
-            foreach (GmItemDefinition item in GmItemDefinition.All)
+            RectTransform cookedRow = null;
+            foreach (StockRow row in stockRows)
             {
-                int count = bag.Count(item);
-                if (count == 0) continue;
+                int count = bag.Count(row.Item);
+                bool visible = count > 0;
+                if (row.Root.gameObject.activeSelf != visible) row.Root.gameObject.SetActive(visible);
+                if (!visible) continue;
                 any = true;
-                RectTransform row = Row(items, item.Name, 54f);
-                AddText(font, row, "Name", item.Name, 19, .05f, 0f, .69f, 1f, bold: true);
-                AddText(font, row, "Quantity", $"×{count}", 19, .69f, 0f, .95f, 1f, TextAnchor.MiddleRight);
+                row.Quantity.text = $"×{count}";
+                if (row.Item == cookedDish) cookedRow = row.Root;
             }
-            if (!any)
-                AddText(font, Row(items, "Empty", 54f), "Empty Label", "Tas kosong", 18, .05f, 0f, .95f, 1f);
+            emptyStock.gameObject.SetActive(!any);
 
+            bool lostRecipeFocus = false;
+            Button firstAvailableRecipe = null;
             foreach (Recipe recipe in recipes)
             {
                 GmItemDefinition dish = recipe.Dish;
                 int rawFish = bag.Count(dish.Ingredient);
                 recipe.Stock.text = bag.Count(dish) == int.MaxValue ? "Penuh" : $"×{rawFish}";
                 recipe.Cook.interactable = bag.CanCook(dish);
+                if (recipe.Cook.interactable) firstAvailableRecipe ??= recipe.Cook;
+                else if (EventSystem.current?.currentSelectedGameObject == recipe.Cook.gameObject)
+                    lostRecipeFocus = true;
                 recipe.Cook.targetGraphic.color = recipe.Cook.interactable ? Leaf : Paper;
                 Caption(recipe.Cook).color = recipe.Cook.interactable ? Paper : Ink;
             }
-            cookingStatus.text = cookedDish != null ? $"+1 {cookedDish.Name} masuk Tas" : "1 ikan per porsi";
+            if (lostRecipeFocus) GmMenuButton.Focus(firstAvailableRecipe ?? stockTab);
+            if (cookedRow == null)
+            {
+                cookingStatus.text = "1 ikan per porsi";
+                return;
+            }
+            cookingStatus.text = $"+1 {cookedDish.Name} masuk Tas";
+            LayoutRebuilder.ForceRebuildLayoutImmediate(items);
+            GmMenuButton.RevealInScrollView(stockScroll, cookedRow);
         }
 
         private static RectTransform Row(RectTransform parent, string name, float height)

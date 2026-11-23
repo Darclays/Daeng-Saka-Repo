@@ -46,6 +46,7 @@ namespace GamecommMentor.DaengSaka
         private GmMainQuestProgress quest;
         private GmEncounterFlow flow;
         private DialogueSystemController controller;
+        private bool endingPending;
 
         private bool HasActiveQuest => isActiveAndEnabled && quest != null && quest.isActiveAndEnabled;
 
@@ -115,13 +116,22 @@ namespace GamecommMentor.DaengSaka
             flow = GetComponent<GmEncounterFlow>();
             flow.VictoryReturned += OnVictoryReturned;
             controller = bridge != null ? bridge.GetComponent<DialogueSystemController>() : null;
-            if (controller != null) controller.conversationLinePrepared += OnLinePrepared;
+            if (controller != null)
+            {
+                controller.conversationLinePrepared += OnLinePrepared;
+                controller.conversationEnded += OnConversationEnded;
+            }
         }
 
         private void OnDisable()
         {
             if (flow != null) flow.VictoryReturned -= OnVictoryReturned;
-            if (controller != null) controller.conversationLinePrepared -= OnLinePrepared;
+            if (controller != null)
+            {
+                controller.conversationLinePrepared -= OnLinePrepared;
+                controller.conversationEnded -= OnConversationEnded;
+            }
+            endingPending = false;
         }
 
         public bool TryStartCurrent(GmInteractor requester) => TryStartCurrent(requester, null);
@@ -157,7 +167,16 @@ namespace GamecommMentor.DaengSaka
                 controller.masterDatabase?.GetConversation(title)?.id != entry.conversationID) return;
 
             // This terminal entry is reached only after advancing the final visible subtitle.
-            quest.TryCompleteDialogue(quest.Step);
+            GmMainQuestStep finishedStep = quest.Step;
+            if (quest.TryCompleteDialogue(finishedStep) && finishedStep == GmMainQuestStep.Penutup)
+                endingPending = true;
+        }
+
+        private void OnConversationEnded(Transform actor)
+        {
+            if (!endingPending) return;
+            endingPending = false;
+            bridge.PlayDemoEnding();
         }
     }
 }

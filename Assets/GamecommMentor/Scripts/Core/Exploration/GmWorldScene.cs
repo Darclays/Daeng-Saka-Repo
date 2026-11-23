@@ -49,6 +49,7 @@ namespace GamecommMentor.DaengSaka
         [SerializeField] private GmOrbitFollowCamera orbitCamera;
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
         private static Transfer pendingTransfer;
+        private string arrivalEntryId = DefaultEntry;
 
         public void Configure(GmSakaMotor hero, GmOrbitFollowCamera camera, params Entry[] arrivalPoints)
         {
@@ -106,10 +107,8 @@ namespace GamecommMentor.DaengSaka
                 return;
             }
 
-            player.Teleport(point.position);
-            player.transform.rotation = point.rotation * Quaternion.Euler(0f, 180f, 0f);
-            float downwardAngle = entry.cameraPitch > 0f ? entry.cameraPitch : DefaultArrivalPitch;
-            orbitCamera.SetArrivalView(ArrivalHeading(entry), downwardAngle);
+            arrivalEntryId = entry.id;
+            PlacePlayer(entry, point.position);
             if (fromPortal)
             {
                 transfer.placed = true;
@@ -117,6 +116,89 @@ namespace GamecommMentor.DaengSaka
                 if (interactor != null) interactor.SuppressInteraction();
             }
         }
+
+        private void PlacePlayer(Entry entry, Vector3 position)
+        {
+            player.Teleport(position);
+            player.transform.rotation = EntryRotation(entry);
+            float downwardAngle = entry.cameraPitch > 0f ? entry.cameraPitch : DefaultArrivalPitch;
+            orbitCamera.SetArrivalView(ArrivalHeading(entry), downwardAngle);
+        }
+
+        internal static bool TryUnstuck(GmInteractor requester, UnityEngine.Object pause)
+        {
+            if (requester == null || !requester.isActiveAndEnabled || pendingTransfer != null ||
+                GmDemoScenes.IsLoading || requester.gameObject.scene != SceneManager.GetActiveScene() ||
+                !requester.ControlGate.IsBlockedOnlyBy(pause)) return false;
+
+            foreach (GameObject root in requester.gameObject.scene.GetRootGameObjects())
+                if (root != null && root.TryGetComponent(out GmWorldScene world) && world.isActiveAndEnabled &&
+                    world.player != null && world.player.gameObject == requester.gameObject)
+                    return world.RecoverPlayer(requester);
+            return false;
+        }
+
+        private bool RecoverPlayer(GmInteractor requester)
+        {
+            var body = player.GetComponent<CharacterController>();
+            if (body == null || !body.enabled || orbitCamera == null) return false;
+
+            Physics.SyncTransforms();
+            Entry entry = FindEntry(arrivalEntryId);
+            if (!TryClearLanding(entry, body, out Vector3 position))
+            {
+                if (entry.id == DefaultEntry) return false;
+                entry = FindEntry(DefaultEntry);
+                if (!TryClearLanding(entry, body, out position)) return false;
+            }
+
+            PlacePlayer(entry, position);
+            orbitCamera.SnapToTarget();
+            player.RefreshArrivalFacing();
+            requester.SuppressInteraction();
+            return true;
+        }
+
+        private bool TryClearLanding(Entry entry, CharacterController body, out Vector3 position)
+        {
+            position = default;
+            if (entry.point == null || entry.point.gameObject.scene != gameObject.scene) return false;
+
+            Vector3 scale = body.transform.lossyScale;
+            float radius = body.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+            float halfHeight = Mathf.Max(radius, body.height * Mathf.Abs(scale.y) * .5f);
+            Vector3 center = EntryRotation(entry) * Vector3.Scale(body.center, scale);
+            float minNormalY = Mathf.Cos(Mathf.Min(body.slopeLimit, 75f) * Mathf.Deg2Rad);
+            Vector3 marker = entry.point.position;
+            float bestGround = float.NegativeInfinity;
+
+            foreach (var hit in Physics.RaycastAll(marker + Vector3.up * .85f, Vector3.down, 2.35f, ~0,
+                QueryTriggerInteraction.Ignore))
+            {
+                if (BlocksLanding(hit.collider, body) && hit.normal.y >= minNormalY)
+                    bestGround = Mathf.Max(bestGround, hit.point.y);
+            }
+            if (float.IsNegativeInfinity(bestGround)) return false;
+            position = new Vector3(marker.x, bestGround + halfHeight - center.y + .045f, marker.z);
+            Vector3 axis = Vector3.up * (halfHeight - radius);
+            return HasRoomToStand(position + center, axis, radius, body);
+        }
+
+        private bool HasRoomToStand(Vector3 center, Vector3 axis, float radius, CharacterController body)
+        {
+            foreach (var collider in Physics.OverlapCapsule(center - axis, center + axis, radius, ~0,
+                QueryTriggerInteraction.Collide))
+                if (BlocksLanding(collider, body) && (!collider.isTrigger ||
+                    collider.GetComponentInParent<GmEnemyEncounter>() != null)) return false;
+            return true;
+        }
+
+        private bool BlocksLanding(Collider collider, CharacterController body) =>
+            collider != null && collider.gameObject.scene == gameObject.scene &&
+            !collider.transform.IsChildOf(body.transform) &&
+            !Physics.GetIgnoreLayerCollision(body.gameObject.layer, collider.gameObject.layer);
+
+        private static Quaternion EntryRotation(Entry entry) => entry.point.rotation * Quaternion.Euler(0f, 180f, 0f);
 
         private Entry FindEntry(string id)
         {

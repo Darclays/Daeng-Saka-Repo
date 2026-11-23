@@ -8,7 +8,7 @@ using static GamecommMentor.DaengSaka.GmBattleView;
 
 namespace GamecommMentor.DaengSaka
 {
-    internal enum GmJournalPage { Journal, Map, Bag, Pause, Options, ReturnToTitle }
+    internal enum GmJournalPage { Journal, Map, Bag, Pause, Options, ReturnToTitle, Unstuck }
 
     internal sealed class GmQuestJournalView
     {
@@ -34,12 +34,12 @@ namespace GamecommMentor.DaengSaka
         private readonly List<(GmQuestEntry entry, Image background, Text label)> rows =
             new List<(GmQuestEntry, Image, Text)>();
         private readonly Button journalTab, mapTab, bagTab, close, activeTab, completeTab, trackAction, mapAction;
-        private readonly Button resume, pauseJournal, pauseMap, pauseBag, pauseOptions, pauseReturn;
+        private readonly Button resume, pauseJournal, pauseMap, pauseBag, pauseOptions, pauseReturn, pauseUnstuck;
         private readonly Text category, title, description, objectives, trackLabel, tabHint, pauseHint;
         private bool showCompleted;
         private string selectedId, mapQuestId;
         private GmOptionsView optionsView;
-        private GmControlDialog returnDialog;
+        private GmControlDialog returnDialog, unstuckDialog;
 
         internal bool IsOpen => root.gameObject.activeSelf;
         internal GmJournalPage Page { get; private set; }
@@ -99,13 +99,15 @@ namespace GamecommMentor.DaengSaka
             Caption(pauseMap).supportRichText = true;
             pauseBag = PauseButton("Tas", 3, () => journal.OpenFromPause(GmJournalPage.Bag));
             pauseOptions = PauseButton("Opsi", 4, () => journal.OpenFromPause(GmJournalPage.Options));
-            pauseReturn = PauseButton("Ke Main Menu", 5, () => journal.OpenFromPause(GmJournalPage.ReturnToTitle));
+            pauseUnstuck = PauseButton("Unstuck", 5, () => journal.OpenFromPause(GmJournalPage.Unstuck));
+            pauseReturn = PauseButton("Ke Main Menu", 6, () => journal.OpenFromPause(GmJournalPage.ReturnToTitle));
             GmMenuButton.Link(resume, null, pauseJournal);
             GmMenuButton.Link(pauseJournal, resume, pauseMap);
             GmMenuButton.Link(pauseMap, pauseJournal, pauseBag);
             GmMenuButton.Link(pauseBag, pauseMap, pauseOptions);
-            GmMenuButton.Link(pauseOptions, pauseBag, pauseReturn);
-            GmMenuButton.Link(pauseReturn, pauseOptions, null);
+            GmMenuButton.Link(pauseOptions, pauseBag, pauseUnstuck);
+            GmMenuButton.Link(pauseUnstuck, pauseOptions, pauseReturn);
+            GmMenuButton.Link(pauseReturn, pauseUnstuck, null);
             pauseHint = AddText(font, pausePanel, "Pintasan jeda", "", 16, .09f, .031f, .91f, .096f);
             pauseHint.color = Muted;
             root.gameObject.SetActive(false);
@@ -113,8 +115,8 @@ namespace GamecommMentor.DaengSaka
 
         private Button PauseButton(string name, int row, Action action, bool primary = false)
         {
-            float bottom = .707f - row * .119f;
-            return AddButton(font, pausePanel, name, .09f, bottom, .91f, bottom + .099f, action, primary);
+            float bottom = .717f - row * .102f;
+            return AddButton(font, pausePanel, name, .09f, bottom, .91f, bottom + .088f, action, primary);
         }
 
         private void SelectPage(GmJournalPage page)
@@ -159,6 +161,7 @@ namespace GamecommMentor.DaengSaka
                 GmJournalPage.Bag => pauseBag,
                 GmJournalPage.Options => pauseOptions,
                 GmJournalPage.ReturnToTitle => pauseReturn,
+                GmJournalPage.Unstuck => pauseUnstuck,
                 _ => resume
             });
             UpdateInputHints();
@@ -176,6 +179,19 @@ namespace GamecommMentor.DaengSaka
             ShowPauseOverlay(GmJournalPage.ReturnToTitle);
             returnDialog ??= new GmControlDialog(root, font, journal.Back, ReturnToTitle);
             returnDialog.Show("Kembali ke Main Menu?", "Sesi demo saat ini akan berakhir.", "Batal", "Ke Main Menu");
+        }
+
+        internal void ShowUnstuckConfirmation()
+        {
+            ShowPauseOverlay(GmJournalPage.Unstuck);
+            unstuckDialog ??= new GmControlDialog(root, font, journal.Back, journal.ConfirmUnstuck);
+            unstuckDialog.Show("Kembali ke titik aman?", "Saka akan dipindahkan ke titik masuk di area ini.", "Batal", "Unstuck");
+        }
+
+        internal void ShowUnstuckUnavailable()
+        {
+            if (Page == GmJournalPage.Unstuck)
+                unstuckDialog.Show("Titik masuk terhalang", "Coba kembali saat titik masuk bisa dipijak.", "Kembali");
         }
 
         private void ReturnToTitle()
@@ -200,11 +216,13 @@ namespace GamecommMentor.DaengSaka
         {
             optionsView?.Hide();
             returnDialog?.Hide();
+            unstuckDialog?.Hide();
             shade.enabled = true;
         }
 
         internal void UpdateOptionsInput() => optionsView?.UpdateInput();
-        internal void RestoreReturnFocus() => returnDialog?.RestoreFocus();
+        internal void RestoreConfirmationFocus() =>
+            (Page == GmJournalPage.Unstuck ? unstuckDialog : returnDialog)?.RestoreFocus();
 
         internal void UpdateInputHints()
         {

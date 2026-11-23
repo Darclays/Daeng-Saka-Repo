@@ -112,6 +112,8 @@ namespace GamecommMentor.DaengSaka
         {
             var info = subtitle.speakerInfo;
             var active = cast.Speaker(info);
+            if (active == null && cast.UsesSpeakerPortraits && info?.portrait == null)
+                active = GmVnDialogueCatalog.SharedSpeaker(info);
             var identity = new VNActorIdentity(info?.id ?? 0, info?.nameInDatabase, info?.Name);
             speaker.text = active != null ? active.GetResolvedDisplayName(identity) :
                 string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.PixelActorName : identity.DisplayName;

@@ -32,21 +32,26 @@ namespace GamecommMentor.DaengSaka
         internal VNActorVisualProfile Speaker(DialogueCharacterInfo info)
         {
             if (info == null) return null;
+            return Speaker(info.id, string.IsNullOrWhiteSpace(info.nameInDatabase) ? info.Name : info.nameInDatabase);
+        }
+
+        internal VNActorVisualProfile Speaker(int id, string name)
+        {
             if (UsesSpeakerPortraits)
             {
                 foreach (var profile in portraitPembicara)
-                    if (Matches(profile, info)) return profile;
+                    if (Matches(profile, id, name)) return profile;
             }
-            if (Matches(aktorKiri, info)) return aktorKiri;
-            return Matches(aktorKanan, info) ? aktorKanan : null;
+            if (Matches(aktorKiri, id, name)) return aktorKiri;
+            return Matches(aktorKanan, id, name) ? aktorKanan : null;
         }
 
-        private static bool Matches(VNActorVisualProfile profile, DialogueCharacterInfo info)
+        internal static bool Matches(VNActorVisualProfile profile, int id, string key)
         {
             if (profile == null) return false;
-            if (profile.PixelActorId > 0 && profile.PixelActorId == info.id) return true;
-            string key = info.nameInDatabase;
+            if (profile.PixelActorId > 0 && profile.PixelActorId == id) return true;
             if (string.IsNullOrWhiteSpace(key)) return false;
+            key = key.Trim();
             if (string.Equals(profile.PixelActorName, key, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(profile.ActorKey, key, StringComparison.OrdinalIgnoreCase)) return true;
             return profile.Aliases != null && Array.Exists(profile.Aliases,

@@ -416,10 +416,10 @@ namespace GamecommMentor.DaengSaka
                 view.UpdateOptionsInput();
                 return;
             }
-            if (view?.IsOpen == true && view.Page == GmJournalPage.ReturnToTitle)
+            if (view?.IsOpen == true && view.Page is GmJournalPage.ReturnToTitle or GmJournalPage.Unstuck)
             {
                 if (GmGamepadInput.PressedBack() || GmGamepadInput.PressedMenu()) Back();
-                else view.RestoreReturnFocus();
+                else view.RestoreConfirmationFocus();
                 return;
             }
             GmJournalPage? requested = ReadPageShortcut();
@@ -510,7 +510,15 @@ namespace GamecommMentor.DaengSaka
             else if (page == GmJournalPage.Map) OpenMap();
             else if (page == GmJournalPage.Options) view.ShowOptions();
             else if (page == GmJournalPage.ReturnToTitle) view.ShowReturnConfirmation();
+            else if (page == GmJournalPage.Unstuck) view.ShowUnstuckConfirmation();
             else view.ShowJournal();
+        }
+
+        internal void ConfirmUnstuck()
+        {
+            if (view?.IsOpen != true || view.Page != GmJournalPage.Unstuck) return;
+            if (GmWorldScene.TryUnstuck(player, this)) Close();
+            else view.ShowUnstuckUnavailable();
         }
 
         internal void Close()
