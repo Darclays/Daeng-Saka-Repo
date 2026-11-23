@@ -14,7 +14,8 @@ namespace GamecommMentor.DaengSaka
         [Tooltip("Use three equal health segments. Damage stops at each phase boundary.")]
         [SerializeField] private bool splitHealthIntoThirds;
         [SerializeField, Min(1)] private int minionHp = 22;
-        [SerializeField, Min(1)] private int minionDamage = 7;
+        [SerializeField, Min(1)] private int minionDamage = 13;
+        [SerializeField, Min(1)] private int basicAttackDamage = 24;
         [SerializeField, Min(1)] private int boltDamage = 20;
         [SerializeField, Min(1)] private int waveDamage = 14;
         [SerializeField, Min(1)] private int airbornePoisonDamage = 4;
@@ -36,7 +37,7 @@ namespace GamecommMentor.DaengSaka
 
         internal GmBattleStats[] CreateRoster() => new[]
         {
-            new GmBattleStats("Nenek Pakande", bossHp, 0, 0, 25, BoltDamage, isBoss: true),
+            new GmBattleStats("Nenek Pakande", bossHp, 0, 0, 25, Math.Max(1, basicAttackDamage), isBoss: true),
             new GmBattleStats("Poppo A", minionHp, 0, 0, 16, minionDamage, enemyKind: GmBattleEnemyKind.Poppo),
             new GmBattleStats("Poppo B", minionHp, 0, 0, 15, minionDamage, enemyKind: GmBattleEnemyKind.Poppo)
         };

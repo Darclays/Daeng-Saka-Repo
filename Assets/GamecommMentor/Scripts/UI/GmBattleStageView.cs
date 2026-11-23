@@ -24,6 +24,7 @@ namespace GamecommMentor.DaengSaka
         private sealed class UnitView
         {
             public RectTransform Slot;
+            public RectTransform EnemyPlate;
             public RawImage Ring;
             public RawImage Sprite;
             public RawImage Effect;
@@ -53,6 +54,7 @@ namespace GamecommMentor.DaengSaka
         private readonly GmBattleArt.Clip statusFrame;
         private readonly RectTransform arena;
         private readonly RectTransform stage;
+        private readonly RectTransform enemyPlates;
         private readonly float hitZoom;
         private readonly RawImage background;
         private readonly Color locationTint;
@@ -92,6 +94,7 @@ namespace GamecommMentor.DaengSaka
             Texture2D contactShadow = LocationBackdrop != null ? art.FindContactShadow() : null;
             hasContactShadows = contactShadow != null;
             stage = GmBattleView.Rect("Battle Framing", arena, 0f, 0f, 1f, 1f);
+            enemyPlates = GmBattleView.Rect("Enemy Plates", stage, 0f, 0f, 1f, 1f);
             RectTransform partyOrigin = GmBattleView.Rect("Party Impact", stage, 0.27f, 0.31f, 0.27f, 0.31f);
             partyImpact = Frame("Effect", partyOrigin);
             partyImpact.enabled = false;
@@ -135,7 +138,10 @@ namespace GamecommMentor.DaengSaka
                 Button button = GmBattleView.Clickable(hitImage, () => select(index));
                 statusFocus(hit.gameObject, index);
 
-                RectTransform name = At("Name Plate", slot, boss ? 160f : 118f, 24f, 0f, -25f);
+                // Enemy readouts stay in their formation slots while sprites close in or recoil.
+                RectTransform enemyPlate = unit.IsParty ? null :
+                    GmBattleView.Rect(unit.Name, enemyPlates, position.x, position.y, position.x, position.y);
+                RectTransform name = At("Name Plate", enemyPlate ?? slot, boss ? 160f : 118f, 24f, 0f, -25f);
                 Image nameBackground = GmBattleView.Fill(name, LabelBackground);
                 OutlinePlate(nameBackground);
                 button.targetGraphic = nameBackground;
@@ -154,12 +160,12 @@ namespace GamecommMentor.DaengSaka
                 Text status = null;
                 if (!unit.IsParty)
                 {
-                    RectTransform health = At("Enemy HP", slot, 116f, 20f, 0f, -48f);
+                    RectTransform health = At("Enemy HP", enemyPlate, 116f, 20f, 0f, -48f);
                     GmBattleView.Fill(health, HpPlate);
                     hp = GmBattleView.Label(font, health, "Value", "", 15, 0.03f, 0f, 0.97f, 1f);
                     hp.color = HpInk;
                     hp.fontStyle = FontStyle.Bold;
-                    RectTransform pill = At("Enemy Status", slot, boss ? 192f : 154f, 18f, 0f, -69f);
+                    RectTransform pill = At("Enemy Status", enemyPlate, boss ? 192f : 154f, 18f, 0f, -69f);
                     Image statusBackground = GmBattleView.Fill(pill, LabelBackground);
                     statusBackground.raycastTarget = true;
                     OutlinePlate(statusBackground);
@@ -177,12 +183,13 @@ namespace GamecommMentor.DaengSaka
                 amount.enabled = false;
                 views[i] = new UnitView
                 {
-                    Slot = slot, Ring = ground, Sprite = sprite, Effect = effect, HitSpark = spark,
+                    Slot = slot, EnemyPlate = enemyPlate, Ring = ground, Sprite = sprite, Effect = effect, HitSpark = spark,
                     Button = button, NameBackground = nameBackground, Name = nameText, Hp = hp, Amount = amount,
                     Status = status, Poison = poison, PoisonFrame = poisonFrame, Stun = stun,
                     StunFrame = stunFrame, DefenseDown = defenseDown
                 };
             }
+            enemyPlates.SetAsLastSibling();
         }
 
         public void Render(GmBattleSession session, int actor, int round, bool focus,
@@ -198,6 +205,7 @@ namespace GamecommMentor.DaengSaka
             for (int i = 0; i < views.Length; i++)
                 if (session.Units[i].IsPresent) views[i].Slot.SetAsLastSibling();
             if (actor >= 0 && session.Units[actor].IsPresent) views[actor].Slot.SetAsLastSibling();
+            enemyPlates.SetAsLastSibling();
             for (int i = 0; i < views.Length; i++)
             {
                 UnitView view = views[i];
@@ -205,6 +213,7 @@ namespace GamecommMentor.DaengSaka
                 bool isBoss = session.Boss?.Index == i;
                 bool isPoppo = unit.EnemyKind == GmBattleEnemyKind.Poppo;
                 view.Slot.gameObject.SetActive(unit.IsPresent);
+                if (view.EnemyPlate != null) view.EnemyPlate.gameObject.SetActive(unit.IsPresent);
                 if (!unit.IsPresent) continue;
                 bool acting = i == actor;
                 bool marked = selection != null && session.CanTarget(selection, i);
@@ -349,8 +358,8 @@ namespace GamecommMentor.DaengSaka
 
         private static Color LocationTint(string scene) => scene switch
         {
-            "IbuKota" => new Color(1f, .97f, .89f),
-            "DesaSorelia" => new Color(1f, .98f, .90f),
+            "IbuKota" => new Color(.95f, .99f, 1f),
+            "DesaSorelia" => new Color(.94f, 1f, .98f),
             "GoaLembanyung" or "GoaLembayung" => new Color(.91f, .95f, 1f),
             _ => Color.white
         };
@@ -452,6 +461,13 @@ namespace GamecommMentor.DaengSaka
 
         private static void DrawAmount(UnitView view, GmBattleMove move, GmBattleHit hit, float progress, bool pop)
         {
+            if (move.Effect == GmBattleEffect.RestoreVitals)
+            {
+                string restoration = GmBattleView.RestorationLabel(hit);
+                DrawAmountLabel(view, restoration.Length > 0 ? restoration : "BERSIH",
+                    new Color(0.65f, 0.99f, 0.76f), progress, pop);
+                return;
+            }
             int amount = hit.Amount;
             bool stunOnly = amount == 0 && hit.Stunned;
             if (move.Effect == GmBattleEffect.Poison)
@@ -579,9 +595,23 @@ namespace GamecommMentor.DaengSaka
                     _ => new Vector2(0.90f, 0.54f)
                 };
             }
-            int count = session.Units.Count - session.PartyCount;
+            int count = session.FirstWaveEnemyCount;
+            if (enemy >= count)
+            {
+                enemy -= count;
+                count = session.Units.Count - session.PartyCount - count;
+            }
             if (count <= 2)
                 return enemy == 0 ? new Vector2(0.70f, 0.46f) : new Vector2(0.83f, 0.28f);
+            if (count == 3)
+            {
+                return enemy switch
+                {
+                    0 => new Vector2(0.58f, 0.32f),
+                    1 => new Vector2(0.73f, 0.42f),
+                    _ => new Vector2(0.885f, 0.31f)
+                };
+            }
             int columns = (count + 1) / 2;
             float position = (enemy / 2) / (float)(columns - 1);
             return new Vector2(Mathf.Lerp(0.65f, 0.90f, position), enemy % 2 == 0 ? 0.50f : 0.22f);

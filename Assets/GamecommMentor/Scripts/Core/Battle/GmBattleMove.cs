@@ -5,7 +5,7 @@ namespace GamecommMentor.DaengSaka
 {
     internal enum GmBattleCharacter { Unspecified, Saka, Pacca, Daung }
     internal enum GmBattleTarget { Enemy, AllEnemies, Ally, AllAllies, Self }
-    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff, Summon, Charge, Poison }
+    internal enum GmBattleEffect { Damage, StunDamage, Heal, HealPercent, RestoreMp, Buff, Summon, Charge, Poison, RestoreVitals }
     internal enum GmBattleBuff { None, Attack, Defense, Weaken }
     internal enum GmBattleCleanse { None, DefenseDown, AllNegative }
 
@@ -17,13 +17,13 @@ namespace GamecommMentor.DaengSaka
             "GBite", GmBattleTarget.Enemy, GmBattleEffect.Damage, 12, cooldown: 1,
             animation: "poppoBite", impact: "poppoBiteImpact", enemyOnly: true, poisonTurns: 2, poisonDamage: 4);
         public static readonly GmBattleMove HammerSweep = new GmBattleMove(
-            "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 18, cooldown: 1,
+            "Hammer Sweep", GmBattleTarget.AllEnemies, GmBattleEffect.Damage, 24, cooldown: 1,
             buff: GmBattleBuff.Defense, buffPercent: -20, buffRounds: 2, animation: "babiRusaHammerSweep", enemyOnly: true);
         public static readonly GmBattleMove Uppercut = new GmBattleMove(
             "Uppercut", GmBattleTarget.Enemy, GmBattleEffect.StunDamage, 0, cooldown: 2,
             animation: "manguniUppercut", enemyOnly: true);
         public static readonly GmBattleMove TailSweep = new GmBattleMove(
-            "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 13, cooldown: 1,
+            "Tail Sweep", GmBattleTarget.Enemy, GmBattleEffect.Damage, 20, cooldown: 1,
             animation: "laWunaTailSweep", enemyOnly: true);
         public static readonly GmBattleMove Glare = new GmBattleMove(
             "Glare", GmBattleTarget.Enemy, GmBattleEffect.Poison, 7, cooldown: 2,
@@ -68,8 +68,14 @@ namespace GamecommMentor.DaengSaka
         public static readonly GmBattleMove GrilledWader = new GmBattleMove(
             GmItemDefinition.GrilledWader.Name, GmBattleTarget.Ally, GmBattleEffect.Heal, GmItemDefinition.GrilledWader.HpRecovery,
             item: GmItemDefinition.GrilledWader, impact: "healingImpact");
+        public static readonly GmBattleMove GrilledNila = new GmBattleMove(
+            GmItemDefinition.GrilledNila.Name, GmBattleTarget.Ally, GmBattleEffect.RestoreMp, GmItemDefinition.GrilledNila.MpRecovery,
+            item: GmItemDefinition.GrilledNila);
+        public static readonly GmBattleMove GrilledGabus = new GmBattleMove(
+            GmItemDefinition.GrilledGabus.Name, GmBattleTarget.AllAllies, GmBattleEffect.RestoreVitals, 0,
+            item: GmItemDefinition.GrilledGabus, impact: "healingImpact", cleanse: GmBattleCleanse.AllNegative);
         public static IReadOnlyList<GmBattleMove> Items { get; } =
-            Array.AsReadOnly(new[] { HpItem, MpItem, GrilledWader });
+            Array.AsReadOnly(new[] { HpItem, MpItem, GrilledWader, GrilledNila, GrilledGabus });
 
         private static readonly IReadOnlyList<GmBattleMove> SakaSkills = Array.AsReadOnly(new[] { TideResonance, SharkBite, LegacyOfBarani });
         private static readonly IReadOnlyList<GmBattleMove> PaccaSkills = Array.AsReadOnly(new[] { ShieldSwing, BattleAura, DominionStrike });
@@ -156,9 +162,10 @@ namespace GamecommMentor.DaengSaka
         public readonly bool DebuffApplied;
         public readonly int CleansedCount;
         public readonly bool Poisoned;
+        public readonly int MpRestored;
 
         public GmBattleHit(int index, int amount, bool stunned, bool debuffApplied = false, int cleansedCount = 0,
-            bool poisoned = false)
+            bool poisoned = false, int mpRestored = 0)
         {
             Index = index;
             Amount = amount;
@@ -166,6 +173,7 @@ namespace GamecommMentor.DaengSaka
             DebuffApplied = debuffApplied;
             CleansedCount = cleansedCount;
             Poisoned = poisoned;
+            MpRestored = mpRestored;
         }
     }
 }

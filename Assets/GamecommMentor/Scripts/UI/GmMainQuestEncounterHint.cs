@@ -33,6 +33,7 @@ namespace GamecommMentor.DaengSaka
         private Text mapKey, menuKey, sprintKey;
         private ShortcutNotice questNotice;
         private ShortcutNotice itemNotice;
+        private ShortcutNotice mapNotice;
 
         private sealed class ShortcutNotice
         {
@@ -44,7 +45,8 @@ namespace GamecommMentor.DaengSaka
             private readonly string guidance;
             private string displayedTitle, displayedGuidance;
 
-            internal ShortcutNotice(RectTransform canvas, Font font, Text shortcut, string name, string heading, string guidance)
+            internal ShortcutNotice(RectTransform canvas, Font font, Text shortcut, string name, string heading, string guidance,
+                string marker = "↑")
             {
                 this.shortcut = shortcut;
                 this.heading = heading;
@@ -69,7 +71,7 @@ namespace GamecommMentor.DaengSaka
                 panel.gameObject.SetActive(false);
 
                 arrow = CreateLabel("Notice Arrow", shortcut.rectTransform, font, TextAnchor.MiddleCenter);
-                arrow.text = "↑";
+                arrow.text = marker;
                 arrow.fontSize = 20;
                 arrow.gameObject.AddComponent<Outline>().effectColor = Color.black;
                 arrow.rectTransform.anchorMin = arrow.rectTransform.anchorMax = new Vector2(.5f, 0f);
@@ -100,7 +102,8 @@ namespace GamecommMentor.DaengSaka
                 }
                 float pulse = .5f + .5f * Mathf.Sin(elapsed * 6f);
                 panel.anchoredPosition = new Vector2(-24f, -top);
-                shortcut.color = arrow.color = Color.Lerp(new Color(1f, .77f, .35f), Color.white, pulse * .6f);
+                Color accent = arrow.text == "!" ? new Color(1f, .46f, .51f) : new Color(1f, .77f, .35f);
+                shortcut.color = arrow.color = Color.Lerp(accent, Color.white, pulse * .6f);
                 arrow.rectTransform.anchoredPosition = new Vector2(0f, -7f + 3f * pulse);
                 return true;
             }
@@ -195,6 +198,8 @@ namespace GamecommMentor.DaengSaka
                     "Quest baru", "[J] Jurnal → Lacak quest");
                 itemNotice = new ShortcutNotice(canvasRect, font, bagKey, "New Item Notice",
                     "Item baru", "[I] Tas → Cek item");
+                mapNotice = new ShortcutNotice(canvasRect, font, mapKey, "Quest Available Notice",
+                    "Quest tersedia", "[M] Peta → Temukan pemberi quest", "!");
             }
         }
 
@@ -288,21 +293,24 @@ namespace GamecommMentor.DaengSaka
         private void UpdateShortcuts(bool visible)
         {
             bool pad = GmGamepadInput.UsingGamepad;
-            mapKey.gameObject.SetActive(visible);
             menuKey.gameObject.SetActive(visible);
             sprintKey.gameObject.SetActive(visible);
-            mapKey.text = pad ? "[LB] Peta" : "[M] Peta";
-            if (visible && journal.HasMapQuest) mapKey.text += "  <color=#FF787D>!</color>";
             menuKey.text = pad ? "[Menu] Jeda" : "[P] Jeda";
             sprintKey.text = pad ? "[RT] Sprint" : "[Shift] Sprint";
             bool showQuest = questNotice.Render(visible, journal.NewQuestTitle,
                 GmQuestJournal.QuestNoticeDuration - journal.QuestNoticeRemaining, NoticeTop,
                 pad ? "[Y] Jurnal" : "[J] Jurnal", pad ? "[Y] Jurnal → Lacak quest" : null);
             GmPartyRun run = GmPartyRun.Current;
-            itemNotice.Render(visible, run.NewItemSummary,
+            bool showItem = itemNotice.Render(visible, run.NewItemSummary,
                 GmPartyRun.ItemNoticeDuration - run.ItemNoticeRemaining,
                 showQuest ? NoticeTop + NoticeSpacing : NoticeTop, pad ? "[RB] Tas" : "[I] Tas",
                 pad ? "[RB] Tas → Cek item" : null);
+            int offers = visible ? journal.LocalOfferCount : 0;
+            string mapLabel = pad ? "[LB] Peta" : "[M] Peta";
+            if (visible && offers == 0 && journal.HasMapQuest) mapLabel += "  ◆";
+            float mapNoticeTop = NoticeTop + NoticeSpacing * ((showQuest ? 1 : 0) + (showItem ? 1 : 0));
+            mapNotice.Render(visible, offers > 0 ? $"{offers} di area ini" : null,
+                (float)Time.unscaledTimeAsDouble, mapNoticeTop, mapLabel, pad ? "[LB] Peta → Temukan pemberi quest" : null);
         }
 
         private void UpdateJournalHint(bool exploring, Camera camera)

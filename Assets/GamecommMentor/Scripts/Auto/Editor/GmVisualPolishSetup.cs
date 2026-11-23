@@ -34,22 +34,22 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static readonly Look CapitalLook = new Look
         {
-            Sky = "#BBC9DD", Equator = "#A6927B", Ground = "#5F5041",
-            Horizon = "#C6C3AF", Sun = "#FFE2B8", SunIntensity = 1.23f, Reflection = .70f,
-            FogDistances = new Vector2(27f, 136f), Exposure = .10f, Contrast = 8f, Saturation = 7f,
-            Temperature = 8f, Bloom = .10f, Vignette = .12f,
-            Shadows = new Vector4(.94f, 1f, 1.10f, .025f), Midtones = new Vector4(1.04f, 1.01f, .96f, 0f),
-            Highlights = new Vector4(1.06f, 1.02f, .94f, 0f)
+            Sky = "#C6DEEE", Equator = "#AAB6BC", Ground = "#666963",
+            Horizon = "#CBDDE7", Sun = "#FFF9F2", SunIntensity = 1.20f, Reflection = .68f,
+            FogDistances = new Vector2(32f, 145f), Exposure = .10f, Contrast = 8f, Saturation = 5f,
+            Temperature = -4f, Bloom = .10f, Vignette = .12f,
+            Shadows = new Vector4(.965f, 1.01f, 1.095f, .024f), Midtones = new Vector4(.995f, 1.008f, 1.018f, 0f),
+            Highlights = new Vector4(.993f, 1.003f, 1.025f, 0f)
         };
 
         private static readonly Look VillageLook = new Look
         {
-            Sky = "#B5C6D2", Equator = "#A5A18A", Ground = "#675841",
-            Horizon = "#BBC3AD", Sun = "#FFE4B8", SunIntensity = 1.14f, Reflection = .63f,
-            FogDistances = new Vector2(23f, 112f), Exposure = .11f, Contrast = 7f, Saturation = 8f,
-            Temperature = 9f, Bloom = .12f, Vignette = .13f,
-            Shadows = new Vector4(.94f, 1.02f, 1.08f, .035f), Midtones = new Vector4(1.02f, 1.02f, .96f, 0f),
-            Highlights = new Vector4(1.07f, 1.025f, .94f, 0f)
+            Sky = "#8B9FAD", Equator = "#737E73", Ground = "#515648",
+            Horizon = "#CEDFE0", Sun = "#FFF4DE", SunIntensity = 1.02f, Reflection = .63f,
+            FogDistances = new Vector2(64f, 165f), Exposure = .025f, Contrast = 4f, Saturation = 4f,
+            Temperature = 1f, Bloom = .06f, Vignette = .08f,
+            Shadows = new Vector4(.98f, 1f, 1.04f, 0f), Midtones = new Vector4(1.012f, 1.014f, .988f, 0f),
+            Highlights = new Vector4(1.012f, 1f, .984f, -.015f)
         };
 
         private static readonly Look CaveLook = new Look
@@ -80,7 +80,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 EditorSceneManager.MarkSceneDirty(scene);
                 Undo.CollapseUndoOperations(group);
                 Selection.activeGameObject = root.gameObject;
-                Debug.Log($"[Daeng Saka 1E.41B] Petualangan Hangat siap di {scene.name}. Simpan scene.", root);
+                Debug.Log($"[Daeng Saka 1E.41B R3] Visual Polish siap di {scene.name}. Simpan scene.", root);
             }
             catch (Exception exception)
             {
@@ -99,6 +99,7 @@ namespace GamecommMentor.DaengSaka.Editor
             Camera camera = Require<Camera>(RequireChild(world, "Saka - Orbit Camera"));
             Transform level = RequireRoot(scene, scene.name == Capital ? "LevelDesain" : "LevelDesign");
             Look look = scene.name == Capital ? CapitalLook : scene.name == Village ? VillageLook : CaveLook;
+            bool outdoors = scene.name != Cave;
             string folder = Generated + scene.name + "/";
             if (!AssetDatabase.IsValidFolder(folder.TrimEnd('/')))
             {
@@ -117,8 +118,14 @@ namespace GamecommMentor.DaengSaka.Editor
 
             // Keep the world profiles outside the default mask used by the additive battle camera.
             const int volumeLayer = 1; // TransparentFX, a built-in GameObject layer.
+            string profileName = scene.name switch
+            {
+                Village => "Siang Tropis.asset",
+                Capital => "Siang Biru.asset",
+                _ => "Petualangan Hangat.asset"
+            };
             Volume volume = SetVolume(root, "Pewarnaan area", volumeLayer, 20f,
-                GetProfile(folder + "Petualangan Hangat.asset", profile => ConfigureLook(profile, look)));
+                GetProfile(folder + profileName, profile => ConfigureLook(profile, look)));
             Undo.RecordObject(volume, UndoName);
             volume.weight = 1f;
             ConfigureCamera(camera, volumeLayer);
@@ -128,8 +135,9 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 var quest = Require<GmMainQuestProgress>(RequireRoot(scene, "Daeng Saka - Encounter Flow"));
                 PolishVillageGround(Require<Terrain>(RequireChild(level, "Terrain")), folder);
+                PolishVillageWater(level, folder);
                 var invasion = SetVolume(root, "Saat Sorelia diserang", volumeLayer, 21f,
-                    GetProfile(folder + "Saat Invasi.asset", ConfigureInvasion));
+                    GetProfile(folder + "Saat Invasi - Siang Tropis.asset", ConfigureInvasion));
                 Undo.RecordObject(invasion, UndoName);
                 invasion.weight = 1f;
                 var recovery = GetOrAdd<GmSoreliaLightRecovery>(invasion.transform);
@@ -139,7 +147,12 @@ namespace GamecommMentor.DaengSaka.Editor
             PopulateAtmosphere(root, level, world, folder, scene.name);
 
             Light sun = ConfigureSun(scene, root, look);
-            Material sky = scene.name == Cave ? RenderSettings.skybox : CreateSky(folder, look, scene.name == Village);
+            Material sky = RenderSettings.skybox;
+            if (outdoors)
+            {
+                sky = CreateSky(folder, scene.name);
+                ApplyCameraSky(camera, sky);
+            }
             AssetDatabase.SaveAssets();
             ApplyEnvironment(look, sun, sky);
             return root;
@@ -155,6 +168,18 @@ namespace GamecommMentor.DaengSaka.Editor
             camera.allowHDR = true;
             PrefabUtility.RecordPrefabInstancePropertyModifications(data);
             PrefabUtility.RecordPrefabInstancePropertyModifications(camera);
+        }
+
+        private static void ApplyCameraSky(Camera camera, Material sky)
+        {
+            Undo.RecordObject(camera, UndoName);
+            camera.clearFlags = CameraClearFlags.Skybox;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(camera);
+            if (!camera.TryGetComponent(out Skybox skyOverride)) return;
+
+            Undo.RecordObject(skyOverride, UndoName);
+            skyOverride.material = sky;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(skyOverride);
         }
 
         private static Volume SetVolume(Transform parent, string name, int layer, float priority, VolumeProfile profile)
@@ -224,10 +249,10 @@ namespace GamecommMentor.DaengSaka.Editor
         private static void ConfigureInvasion(VolumeProfile profile)
         {
             var grade = profile.Add<ColorAdjustments>();
-            grade.postExposure.Override(-.10f);
-            grade.contrast.Override(9f);
-            grade.saturation.Override(-6f);
-            profile.Add<WhiteBalance>().temperature.Override(1f);
+            grade.postExposure.Override(-.04f);
+            grade.contrast.Override(5f);
+            grade.saturation.Override(-2f);
+            profile.Add<WhiteBalance>().temperature.Override(-1f);
         }
 
         private static Light ConfigureSun(Scene scene, Transform root, Look look)
@@ -244,26 +269,30 @@ namespace GamecommMentor.DaengSaka.Editor
 
             Undo.RecordObject(sun, UndoName);
             Undo.RecordObject(sun.transform, UndoName);
-            sun.transform.rotation = Quaternion.Euler(scene.name == Village ? 42f : scene.name == Capital ? 37f : 50f, -32f, 0f);
+            sun.transform.rotation = scene.name switch
+            {
+                Village => Quaternion.Euler(50f, -30f, 0f),
+                Capital => Quaternion.Euler(37f, -32f, 0f),
+                _ => Quaternion.Euler(50f, -32f, 0f)
+            };
             sun.useColorTemperature = false;
             sun.color = ColorFrom(look.Sun);
             sun.intensity = look.SunIntensity;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = scene.name == Cave ? .70f : .80f;
+            sun.shadowStrength = scene.name == Village ? 1f : scene.name == Cave ? .70f : .80f;
             PrefabUtility.RecordPrefabInstancePropertyModifications(sun);
             PrefabUtility.RecordPrefabInstancePropertyModifications(sun.transform);
             return sun;
         }
 
-        private static Material CreateSky(string folder, Look look, bool village)
+        private static Material CreateSky(string folder, string sceneName)
         {
-            return GetMaterial(folder + "Langit.mat", Shader.Find("Skybox/Procedural"), material =>
+            return GetMaterial(folder + "Langit - Siang Biru.mat", Shader.Find("Skybox/Panoramic"), material =>
             {
-                material.SetFloat("_SunSize", .028f);
-                material.SetFloat("_AtmosphereThickness", village ? 1.18f : 1.07f);
-                material.SetColor("_SkyTint", ColorFrom(village ? "#889BA9" : "#879CB0"));
-                material.SetColor("_GroundColor", ColorFrom(look.Horizon));
-                material.SetFloat("_Exposure", .94f);
+                // A fixed daylight panorama keeps the horizon blue at every sun angle.
+                material.SetTexture("_MainTex", Texture("Langit_" + sceneName));
+                material.SetFloat("_Mapping", 1f); // Latitude-longitude.
+                material.SetFloat("_ImageType", 0f); // 360 degrees.
             });
         }
 

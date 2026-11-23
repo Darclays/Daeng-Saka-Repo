@@ -124,6 +124,7 @@ namespace GamecommMentor.DaengSaka
         public int Hp { get => vitals.Hp; internal set => vitals.Hp = value; }
         public int Mp { get => vitals.Mp; internal set => vitals.Mp = value; }
         public int LastActedRound { get; internal set; } = -1;
+        public int LastItemRound { get; internal set; } = -1;
         public int GuardRound { get; internal set; } = -1;
         public int CompletedActions { get; internal set; }
         public bool IsStunned { get; internal set; }
@@ -282,6 +283,7 @@ namespace GamecommMentor.DaengSaka
         public IReadOnlyList<GmBattleUnit> Units => units;
         public IReadOnlyList<int> EnemyOrder => enemyOrder;
         public int PartyCount { get; }
+        internal int FirstWaveEnemyCount => reinforcementStart - PartyCount;
         public int WaveNumber { get; private set; } = 1;
         public int WaveCount => reinforcementStart < units.Length ? 2 : 1;
         public GmBossBattle Boss { get; }
@@ -362,9 +364,21 @@ namespace GamecommMentor.DaengSaka
                 if (move.IsItem)
                 {
                     if (ItemCount(move) == 0) return "Habis";
+                    bool quotaUsed = false;
                     for (int i = 0; i < PartyCount; i++)
-                        if (CanTarget(move, i)) return null;
-                    return move.Effect == GmBattleEffect.RestoreMp ? "MP target penuh" : "HP target penuh";
+                    {
+                        GmBattleUnit unit = units[i];
+                        if (!CanBenefitFromItem(move, unit)) continue;
+                        if (unit.LastItemRound != RoundNumber) return null;
+                        quotaUsed = true;
+                    }
+                    if (quotaUsed) return "Jatah habis";
+                    return move.Effect switch
+                    {
+                        GmBattleEffect.RestoreMp => "MP penuh",
+                        GmBattleEffect.RestoreVitals => "Party sudah pulih",
+                        _ => "HP penuh"
+                    };
                 }
                 if (!Actor.Skills.Contains(move)) return "Tidak tersedia";
             }
@@ -397,8 +411,8 @@ namespace GamecommMentor.DaengSaka
                 return index == ActorIndex || index == Boss.ChargeStunTarget;
             if (move.IsEnemyMove && move.Target == GmBattleTarget.AllAllies && index == ActorIndex) return false;
             GmBattleUnit unit = units[index];
-            if (move.IsItem && ((move.Effect == GmBattleEffect.Heal && unit.Hp >= unit.MaxHp) ||
-                                (move.Effect == GmBattleEffect.RestoreMp && unit.Mp >= unit.MaxMp))) return false;
+            if (move.IsItem && (!unit.IsParty || unit.LastItemRound == RoundNumber || !CanBenefitFromItem(move, unit)))
+                return false;
             if (move.Target == GmBattleTarget.Ally && move.Cleanse == GmBattleCleanse.AllNegative &&
                 !CanBenefitFromHealing(unit)) return false;
             bool ally = unit.IsParty == Actor.IsParty;
@@ -412,6 +426,15 @@ namespace GamecommMentor.DaengSaka
         }
 
         private bool CanBenefitFromHealing(GmBattleUnit unit) => unit.Hp < unit.MaxHp || unit.HasNegativeEffects(RoundNumber);
+
+        private bool CanBenefitFromItem(GmBattleMove move, GmBattleUnit unit) => unit.IsAlive &&
+            (move.Effect switch
+            {
+                GmBattleEffect.Heal or GmBattleEffect.HealPercent => unit.Hp < unit.MaxHp,
+                GmBattleEffect.RestoreMp => unit.Mp < unit.MaxMp,
+                GmBattleEffect.RestoreVitals => unit.Mp < unit.MaxMp || CanBenefitFromHealing(unit),
+                _ => true
+            });
 
         public int[] TargetsFor(GmBattleMove move, int targetIndex)
         {
@@ -448,7 +471,8 @@ namespace GamecommMentor.DaengSaka
                 int targetIndexInBattle = targets[index];
                 GmBattleUnit target = units[targetIndexInBattle];
                 int cleansed = target.ClearNegativeEffects(move.Cleanse, RoundNumber);
-                int amount = ApplyMove(move, target);
+                int amount = ApplyMove(move, target, out int mpRestored);
+                if (move.IsItem) target.LastItemRound = RoundNumber;
                 bool stunned = target.IsAlive && (move.Effect == GmBattleEffect.StunDamage && RollStun(move, target) ||
                     move.Effect == GmBattleEffect.Charge && Boss?.Index == ActorIndex && targetIndexInBattle != ActorIndex);
                 if (stunned) target.IsStunned = true;
@@ -456,7 +480,7 @@ namespace GamecommMentor.DaengSaka
                 if (appliedDebuff) target.ApplyBuff(move, RoundNumber);
                 bool poisoned = target.IsAlive && move.InflictsPoison;
                 if (poisoned) target.ApplyPoison(move.PoisonDamage, move.PoisonTurns, move);
-                hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned, appliedDebuff, cleansed, poisoned);
+                hits[index] = new GmBattleHit(targetIndexInBattle, amount, stunned, appliedDebuff, cleansed, poisoned, mpRestored);
             }
             if (move.IsDamaging && move.Buff != GmBattleBuff.None && !move.AppliesDebuffOnHit)
                 Actor.ApplyBuff(move, RoundNumber);
@@ -471,17 +495,26 @@ namespace GamecommMentor.DaengSaka
             if (Actor.IsParty) return true;
             int chance = target.Character switch
             {
-                GmBattleCharacter.Saka => 90,
-                GmBattleCharacter.Pacca => 70,
-                GmBattleCharacter.Daung => 40,
-                _ => 70
+                GmBattleCharacter.Saka => 98,
+                GmBattleCharacter.Pacca => 90,
+                GmBattleCharacter.Daung => 55,
+                _ => 90
             };
             return random.Next(100) < chance;
         }
 
-        private int ApplyMove(GmBattleMove move, GmBattleUnit target)
+        private int ApplyMove(GmBattleMove move, GmBattleUnit target, out int mpRestored)
         {
+            mpRestored = 0;
             if (move.Effect == GmBattleEffect.Summon || move.Effect == GmBattleEffect.Charge) return 0;
+            if (move.Effect == GmBattleEffect.RestoreVitals)
+            {
+                int hpRestored = target.MaxHp - target.Hp;
+                mpRestored = target.MaxMp - target.Mp;
+                target.Hp = target.MaxHp;
+                target.Mp = target.MaxMp;
+                return hpRestored;
+            }
             if (move.Effect == GmBattleEffect.Heal || move.Effect == GmBattleEffect.HealPercent)
             {
                 int heal = move.Effect == GmBattleEffect.HealPercent ? (int)((long)target.MaxHp * move.Amount / 100) : move.Amount;

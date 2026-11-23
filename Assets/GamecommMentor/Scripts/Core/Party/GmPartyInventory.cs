@@ -13,23 +13,33 @@ namespace GamecommMentor.DaengSaka
         public static readonly GmItemDefinition SoreliaHerbs = new GmItemDefinition("quest.sorelia.herbs", "Bahan Ramuan Sorelia");
         public static readonly GmItemDefinition GrilledWader = new GmItemDefinition(
             "food.wader.grilled", "Wader Bakar", hpRecovery: 15, ingredient: Wader);
+        public static readonly GmItemDefinition GrilledNila = new GmItemDefinition(
+            "food.nila.grilled", "Nila Bakar", mpRecovery: 10, ingredient: Nila);
+        public static readonly GmItemDefinition GrilledGabus = new GmItemDefinition(
+            "food.gabus.grilled", "Gabus Bakar", ingredient: Gabus, restoresParty: true);
+        internal static IReadOnlyList<GmItemDefinition> FishRecipes { get; } =
+            Array.AsReadOnly(new[] { GrilledWader, GrilledNila, GrilledGabus });
         public static IReadOnlyList<GmItemDefinition> All { get; } =
-            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader, Nila, Gabus, GrilledWader, SoreliaHerbs });
+            Array.AsReadOnly(new[] { HpPotion, MpPotion, Wader, Nila, Gabus, GrilledWader, GrilledNila, GrilledGabus, SoreliaHerbs });
 
         public string Id { get; }
         public string Name { get; }
         internal int HpRecovery { get; }
         internal int MpRecovery { get; }
         internal GmItemDefinition Ingredient { get; }
+        internal bool RestoresParty { get; }
+        internal string RecoveryLabel => RestoresParty ? "HP/MP penuh · hapus debuff" :
+            MpRecovery > 0 ? $"+{MpRecovery} MP" : $"+{HpRecovery} HP";
 
         private GmItemDefinition(string id, string name, int hpRecovery = 0, int mpRecovery = 0,
-            GmItemDefinition ingredient = null)
+            GmItemDefinition ingredient = null, bool restoresParty = false)
         {
             Id = id;
             Name = name;
             HpRecovery = hpRecovery;
             MpRecovery = mpRecovery;
             Ingredient = ingredient;
+            RestoresParty = restoresParty;
         }
     }
 

@@ -7,7 +7,6 @@ namespace GamecommMentor.DaengSaka
 {
     internal sealed class GmPartyBagView
     {
-        private static readonly GmItemDefinition Dish = GmItemDefinition.GrilledWader;
         private static bool showEquipment;
         private readonly Font font;
         private readonly Button stockTab, equipmentTab;
@@ -16,14 +15,19 @@ namespace GamecommMentor.DaengSaka
         private readonly RectTransform items;
         private readonly RectTransform members;
         private readonly Button recover;
-        private readonly Button cook;
-        private readonly Text cookLabel;
-        private readonly Text ingredientStock;
+        private readonly Recipe[] recipes = new Recipe[GmItemDefinition.FishRecipes.Count];
         private readonly Text cookingStatus;
         private readonly Text wallet;
         private int lastInventoryRevision = -1;
         private int lastCoins = -1;
         public RectTransform Panel { get; }
+
+        private sealed class Recipe
+        {
+            internal GmItemDefinition Dish;
+            internal Text Stock;
+            internal Button Cook;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         internal static void ResetTab() => showEquipment = false;
@@ -43,17 +47,26 @@ namespace GamecommMentor.DaengSaka
             RectTransform stock = Rect("Isi Tas", stockPage, 0f, 0f, .46f, 1f);
             Fill(stock, Inset);
             AddText(font, stock, "Title", "Isi tas", 26, .055f, .835f, .95f, .98f, bold: true);
-            items = CreateScrollContent(Rect("Item List", stock, .035f, .35f, .965f, .81f), out _);
+            items = CreateScrollContent(Rect("Item List", stock, .035f, .464f, .965f, .81f), out _);
 
-            RectTransform recipe = Rect("Resep", stock, .035f, .03f, .965f, .32f);
-            Fill(recipe, Paper);
-            AddText(font, recipe, "Nama masakan", $"Resep {Dish.Name}", 21, .045f, .63f, .56f, .96f, bold: true);
-            AddText(font, recipe, "Efek", $"+{Dish.HpRecovery} HP saat battle", 16,
-                .56f, .63f, .955f, .96f, TextAnchor.MiddleRight);
-            ingredientStock = AddText(font, recipe, "Bahan", "", 16, .045f, .34f, .64f, .63f);
-            cookingStatus = AddText(font, recipe, "Hasil masak", "", 15, .045f, .065f, .64f, .34f);
-            cook = AddButton(font, recipe, "Masak 1", .67f, .10f, .955f, .53f, Cook, primary: true);
-            cookLabel = cook.GetComponentInChildren<Text>(true);
+            RectTransform recipePanel = Rect("Resep", stock, .035f, .027f, .965f, .438f);
+            Fill(recipePanel, Paper);
+            AddText(font, recipePanel, "Judul", "Resep ikan", 19, .04f, .823f, .43f, .993f, bold: true);
+            cookingStatus = AddText(font, recipePanel, "Hasil masak", "", 15, .43f, .823f, .957f, .993f,
+                TextAnchor.MiddleRight);
+            cookingStatus.color = Leaf;
+            for (int i = 0; i < recipes.Length; i++)
+            {
+                GmItemDefinition dish = GmItemDefinition.FishRecipes[i];
+                float top = .81f - i * .26f;
+                RectTransform row = Rect(dish.Name, recipePanel, .04f, top - .238f, .957f, top);
+                Fill(row, Inset);
+                AddText(font, row, "Nama masakan", dish.Name, 17, .025f, .49f, .48f, 1f, bold: true);
+                Text stockCount = AddText(font, row, "Bahan", "", 14, .49f, .49f, .73f, 1f, TextAnchor.MiddleRight);
+                AddText(font, row, "Efek", dish.RecoveryLabel, 14, .025f, 0f, .73f, .51f);
+                Button cook = AddButton(font, row, "Masak", .746f, .069f, .98f, .925f, () => Cook(dish), primary: true);
+                recipes[i] = new Recipe { Dish = dish, Stock = stockCount, Cook = cook };
+            }
 
             RectTransform party = Rect("Status Party", stockPage, .48f, 0f, 1f, 1f);
             Fill(party, Inset);
@@ -131,7 +144,7 @@ namespace GamecommMentor.DaengSaka
             wallet.text = $"Kas party   {coins:N0} koin";
         }
 
-        private void RenderItems(bool justCooked = false)
+        private void RenderItems(GmItemDefinition cookedDish = null)
         {
             GmPartyInventory bag = GmPartyRun.Current.Inventory;
             lastInventoryRevision = bag.Revision;
@@ -149,15 +162,16 @@ namespace GamecommMentor.DaengSaka
             if (!any)
                 AddText(font, Row(items, "Empty", 54f), "Empty Label", "Tas kosong", 18, .05f, 0f, .95f, 1f);
 
-            int rawFish = bag.Count(Dish.Ingredient);
-            ingredientStock.text = $"Perlu 1 {Dish.Ingredient.Name} · Punya {rawFish}";
-            cook.interactable = bag.CanCook(Dish);
-            cook.targetGraphic.color = cook.interactable ? Leaf : Inset;
-            cookLabel.color = cook.interactable ? Paper : Ink;
-            if (justCooked) cookingStatus.text = "+1 porsi masuk Tas.";
-            else if (bag.Count(Dish) == int.MaxValue) cookingStatus.text = "Tumpukan makanan penuh.";
-            else if (rawFish == 0) cookingStatus.text = "Tangkap Wader di Sorelia.";
-            else cookingStatus.text = "";
+            foreach (Recipe recipe in recipes)
+            {
+                GmItemDefinition dish = recipe.Dish;
+                int rawFish = bag.Count(dish.Ingredient);
+                recipe.Stock.text = bag.Count(dish) == int.MaxValue ? "Penuh" : $"×{rawFish}";
+                recipe.Cook.interactable = bag.CanCook(dish);
+                recipe.Cook.targetGraphic.color = recipe.Cook.interactable ? Leaf : Paper;
+                Caption(recipe.Cook).color = recipe.Cook.interactable ? Paper : Ink;
+            }
+            cookingStatus.text = cookedDish != null ? $"+1 {cookedDish.Name} masuk Tas" : "1 ikan per porsi";
         }
 
         private static RectTransform Row(RectTransform parent, string name, float height)
@@ -173,11 +187,11 @@ namespace GamecommMentor.DaengSaka
             if (stockPage.gameObject.activeInHierarchy && GmPartyRun.Current.TryRecoverWipedParty()) Render();
         }
 
-        private void Cook()
+        private void Cook(GmItemDefinition dish)
         {
             if (!stockPage.gameObject.activeInHierarchy) return;
-            bool cooked = GmPartyRun.Current.Inventory.TryCook(Dish);
-            RenderItems(cooked);
+            bool cooked = GmPartyRun.Current.Inventory.TryCook(dish);
+            RenderItems(cooked ? dish : null);
         }
     }
 }

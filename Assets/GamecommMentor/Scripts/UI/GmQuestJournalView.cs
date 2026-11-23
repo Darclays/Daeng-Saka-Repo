@@ -206,19 +206,22 @@ namespace GamecommMentor.DaengSaka
         internal void UpdateInputHints()
         {
             bool pad = GmGamepadInput.UsingGamepad;
+            int offers = journal.LocalOfferCount;
             if (Page == GmJournalPage.Pause)
             {
-                Caption(pauseMap).text = WithAlert("Peta", journal.HasMapQuest);
+                Caption(pauseMap).text = offers > 0 ? WithAlert($"Peta · {offers} quest tersedia", true) : "Peta";
                 pauseHint.text = pad ? "[A] Pilih    [B] Lanjutkan" : "[Enter] Pilih    [Esc] Lanjutkan";
                 if (pad) GmMenuButton.FocusWithin(pausePanel, resume);
                 return;
             }
             tabHint.text = pad ? "[LB/RB] Ganti tab" : "";
             Caption(journalTab).text = pad ? "Jurnal" : "Jurnal  [J]";
-            Caption(mapTab).text = WithAlert(pad ? "Peta" : "Peta  [M]", journal.HasMapQuest);
+            string mapLabel = pad ? "Peta" : "Peta  [M]";
+            Caption(mapTab).text = WithAlert(mapLabel, offers > 0);
             Caption(bagTab).text = pad ? "Tas" : "Tas  [I]";
             string action = journal.ReturnsToPause ? "Kembali" : "Tutup";
             Caption(close).text = $"{action}  [{GmGamepadInput.BackLabel}]";
+            if (IsMap) mapView.AnimateOffers();
             if (pad) GmMenuButton.FocusWithin(window, PageTab);
         }
 

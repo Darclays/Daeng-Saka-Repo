@@ -264,16 +264,18 @@ namespace GamecommMentor.DaengSaka
             trackedOfferId = null;
         }
 
-        internal bool HasMapQuest
+        internal int LocalOfferCount
         {
             get
             {
-                if (LocalActiveQuest() != null) return true;
+                int count = 0;
                 foreach (var giver in GmPixelCrushersConversation.ActiveConversations)
-                    if (QuestOfferAt(giver) != null) return true;
-                return false;
+                    if (QuestOfferAt(giver) != null) count++;
+                return count;
             }
         }
+
+        internal bool HasMapQuest => LocalActiveQuest() != null || LocalOfferCount > 0;
 
         private GmQuestEntry LocalActiveQuest()
         {
@@ -286,6 +288,11 @@ namespace GamecommMentor.DaengSaka
 
         internal void OpenMap()
         {
+            if (TryGetTrackedOffer(out _, out _))
+            {
+                view.ShowMap(null);
+                return;
+            }
             GmPixelCrushersConversation nearest = null;
             string nearestId = null;
             float nearestDistance = float.PositiveInfinity;

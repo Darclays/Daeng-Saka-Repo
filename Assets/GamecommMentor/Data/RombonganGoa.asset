@@ -18,7 +18,7 @@ MonoBehaviour:
     maxMp: 0
     startingMp: 0
     speed: 13
-    attackDamage: 11
+    attackDamage: 20
     character: 0
     isBoss: 0
     enemyKind: 2
@@ -27,7 +27,7 @@ MonoBehaviour:
     maxMp: 0
     startingMp: 0
     speed: 22
-    attackDamage: 7
+    attackDamage: 16
     character: 0
     isBoss: 0
     enemyKind: 3
@@ -36,7 +36,7 @@ MonoBehaviour:
     maxMp: 0
     startingMp: 0
     speed: 17
-    attackDamage: 8
+    attackDamage: 17
     character: 0
     isBoss: 0
     enemyKind: 4

@@ -182,6 +182,8 @@ namespace GamecommMentor.DaengSaka
         private float explorationFov;
         private float shotTime;
         private int shotIndex;
+        private (string Text, float Seconds)[] openingCaptions;
+        private float openingCaptionDuration;
         private AudioSource playingCue;
         private float playingCueVolume;
         private bool cuePlayedInShot;
@@ -235,7 +237,8 @@ namespace GamecommMentor.DaengSaka
             terraceShotsInstalled = true;
         }
 
-        internal bool TryPlay(GmSakaMotor player, bool holdFinalShot = false, bool limitFrameDelta = false)
+        internal bool TryPlay(GmSakaMotor player, bool holdFinalShot = false, bool limitFrameDelta = false,
+            (string Text, float Seconds)[] openingCaptions = null)
         {
             if (started || !isActiveAndEnabled || player == null || !IsConfigured || orbit.Target != player.transform)
                 return false;
@@ -246,6 +249,15 @@ namespace GamecommMentor.DaengSaka
             playing = true;
             this.holdFinalShot = holdFinalShot;
             this.limitFrameDelta = limitFrameDelta;
+            this.openingCaptions = openingCaptions;
+            openingCaptionDuration = 0f;
+            if (openingCaptions != null)
+            {
+                foreach (var line in openingCaptions) openingCaptionDuration += line.Seconds;
+                caption.resizeTextForBestFit = true;
+                caption.resizeTextMinSize = Math.Min(18, caption.fontSize);
+                caption.resizeTextMaxSize = caption.fontSize;
+            }
             playStartedFrame = Time.frameCount;
             gate = controls;
             gate.Block(this);
@@ -297,7 +309,7 @@ namespace GamecommMentor.DaengSaka
             }
 
             shotTime += elapsed;
-            while (shotTime >= shots[shotIndex].Seconds)
+            while (shotTime >= ShotDuration)
             {
                 if (shotIndex == shots.Length - 1)
                 {
@@ -312,14 +324,14 @@ namespace GamecommMentor.DaengSaka
                     else Finish(completed: true);
                     return;
                 }
-                float remainder = shotTime - shots[shotIndex].Seconds;
+                float remainder = shotTime - ShotDuration;
                 EnterShot(shotIndex + 1);
                 shotTime = remainder;
             }
 
             Shot shot = shots[shotIndex];
             shot.Sample(view, terrain, shotTime);
-            caption.text = shot.Caption(shotTime);
+            caption.text = CaptionAt(shot);
             AudioSource cue = shot.AudioAt(shotTime);
             if (!cuePlayedInShot && cue != null)
             {
@@ -332,7 +344,22 @@ namespace GamecommMentor.DaengSaka
             }
             if (shotIndex == 0) SetFade(1f - shotTime / FadeSeconds);
             else if (shotIndex == shots.Length - 1 && !holdFinalShot)
-                SetFade(1f - (shot.Seconds - shotTime) / FadeSeconds);
+                SetFade(1f - (ShotDuration - shotTime) / FadeSeconds);
+        }
+
+        private float ShotDuration => shots[shotIndex].Seconds + (shotIndex == 0 ? openingCaptionDuration : 0f);
+
+        private string CaptionAt(Shot shot)
+        {
+            if (shotIndex != 0 || openingCaptions == null || shotTime < shot.Seconds) return shot.Caption(shotTime);
+
+            float elapsed = shotTime - shot.Seconds;
+            foreach (var line in openingCaptions)
+            {
+                if (elapsed < line.Seconds) return line.Text;
+                elapsed -= line.Seconds;
+            }
+            return "";
         }
 
         private void EnterShot(int index)

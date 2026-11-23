@@ -1,14 +1,15 @@
 using System;
-using System.IO;
 using UnityEditor;
 using UnityEngine;
 using static GamecommMentor.DaengSaka.Editor.GmAmbientNpcPlacement;
-using Object = UnityEngine.Object;
 
 namespace GamecommMentor.DaengSaka.Editor
 {
     internal static partial class GmVisualPolishSetup
     {
+        // Authored TerrainData referenced by both Terrain and TerrainCollider in DesaSorelia.
+        private const string SoreliaTerrainGuid = "4f9ac4e7e43dd724e88646ec9d22c2b4";
+
         private static Texture2D Texture(string name)
         {
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(Art + name + ".png");
@@ -53,78 +54,73 @@ namespace GamecommMentor.DaengSaka.Editor
 
         private static void PolishVillageGround(Terrain terrain, string folder)
         {
-            TerrainData source = terrain.terrainData;
             var collider = Require<TerrainCollider>(terrain.transform);
-            if (source == null || collider.terrainData != source)
-                throw new InvalidOperationException("Terrain dan Terrain Collider Sorelia harus menunjuk data yang sama.");
-
-            TerrainLayer[] layers = source.terrainLayers;
-            bool changed = false;
-            for (int i = 0; i < layers.Length; i++)
+            TerrainData rendered = terrain.terrainData;
+            TerrainData collision = collider.terrainData;
+            bool renderedCopy = IsVillagePolishCopy(rendered, folder);
+            bool collisionCopy = IsVillagePolishCopy(collision, folder);
+            if (!renderedCopy && !collisionCopy)
             {
-                TerrainLayer layer = layers[i];
-                if (layer == null) continue;
-                string file = Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(layer));
-                TerrainLayer polished = file switch
-                {
-                    "Terrain_Grass" => GetTerrainLayer(folder, layer, "Rumput_Sorelia", 5.4f),
-                    "Soil" => GetTerrainLayer(folder, layer, "Tanah_Sorelia", 5.2f),
-                    "WalkPath" => GetTerrainLayer(folder, layer, "Jalur_Sorelia", 4.6f),
-                    _ => layer
-                };
-                if (polished == layer) continue;
-                layers[i] = polished;
-                changed = true;
-            }
-            if (!changed)
-            {
-                if (!AssetDatabase.GetAssetPath(source).StartsWith(folder, StringComparison.Ordinal))
-                    Debug.LogWarning("[Daeng Saka] Terrain Sorelia tidak memakai layer Soil, Terrain_Grass, atau WalkPath.", terrain);
+                if (rendered == null || rendered != collision)
+                    throw new InvalidOperationException("Terrain dan Terrain Collider Sorelia harus menunjuk data yang sama.");
                 return;
             }
 
-            // Preserve the same painted weights, heights, holes, and placed terrain instances.
-            // Duplicate data once so edits to this scene never repaint the source terrain.
-            TerrainData data = source;
-            if (!AssetDatabase.GetAssetPath(source).StartsWith(folder, StringComparison.Ordinal))
+            // Keep an authored reference from either component when one is still available.
+            TerrainData authored = renderedCopy ? null : rendered;
+            if (authored == null && !collisionCopy) authored = collision;
+            if (authored == null)
             {
-                data = Object.Instantiate(source);
-                data.name = "Terrain - Sorelia";
-                AssetDatabase.CreateAsset(data, AssetDatabase.GenerateUniqueAssetPath(folder + data.name + ".asset"));
+                string path = AssetDatabase.GUIDToAssetPath(SoreliaTerrainGuid);
+                authored = string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<TerrainData>(path);
             }
-            Undo.RecordObject(data, UndoName);
-            float[,,] paint = data.GetAlphamaps(0, 0, data.alphamapWidth, data.alphamapHeight);
-            data.terrainLayers = layers;
-            data.SetAlphamaps(0, 0, paint);
-            EditorUtility.SetDirty(data);
+            if (authored == null || IsVillagePolishCopy(authored, folder))
+                throw new InvalidOperationException("Terrain asli Sorelia tidak ditemukan. Periksa Assets/New Terrain 1.asset beserta file .meta di proyek.");
+
             Undo.RecordObject(terrain, UndoName);
             Undo.RecordObject(collider, UndoName);
-            terrain.terrainData = data;
-            collider.terrainData = data;
+            terrain.terrainData = authored;
+            collider.terrainData = authored;
             terrain.Flush();
             PrefabUtility.RecordPrefabInstancePropertyModifications(terrain);
             PrefabUtility.RecordPrefabInstancePropertyModifications(collider);
+            Debug.Log($"[Daeng Saka 1E.41B R2] Jalur Sorelia dipulihkan dari {AssetDatabase.GetAssetPath(authored)}.", terrain);
         }
 
-        private static TerrainLayer GetTerrainLayer(string folder, TerrainLayer source, string art, float tile)
+        private static bool IsVillagePolishCopy(TerrainData data, string folder)
         {
-            string path = folder + art + ".terrainlayer";
-            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(path);
-            if (layer != null) return layer;
+            return data != null && AssetDatabase.GetAssetPath(data)
+                .StartsWith(folder + "Terrain - Sorelia", StringComparison.Ordinal);
+        }
 
-            Texture2D texture = Texture(art);
-            layer = Object.Instantiate(source);
-            layer.name = art;
-            layer.diffuseTexture = texture;
-            layer.diffuseRemapMin = Vector4.zero;
-            layer.diffuseRemapMax = Vector4.one;
-            layer.normalMapTexture = null;
-            layer.maskMapTexture = null;
-            layer.tileSize = new Vector2(tile, tile);
-            layer.metallic = 0f;
-            layer.smoothness = 0f;
-            AssetDatabase.CreateAsset(layer, path);
-            return layer;
+        private static void PolishVillageWater(Transform level, string folder)
+        {
+            var renderer = level.Find("Water")?.GetComponent<MeshRenderer>();
+            Material source = renderer != null ? renderer.sharedMaterial : null;
+            if (source == null || !source.HasProperty("_ShallowColor") || !source.HasProperty("_DeepColor") ||
+                !source.HasProperty("_WaterDepth") || !source.HasProperty("_WaveAmptitude"))
+            {
+                Debug.LogWarning("[Daeng Saka] Visual air Sorelia memerlukan material SimpleWater pada LevelDesign/Water.", level);
+                return;
+            }
+
+            string path = folder + "Air - Siang Tropis.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                // SimpleWater uses this multiplier to blend shallow and deep colors by scene depth.
+                material = new Material(source);
+                material.SetColor("_ShallowColor", ColorFrom("#71928C"));
+                material.SetColor("_DeepColor", ColorFrom("#355D60"));
+                material.SetFloat("_WaterDepth", .65f);
+                material.SetFloat("_WaveAmptitude", .045f);
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            if (renderer.sharedMaterial == material) return;
+            Undo.RecordObject(renderer, UndoName);
+            renderer.sharedMaterial = material;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(renderer);
         }
     }
 }

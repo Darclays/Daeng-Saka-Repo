@@ -174,12 +174,10 @@ namespace GamecommMentor.DaengSaka
             restButton = MakeButton(panel, "Rest", 0.750f, 0.23f, 0.974f, 0.61f, rest);
             commands = new[] { attackButton, skillButton, itemButton, restButton };
             backButton = MakeButton(panel, "Kembali", 0.759f, 0.72f, 0.974f, 0.96f, back, 16);
-            float optionStep = .63f / options.Length;
             for (int i = 0; i < options.Length; i++)
             {
                 int index = i;
-                float top = 0.665f - optionStep * i;
-                options[i] = MakeButton(panel, "", 0.026f, top - optionStep + .02f, 0.974f, top,
+                options[i] = MakeButton(panel, "", 0f, 0f, 0f, 0f,
                     () => pickMove(index), 17, TextAnchor.MiddleLeft);
             }
             hint = Label(font, panel, "Target Prompt", "", 17, 0.026f, 0.39f, 0.974f, 0.68f, TextAnchor.MiddleLeft);
@@ -268,7 +266,9 @@ namespace GamecommMentor.DaengSaka
                 }
                 else
                 {
-                    hint.text = selection.Target switch
+                    hint.text = selection.IsItem && selection.TargetsAll
+                        ? "HP/MP penuh dan hapus debuff untuk anggota yang masih punya jatah item."
+                        : selection.IsItem ? "Pilih teman · 1 item per karakter tiap ronde." : selection.Target switch
                     {
                         GmBattleTarget.Ally => "Pilih satu teman.",
                         GmBattleTarget.AllEnemies => "Semua musuh hidup terpilih.",
@@ -279,7 +279,7 @@ namespace GamecommMentor.DaengSaka
                         hint.text += selection.AppliesDebuffOnHit ? $" {BuffDetail(selection)} setelah hit."
                             : $" Diri · {BuffDetail(selection)}";
                 }
-                if (selection.Cleanse != GmBattleCleanse.None) hint.text += $" · {CleanseDetail(selection.Cleanse)}";
+                if (!selection.IsItem && selection.Cleanse != GmBattleCleanse.None) hint.text += $" · {CleanseDetail(selection.Cleanse)}";
             }
             else if (choosingMember)
             {
@@ -287,7 +287,8 @@ namespace GamecommMentor.DaengSaka
                 hint.text = "Pilih lewat sprite atau kartu HP/MP.";
             }
             else if (resolving) actionTitle.text = "Aksi berlangsung";
-            else if (moves) actionTitle.text = menu.ToString();
+            else if (moves) actionTitle.text = menu == GmBattleMenu.Item
+                ? "Item · 1 per karakter tiap ronde" : menu.ToString();
             else if (partyTurn || finished) actionTitle.text = "Aksi";
             else if (actor != null && actor.IsStunned) actionTitle.text = "Terkena Stun";
             else actionTitle.text = "Musuh bertindak";
@@ -671,6 +672,11 @@ namespace GamecommMentor.DaengSaka
                 card.Status.text = unit.IsAlive && unit.PendingPoisonDamage(round) >= unit.Hp
                     ? "Racun · KO saat dipilih" : StatusSummary(unit, round);
                 card.Status.color = StatusColor(unit);
+                if (move?.IsItem == true && unit.IsAlive && unit.LastItemRound == round)
+                {
+                    card.Status.text = "Jatah item terpakai";
+                    card.Status.color = Muted;
+                }
                 card.Hp.text = $"HP  {unit.Hp}/{unit.MaxHp}";
                 card.Mp.text = $"MP  {unit.Mp}/{unit.MaxMp}";
                 card.HpFill.anchorMax = new Vector2(unit.Hp / (float)unit.MaxHp, 1f);
@@ -696,6 +702,18 @@ namespace GamecommMentor.DaengSaka
 
         private void RenderOptions(GmBattleSession session, GmBattleMenu menu)
         {
+            bool items = menu == GmBattleMenu.Item;
+            const float rowStep = .21f;
+            for (int i = 0; i < options.Length; i++)
+            {
+                int row = items ? i / 2 : i;
+                bool half = items && row * 2 + 1 < GmBattleMove.Items.Count;
+                bool right = half && i % 2 == 1;
+                float top = .665f - rowStep * row;
+                var rect = (RectTransform)options[i].transform.parent;
+                rect.anchorMin = new Vector2(right ? .508f : .026f, top - rowStep + .02f);
+                rect.anchorMax = new Vector2(half && !right ? .492f : .974f, top);
+            }
             switch (menu)
             {
                 case GmBattleMenu.Skill:
@@ -733,8 +751,8 @@ namespace GamecommMentor.DaengSaka
             };
             if (move.IsItem)
             {
-                string stat = move.Effect == GmBattleEffect.RestoreMp ? "MP" : "HP";
-                detail = $"×{session.ItemCount(move)} · +{move.Amount} {stat}";
+                detail = reason == null || move.TargetsAll
+                    ? $"×{session.ItemCount(move)} · {move.Item.RecoveryLabel}" : move.Item.RecoveryLabel;
             }
             else
             {
@@ -753,8 +771,15 @@ namespace GamecommMentor.DaengSaka
                 detail = $"{move.MpCost} MP · {detail} · {effect}";
             }
             if (reason != null) detail += " · " + reason;
-            ButtonLabel(button).text = move.Name + "  ·  " + detail;
+            ButtonLabel(button).text = move.Name + " · " + detail;
             SetButton(button, true, reason == null);
+        }
+
+        internal static string RestorationLabel(GmBattleHit hit)
+        {
+            string hp = hit.Amount > 0 ? $"+{hit.Amount} HP" : "";
+            if (hit.MpRestored <= 0) return hp;
+            return hp.Length > 0 ? $"{hp} · +{hit.MpRestored} MP" : $"+{hit.MpRestored} MP";
         }
 
         public static string BuffDetail(GmBattleMove move) => move.Buff switch

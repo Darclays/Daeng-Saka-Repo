@@ -17,7 +17,8 @@ MonoBehaviour:
   phaseThreeAt: 45
   splitHealthIntoThirds: 1
   minionHp: 22
-  minionDamage: 7
+  minionDamage: 13
+  basicAttackDamage: 24
   boltDamage: 20
   waveDamage: 14
   airbornePoisonDamage: 4

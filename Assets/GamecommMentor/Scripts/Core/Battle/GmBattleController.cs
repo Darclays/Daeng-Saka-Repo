@@ -11,16 +11,16 @@ namespace GamecommMentor.DaengSaka
     {
         private static readonly GmBattleStats[] PoppoEnemies =
         {
-            new GmBattleStats("Poppo A", 60, 0, 0, 20, 8, enemyKind: GmBattleEnemyKind.Poppo),
-            new GmBattleStats("Poppo B", 54, 0, 0, 16, 7, enemyKind: GmBattleEnemyKind.Poppo)
+            new GmBattleStats("Poppo A", 60, 0, 0, 20, 15, enemyKind: GmBattleEnemyKind.Poppo),
+            new GmBattleStats("Poppo B", 54, 0, 0, 16, 15, enemyKind: GmBattleEnemyKind.Poppo)
         };
 
         [SerializeField] private Canvas battleCanvas;
         [SerializeField] private GmBattleStats[] party = GmBattleStats.CreateDefaultParty();
         [SerializeField] private GmBattleStats[] enemies =
         {
-            new GmBattleStats("Musuh Uji A", 60, 0, 0, 22, 15),
-            new GmBattleStats("Musuh Uji B", 48, 0, 0, 16, 12)
+            new GmBattleStats("Musuh Uji A", 60, 0, 0, 22, 16),
+            new GmBattleStats("Musuh Uji B", 48, 0, 0, 16, 15)
         };
         [SerializeField, Min(1)] private int restMp = 6;
         [SerializeField, Min(0f)] private float enemyActionDelay = 0.55f;
@@ -513,6 +513,7 @@ namespace GamecommMentor.DaengSaka
                     GmBattleEffect.Heal => $"+{hit.Amount} HP",
                     GmBattleEffect.HealPercent => $"+{hit.Amount} HP",
                     GmBattleEffect.RestoreMp => $"+{hit.Amount} MP",
+                    GmBattleEffect.RestoreVitals => GmBattleView.RestorationLabel(hit),
                     _ => $"−{hit.Amount} HP"
                 };
                 string status = !target.IsAlive ? " · KO" : hit.Stunned ? " · Stun" : "";

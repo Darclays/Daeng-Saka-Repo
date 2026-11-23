@@ -19,7 +19,7 @@ namespace GamecommMentor.DaengSaka.Editor
             {
                 Vector3 market = (world.Find("Penempa Besi") ?? start).position;
                 Drift(root, "Debu pelataran", market + Vector3.up * 2.1f,
-                    new Vector3(14f, 3.5f, 10f), ColorFrom("#F5D9A2"), dust, 22, 2.7f);
+                    new Vector3(14f, 3.5f, 10f), ColorFrom("#DDEAF2"), dust, 22, 2.7f);
                 return;
             }
             if (area == Village)
@@ -28,7 +28,7 @@ namespace GamecommMentor.DaengSaka.Editor
                 Transform safe = world.Find("Keluarga Nelayan/Posisi Keluarga/Setelah Ditolong/Ayah");
                 Vector3 field = Vector3.Lerp((invaded ?? start).position, (safe ?? invaded ?? start).position, .42f);
                 Drift(root, "Serbuk halaman nelayan", field + Vector3.up * 1.65f,
-                    new Vector3(21f, 2.8f, 11f), ColorFrom("#E9D69B"), dust, 28, 3.2f);
+                    new Vector3(21f, 2.8f, 11f), ColorFrom("#E5EFE1"), dust, 28, 3.2f);
                 return;
             }
 
