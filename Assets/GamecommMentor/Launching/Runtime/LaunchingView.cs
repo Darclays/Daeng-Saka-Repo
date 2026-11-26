@@ -200,7 +200,7 @@ namespace GamecommMentor.DaengSaka.Launching
             var art = At(card.slot, "Area karakter", 15, 113, 410, 362);
             art.gameObject.AddComponent<RectMask2D>();
             card.aura = Decor(At(art, "Halo dan partikel", 0, 2, 410, 350), Halo, accent, Silver);
-            card.shadow = Decor(At(art, "Bayangan kaki", 91, 312, 240, 18), Shadow, Dark, Silver);
+            card.shadow = Decor(At(art, "Bayangan kaki", 91, 312, 240, 18), LaunchingDecoration.Shape.Shadow, Dark, Silver);
             var anchor = At(art, "Pijakan sprite", foot - 15f, 317f, 0, 0);
             card.sprite = SpriteImage(anchor, "Pixel sprite", pixelMaterial);
             card.impact = SpriteImage(anchor, "Impact skill", pixelMaterial);
